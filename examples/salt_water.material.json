@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "name": "Salt_water",
+  "density_g_cm3": 1.05,
+  "components": [
+    {
+      "formula": "H2O",
+      "weight": 90.0
+    },
+    {
+      "formula": "NaCl",
+      "weight": 10.0
+    }
+  ]
+}

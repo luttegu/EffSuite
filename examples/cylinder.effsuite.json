@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "geometry": "cylindrical",
+  "task": "both",
+  "detector": [
+    80.0,
+    1.0,
+    60.0,
+    60.0,
+    1.0,
+    1.0,
+    1.0,
+    5.0,
+    10.0,
+    40.0,
+    0.0,
+    0.0,
+    100.0,
+    0.0,
+    "Ge",
+    "aluminium",
+    "aluminium",
+    "aluminium",
+    "copper"
+  ],
+  "sample": [
+    90.0,
+    40.0,
+    1.0,
+    1.0,
+    0.0,
+    "water",
+    "polystyrene"
+  ],
+  "standard": [
+    90.0,
+    30.0,
+    1.0,
+    1.0,
+    0.0,
+    "water",
+    "polystyrene"
+  ],
+  "calibration": [
+    {
+      "energy_keV": 44.0,
+      "efficiency": 0.008035,
+      "u_rel_percent": 3.0
+    },
+    {
+      "energy_keV": 55.0,
+      "efficiency": 0.01167,
+      "u_rel_percent": 3.0
+    },
+    {
+      "energy_keV": 80.0,
+      "efficiency": 0.01651,
+      "u_rel_percent": 3.0
+    },
+    {
+      "energy_keV": 100.0,
+      "efficiency": 0.01836,
+      "u_rel_percent": 3.0
+    },
+    {
+      "energy_keV": 120.0,
+      "efficiency": 0.01844,
+      "u_rel_percent": 3.0
+    },
+    {
+      "energy_keV": 150.0,
+      "efficiency": 0.01699,
+      "u_rel_percent": 3.0
+    },
+    {
+      "energy_keV": 200.0,
+      "efficiency": 0.01377,
+      "u_rel_percent": 3.0
+    },
+    {
+      "energy_keV": 300.0,
+      "efficiency": 0.009263,
+      "u_rel_percent": 3.0
+    },
+    {
+      "energy_keV": 400.0,
+      "efficiency": 0.007053,
+      "u_rel_percent": 3.0
+    },
+    {
+      "energy_keV": 500.0,
+      "efficiency": 0.00572,
+      "u_rel_percent": 3.0
+    },
+    {
+      "energy_keV": 600.0,
+      "efficiency": 0.004819,
+      "u_rel_percent": 3.0
+    },
+    {
+      "energy_keV": 800.0,
+      "efficiency": 0.003678,
+      "u_rel_percent": 3.0
+    },
+    {
+      "energy_keV": 1000.0,
+      "efficiency": 0.002982,
+      "u_rel_percent": 3.0
+    },
+    {
+      "energy_keV": 1250.0,
+      "efficiency": 0.002417,
+      "u_rel_percent": 3.0
+    },
+    {
+      "energy_keV": 1500.0,
+      "efficiency": 0.002033,
+      "u_rel_percent": 3.0
+    },
+    {
+      "energy_keV": 1750.0,
+      "efficiency": 0.001757,
+      "u_rel_percent": 3.0
+    }
+  ],
+  "nuclides": [
+    "CO-60",
+    "CS-134",
+    "EU-152"
+  ],
+  "workers": 0,
+  "verify_serial": true,
+  "description": "Supplied example models and calibration; evaluation only"
+}

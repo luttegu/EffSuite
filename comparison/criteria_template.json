@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "plan_id": "SET-LAB-PLAN-ID",
+  "reference_kind": "legacy_program",
+  "criteria_approved": false,
+  "approved_by": "",
+  "approved_date": "",
+  "approval_record": "",
+  "programs": {
+    "reference": {
+      "name": "EFFTRAN",
+      "version": "SET-VERSION",
+      "build_id": "SET-REFERENCE-EXECUTABLE-HASH"
+    },
+    "candidate": {
+      "name": "EffSuite",
+      "version": "0.3.1",
+      "build_id": "SET-CANDIDATE-BUILD-HASH"
+    }
+  },
+  "criteria": [
+    {
+      "geometry": "cylindrical",
+      "quantity": "full_energy_efficiency",
+      "atol": null,
+      "rtol": null,
+      "energy_tolerance_keV": null,
+      "maximum_standardized_difference": null
+    },
+    {
+      "geometry": "cylindrical",
+      "quantity": "transfer_factor",
+      "atol": null,
+      "rtol": null,
+      "energy_tolerance_keV": null,
+      "maximum_standardized_difference": null
+    },
+    {
+      "geometry": "cylindrical",
+      "quantity": "summing_activity_multiplier",
+      "atol": null,
+      "rtol": null,
+      "energy_tolerance_keV": null,
+      "maximum_standardized_difference": null
+    },
+    {
+      "geometry": "marinelli",
+      "quantity": "full_energy_efficiency",
+      "atol": null,
+      "rtol": null,
+      "energy_tolerance_keV": null,
+      "maximum_standardized_difference": null
+    },
+    {
+      "geometry": "marinelli",
+      "quantity": "transfer_factor",
+      "atol": null,
+      "rtol": null,
+      "energy_tolerance_keV": null,
+      "maximum_standardized_difference": null
+    },
+    {
+      "geometry": "marinelli",
+      "quantity": "summing_activity_multiplier",
+      "atol": null,
+      "rtol": null,
+      "energy_tolerance_keV": null,
+      "maximum_standardized_difference": null
+    },
+    {
+      "geometry": "well",
+      "quantity": "full_energy_efficiency",
+      "atol": null,
+      "rtol": null,
+      "energy_tolerance_keV": null,
+      "maximum_standardized_difference": null
+    },
+    {
+      "geometry": "well",
+      "quantity": "transfer_factor",
+      "atol": null,
+      "rtol": null,
+      "energy_tolerance_keV": null,
+      "maximum_standardized_difference": null
+    },
+    {
+      "geometry": "well",
+      "quantity": "summing_activity_multiplier",
+      "atol": null,
+      "rtol": null,
+      "energy_tolerance_keV": null,
+      "maximum_standardized_difference": null
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "source_archive_sha256": "9fae11afbac02238a686372956ac2e38d410cbe0521e69cadd10ca437dea2066",
+  "files": [
+    {
+      "file": "total.f",
+      "original_sha256": "fac1c3166c716d2f38e114421ef7b982b8e9cebe0e4cfb414e743aeabf7c0976",
+      "patched_sha256": "a5eb2fcb338bcd3d31839714087fd47e1542d6e26148b557b1bc0aea329ae672"
+    },
+    {
+      "file": "scatter.f",
+      "original_sha256": "e1b1d0b001a68018f02ce19d1c7bb4afdeaa232505d1a1785519bda3af250ab0",
+      "patched_sha256": "de18c8c6409b669639b6e4ab50c0398c4b450937aa6ac4a34bb6fa0569cca46f"
+    },
+    {
+      "file": "eta.f",
+      "original_sha256": "1b7ec160e29e78c91fc3a81dfabfa7e01cf78042dc63c5718662514349657182",
+      "patched_sha256": "569193ad9319f1d210ea1e9e26193c0940e9e3714fad2d29314823579fc66a4d"
+    }
+  ]
+}
