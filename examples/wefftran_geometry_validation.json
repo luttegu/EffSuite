@@ -1,0 +1,30 @@
+{
+  "compiler": "GNU Fortran 13.3.0 -O3 on Linux",
+  "interior_legacy_comparisons": 2000,
+  "interior_exported_binary64_text_identical": true,
+  "independent_random_ray_comparisons": 4000,
+  "max_absolute_error_mm": 6.252776074688882e-13,
+  "analytic_cases": {
+    "description": [
+      "upward ray above crystal",
+      "axial ray through outer cylinder",
+      "axial ray through well cavity"
+    ],
+    "legacy": [
+      18.333333333333336,
+      0.0,
+      0.0
+    ],
+    "supplied": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "fixed": [
+      0.0,
+      69.0,
+      43.0
+    ]
+  },
+  "note": "This verifies geometric lengths, not full detector response or Windows binaries."
+}

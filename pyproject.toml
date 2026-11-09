@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "effsuite"
+version = "0.1.0-beta"
+description = "Beta version: gamma spectrometry efficiency transfer and coincidence summing suite for cylindrical, Marinelli and well geometries"
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.26,<3", "matplotlib>=3.8,<4", "xlrd>=2,<3", "cryptography>=41.0"]
+
+[project.optional-dependencies]
+gui = ["PySide6-Essentials>=6.6,<7", "matplotlib>=3.8,<4"]
+desktop = ["PySide6-Essentials>=6.6,<7", "matplotlib>=3.8,<4"]
+spatial = ["numpy>=1.26"]
+
+[project.scripts]
+effsuite = "effsuite.app_cli:main"
+effsuite-gui = "effsuite.gui:main"
+effsuite-coincidence = "effsuite.parallel_coincidence:main"
+effsuite-well-coincidence = "effsuite.well_parallel:main"
+effsuite-well-spatial = "effsuite.well_spatial:main"
+effsuite-compare-lab = "effsuite.lab_comparison:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+effsuite = ["assets/**/*"]

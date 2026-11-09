@@ -1,0 +1,50 @@
+{
+  "platform": "windows",
+  "command": [
+    "/workspace/scratch/95f55ffea964/windows_cross_compiler/extracted/usr/bin/x86_64-w64-mingw32-gfortran-posix",
+    "-B/workspace/scratch/95f55ffea964/windows_cross_compiler/extracted/usr/lib/gcc/x86_64-w64-mingw32/12-posix",
+    "-B/workspace/scratch/95f55ffea964/windows_cross_compiler/extracted/usr/x86_64-w64-mingw32/bin",
+    "-L/workspace/scratch/95f55ffea964/windows_cross_compiler/extracted/usr/x86_64-w64-mingw32/lib",
+    "-I/workspace/scratch/95f55ffea964/windows_cross_compiler/extracted/usr/x86_64-w64-mingw32/include",
+    "-O2",
+    "-std=legacy",
+    "-fallow-argument-mismatch",
+    "-fno-fast-math",
+    "-ffp-contract=off",
+    "-fno-use-linker-plugin",
+    "-w",
+    "-static",
+    "-I/tmp/tmpdqspme4b",
+    "-o",
+    "/workspace/scratch/95f55ffea964/effsuite_blueprint/src/effsuite/assets/xcom/bin/windows/xcom.exe",
+    "/tmp/tmpdqspme4b/XCOM.FOR"
+  ],
+  "binary_sha256": "f1a654dadae105db1fa678ec7111aeba87743742bea0788ee1e999c1b160c366",
+  "source_changes": "DOS EOF control characters removed in temporary compiler inputs; numerical statements unchanged",
+  "input_hashes": {
+    "XCOM.FOR": {
+      "original_sha256": "e1db48ccf5f04c003164f80a788cf2075834639ce4403be99a147beb05dd8a20",
+      "compiled_sha256": "e1db48ccf5f04c003164f80a788cf2075834639ce4403be99a147beb05dd8a20"
+    },
+    "ATWTS.DAT": {
+      "original_sha256": "46a998f5479943094566a6b9a3dae521d77ebcb75b59f72b9a322707adbceb26",
+      "compiled_sha256": "9a64aef23e8c909ec2d00b1247639932a3f2ae004852d630766da020fa451d0a"
+    },
+    "HASH2.DAT": {
+      "original_sha256": "5b885d6ecfbc2ab61c3904e73657ccc3f9730b43c3c6a4ffdc754a0142046f37",
+      "compiled_sha256": "5b885d6ecfbc2ab61c3904e73657ccc3f9730b43c3c6a4ffdc754a0142046f37"
+    },
+    "HASH1.DAT": {
+      "original_sha256": "9edd6861645f5f26c2872e5e981011c576bea1051f14836aa829c1b853542c5c",
+      "compiled_sha256": "0b6ddaeb28b48b56a3a90311da2a004f7a547e7c1ec299efdfa8805b81aa9e49"
+    },
+    "INDEX.DAT": {
+      "original_sha256": "ec8ab20a9afc03fc4c94e37beefc157b8f3e5a35bfc3f60066f6590a3902698f",
+      "compiled_sha256": "95ffc77fb29901654fdf3059497c6f564316314e3798f739bdc1eff7024a67a7"
+    },
+    "ENB.DAT": {
+      "original_sha256": "8d0328d99a276aee746a575b4bdfdaf4b642f9621ff7bc9e83c0276aef0948a8",
+      "compiled_sha256": "83a4a910e1a1412fbfd8e8aa2a1deba1199e3dfa0a5c55704bd763870ff92f71"
+    }
+  }
+}

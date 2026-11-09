@@ -1,0 +1,1632 @@
+{
+  "scope": "Structural check and synthetic point response P=0.1, T=0.2; not whole-library laboratory qualification",
+  "parent_groups": 227,
+  "passed": 224,
+  "records": [
+    {
+      "nuclide": "AC-228",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "9c28f1db3dab2ee918fb68e7f5e1132e2af72fd61a146746a6dc7aabc99c2362"
+      ]
+    },
+    {
+      "nuclide": "AG-105",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "9a39f4da0d1065288688165b8a799204cc7a65038f34d953e92a7c55c11786eb"
+      ]
+    },
+    {
+      "nuclide": "AG-105M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "3e8dd809ad4c7da43b5dbb2f1090f2ddf90b40f4becd5e3b72b7d5843ca394ba",
+        "f8a8fb8dd402492c8a47dd5a4c78f10be45f7a34fd09dd9a8a2c36d5bffa7505"
+      ]
+    },
+    {
+      "nuclide": "AG-108",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "a64481190cb64beb065dc578ec20796601d25e7d5219f79721838074d3fb77c6",
+        "175dbe69117824e96f4fb824fc91203afa615c75e7c5616a9385407e338de33e"
+      ]
+    },
+    {
+      "nuclide": "AG-108M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "bb05ba8261be83f5171aa60b234f4e0a5c375eae468ed66fd92187510af0ef92",
+        "6c2259ad49e84ceae354406c04ec48c8dae8da8659b654a776815528b84f904e"
+      ]
+    },
+    {
+      "nuclide": "AG-110",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "58f63e1884681acb434c6cf7da4cad3f2867e7d21b0ae5acde8107d9851c73af"
+      ]
+    },
+    {
+      "nuclide": "AG-110M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "9a352afb49bea6885d875c1769c6fb7f785ec45e07c6b342229ba655b6e33419",
+        "e3eee5287332d0da05c6be84be61cbfa55dd9be96d40d9e4e7ec9cd620a19665"
+      ]
+    },
+    {
+      "nuclide": "AG-111",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "508a8f85662336ded3495e41f4e664cafe0a5f434262e9565da0987b22bc66c1"
+      ]
+    },
+    {
+      "nuclide": "AG-111M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "86847d740a9387e6c1e53374936d96a5a6c36aaeb2e81cd50e41b89937533559",
+        "c026f18b7ae9752de00b326fe0969d73826ac37ffac49f36db4714fedbb26039"
+      ]
+    },
+    {
+      "nuclide": "AL-26",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "7fa3eb945e6fc780511febd544e1e3578590387950e1f097d2a9912f5326e5c0"
+      ]
+    },
+    {
+      "nuclide": "AM-241",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "89032be35862547ffeb82c2d0b64d44efac1215a083d6f3753aed2d06c8f6518"
+      ]
+    },
+    {
+      "nuclide": "AM-243",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "08f4e9eda8b6763e17c4b09a3b6a23796e5d371d7e33cd2615dd51726b1ba3ef"
+      ]
+    },
+    {
+      "nuclide": "AS-76",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "10ca2442ac9d05440046cdc26c06c4ee8bc83fa56321a901877b4e294e44f4f3"
+      ]
+    },
+    {
+      "nuclide": "AU-195",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "3648e334f6f48633b2b675ad751bf196751c9b5b7465925e631067be08e50a28"
+      ]
+    },
+    {
+      "nuclide": "AU-198",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "a64e1728bdb8d16de9e400044a45b83f8884180d2adfd211f84008a1e0520708"
+      ]
+    },
+    {
+      "nuclide": "AU-199",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "5e0be62c75c6e603645d24a8fced766d3e5a7947ad57f156ec7388aa6bffc94c"
+      ]
+    },
+    {
+      "nuclide": "BA-133",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "93d3d2345536ce1ba8ab03607cd9222a82f275acf1a3661daf719408214092a2"
+      ]
+    },
+    {
+      "nuclide": "BA-137M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "e56ffa05833ec3cd9a64109606f4ea3e63871ed78a872b75ef59609a959ace7e"
+      ]
+    },
+    {
+      "nuclide": "BA-140",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "8a9e75551d73b58b478dd989d27a91d15c5c1dd50811e7fa2bf6e6f62a1feecf"
+      ]
+    },
+    {
+      "nuclide": "BE-7",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "dcee33ec5494a4d483b3e78fc7899b005de39272b044553ef1dd6c18f28eb90f"
+      ]
+    },
+    {
+      "nuclide": "BI-207",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "61ce3a64526894e66b5a42a30c1a4e6da6e486518129222bcc0040b81c94ae13"
+      ]
+    },
+    {
+      "nuclide": "BI-210",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "ada39bda848bcf6f5283e5576f49263b3b9c352d5cdbe74b2f2f8d163b09c1df"
+      ]
+    },
+    {
+      "nuclide": "BI-212",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "4d1d3b68c505c6265b7f114967e18efeb9c8d1153bbbb6993820c00325f17d27",
+        "2b17906d68f562db41ba77709701d435fe7715418b93d6d2e8fccae05c6df845"
+      ]
+    },
+    {
+      "nuclide": "BI-214",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "6d3474ecef07c81c9a8d4d8839ba2ad3db8abc7ce71b41402753455dab7a7078",
+        "363c39a671a89ba2bb6fb57a3b80c438ab618be7958d58fbec8cee75ae77ff9d"
+      ]
+    },
+    {
+      "nuclide": "BR-82",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "c9f7ff2049287ff90fe3d1204caca1923625fe953d3d595e0fb0f978c0321f6c"
+      ]
+    },
+    {
+      "nuclide": "CA-47",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "cc83ee50dae3118a95b15cb55650c03316cfa010c51ce109f4fb405e9c2566db"
+      ]
+    },
+    {
+      "nuclide": "CD-109",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "11fd0538a87f659e02d86333e080333c3039d78734ca2a31a22bfe5d84f5a701"
+      ]
+    },
+    {
+      "nuclide": "CD-115",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "db849c3ee318bef333d7d2641819448804a4863cfebb156fb8d9feb347dc1a8c"
+      ]
+    },
+    {
+      "nuclide": "CD-115M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "7faf18d6998de55a1f9fd83e2525ea73097eef69a256b4afc81d8954648e9a64"
+      ]
+    },
+    {
+      "nuclide": "CE-139",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "cf3b850321742e2517604a3b37c60057af435233bd19a82d27d5f8fe81144465"
+      ]
+    },
+    {
+      "nuclide": "CE-141",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "54847f9c9716cf6984ad5b38644a10913977d057afbce276b41d62ebe8eea3b9"
+      ]
+    },
+    {
+      "nuclide": "CE-143",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "fa79e6d31905b7205bd169478c0f21ebce5ad4e46f3f55ca926c14f490a4537e"
+      ]
+    },
+    {
+      "nuclide": "CE-144",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "d13aef544a420697ad956b39d15dfff12bc9d6d63704cfb1c1509085538a9247"
+      ]
+    },
+    {
+      "nuclide": "CF-252",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "be6a95dd42941772515e21c2311767ec46994018ff9d4accb1e1ad6b1ecc378d"
+      ]
+    },
+    {
+      "nuclide": "CM-242",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "f9c52cacc0f9bf8cc0a76b0efa2e2414b0141633e26ab810e4ddbc3f45ffe254"
+      ]
+    },
+    {
+      "nuclide": "CM-244",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "cacc74ed5764b7ad8e3947772079f6ecdbf81408237b5f8861dd1741929fb02c"
+      ]
+    },
+    {
+      "nuclide": "CM-246",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "3f2643209f5ee2f538ccbd543b36d0648f456fafaa07fda619d71dffb302dc70"
+      ]
+    },
+    {
+      "nuclide": "CO-56",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "455536669831525b2f2cbb4bff104902d07b24f5e0edca8b8485566fe50991aa"
+      ]
+    },
+    {
+      "nuclide": "CO-57",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "3aa221adc7dfbd9414a8ebaa4e62ad34ef14f492e9f4fc48fce03f4c55382fa0"
+      ]
+    },
+    {
+      "nuclide": "CO-58",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "2cbc9e963e9863f5552eedd2278e84a18f9376b3c817226151da6d8e9b6590c9"
+      ]
+    },
+    {
+      "nuclide": "CO-60",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "4761912506d5a487738d0735d39c379de3fb9287c93926db554d943f360eb450"
+      ]
+    },
+    {
+      "nuclide": "CO-60M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "00463998f6aa23690210cd74ff73647cfd4cf35100eeac0a4ed7205d7362a433",
+        "9b2c8dd12671b269135ffdaf836a558c7193bcb1f3df2c97c1003fb97e424630"
+      ]
+    },
+    {
+      "nuclide": "CO-64",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "7e6e61f86c06348149c3108239948fcf3caba59cc971045e4008362c628bef03"
+      ]
+    },
+    {
+      "nuclide": "CR-51",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "e9d7b818cafc277a6dbf77edc12ec399ceaa0ebdc434612ae4fb85a15d5f5a63"
+      ]
+    },
+    {
+      "nuclide": "CS-134",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "123fb18c13040fe693e22cf6ca1e42e1bb604f22d88e17fc778a56c54faead0a",
+        "a03a3799a2815102cac74304e905db9226e2cb378fd1335bdb216cdc536d0c71"
+      ]
+    },
+    {
+      "nuclide": "CS-134M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "0448534fa67a60ecb24ef7b52601177c9bd28eb683e95cfd649706152f7dec07"
+      ]
+    },
+    {
+      "nuclide": "CS-136",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "30eeba017942facc0afe65e2f78c7a4262be486017da69585b5b49a1d33fbe01"
+      ]
+    },
+    {
+      "nuclide": "CS-137",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "fec3937d23a4471726a21e15da8d8ec717debf51fab8f1deec81933a3cbd4895"
+      ]
+    },
+    {
+      "nuclide": "CS-138",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "85f96c64bf85007fb3227b3721d3612407d9c3edce14636202713b065279add0"
+      ]
+    },
+    {
+      "nuclide": "CS-138M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "1c284a5c4a3bd0e88647ccf8fe2231fe693de8dfdc6a85103411c864b82ac971",
+        "25f72eb81ff23d7e97e1741e680d822ab11cc24a4774f31f089ef4213e86de88"
+      ]
+    },
+    {
+      "nuclide": "CU-64",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "53ac169b2f3da1811b61618abad7daae72e5236ec46bfdb5d4d82814fe302e66"
+      ]
+    },
+    {
+      "nuclide": "ER-169",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "8c7a2ac7a96a84e2b83ab85d71eb846d0cfc338896189f116cfb9772b536b7d6"
+      ]
+    },
+    {
+      "nuclide": "EU-152",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "55e824135bf0287e165ae8f5c023833f32247efbee0e89ad66d2cefc33c39b24",
+        "687bacc13153bd10d318c23a6b6864533c5042ceaab86bcebef331533246fd89"
+      ]
+    },
+    {
+      "nuclide": "EU-154",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "38fe92089781c8af23577183c94457e355dd164216beca1abec563230e56ab22",
+        "6f8e313c71b2b4729d84b1e847f1361c64ba5f593c161525e2c94db144f72313"
+      ]
+    },
+    {
+      "nuclide": "EU-155",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "ddc57723d4a8b9b58dfa079d4b0e46ae78d1cd1f2c3597a34cfbd69f559fcd24"
+      ]
+    },
+    {
+      "nuclide": "EU-156",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "1bbcf43499f65280f7e9ac73aa440a23273aa99292d0145e3115c84713bcf430"
+      ]
+    },
+    {
+      "nuclide": "FE-55",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "ba3a4b0ecac8d1586b13aad2e9bcd4d84e369af73dc00e15b43dcda16f9e8a46"
+      ]
+    },
+    {
+      "nuclide": "FE-59",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "f6d42fab8b404ee8c4e0fae24fc70092a7c842bc87de08301a19ddb741f7e329"
+      ]
+    },
+    {
+      "nuclide": "FE-64",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "e6845497ff80b1a9bd408909786bc9f3629e62a21900dd62b7ebb33f2d1c12a8"
+      ]
+    },
+    {
+      "nuclide": "GA-64",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "1703e9f385f54437be7d785b24f1cbf3165b08f791e36e9cbd044cbb97ff51ba"
+      ]
+    },
+    {
+      "nuclide": "GA-66",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "519bf92cdaf822921990df5e08143bff5cc6d4bd7ea5a726318b33e72ba9c263"
+      ]
+    },
+    {
+      "nuclide": "GA-67",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "621dcc0cbb2610c2101f52624d324bc043f36471425f43122bc35a0484272ea5"
+      ]
+    },
+    {
+      "nuclide": "GA-68",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "838fc1fcc89ec7201dac8c5cea3ca3f6ea541fa23ab172f536bd3b316d215338"
+      ]
+    },
+    {
+      "nuclide": "GA-72",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "1839403541d608704068123bb51c67b1ab4973c9e7c38af2d581e26851a222f6"
+      ]
+    },
+    {
+      "nuclide": "GD-153",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "454d3e270c444f1f7966244e4b1c0c4d92422a04780b07b14830b470f33a46f9"
+      ]
+    },
+    {
+      "nuclide": "GD-159",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "7de1df625ff95cf1f3a7e2f950e0e0e4fc911e6b098ca177e29bc2b1f21b9ac3"
+      ]
+    },
+    {
+      "nuclide": "HF-175",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "3eeb78798274a1167baf2ed3c44c4e939af871b993cbc0f050e9dba305fcdb65"
+      ]
+    },
+    {
+      "nuclide": "HF-180M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "e4ab5d187ff56a6ebb19e6db9b14f342da252e92cfa66af2104b1898b5f11006"
+      ]
+    },
+    {
+      "nuclide": "HF-181",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "25afa3f00e1bf4a9b9a5fe810223c0da17fcb9126a2957566c4a66923e6922fc"
+      ]
+    },
+    {
+      "nuclide": "HG-197",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "599baeef28fd9aa0ade5f8162a79adf485e59ac8e549fa7558ffc24a3f02d228"
+      ]
+    },
+    {
+      "nuclide": "HG-197M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "4cf62f6df38f56b97bb5d2a0f8a473029ec651afae8a016bd42c5110de20583d",
+        "8209a4635874191491ec015111f254c18489438bd45e282e1acbb3926de352fd"
+      ]
+    },
+    {
+      "nuclide": "HG-203",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "3794a98df2391201c731e902d3d12aae21b8bd0cc415248d0d65ccb020571c09"
+      ]
+    },
+    {
+      "nuclide": "HG-206",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "aee6fc86de7b297ffb252bb4e40df945aa989a9d63a68a02acaaed689398325a"
+      ]
+    },
+    {
+      "nuclide": "HO-166",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "748798de51f5abdd1f86c8f51b44f920e4312e77fa4275588f1446f24db65b69"
+      ]
+    },
+    {
+      "nuclide": "HO-166M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "654f6f4b82090b15ef616f090d7db98774f328830a79b9529e4fc59c0c372a5c"
+      ]
+    },
+    {
+      "nuclide": "I-123",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "390569b7da06d0ae4c2d361b3de0348aa08b1f44ccc76993858be0655e7226f7"
+      ]
+    },
+    {
+      "nuclide": "I-125",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "f27b10647f454bc28fdd919cfa8b5995e3031b4f5128462a307678a17449de49"
+      ]
+    },
+    {
+      "nuclide": "I-128",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "8f695144c5bd922f6fa8dd4998f545b4bf0a2df856d484e7f9019e88ab3399e8",
+        "d82788561dc7c9c58884904ee1ecca22473cd803d04f38cfea162de08323e9e2"
+      ]
+    },
+    {
+      "nuclide": "I-129",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "03f82da685beccdb0ffc120607b3e6f39b1715b8fef7ea62b30057c9cf761d1e"
+      ]
+    },
+    {
+      "nuclide": "I-131",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "7b0dda31a3911b45f3b5114815ce21d4c511e5131912dc934a653bc0359047d6"
+      ]
+    },
+    {
+      "nuclide": "I-132",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "19c253c4128a436610c5426e7a6f9917adc2442cd541bf8f1b7f2554b0e1369b"
+      ]
+    },
+    {
+      "nuclide": "I-132M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "b6dcea32408bf2e2ae99f9def36466a9f9d1b11fbd270babf4b6d42355e0430f",
+        "2546bc3cb41f697468e94cf4f8afca74ebfef375d424ffdaadb711a15480325c"
+      ]
+    },
+    {
+      "nuclide": "I-133",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "7a553d9b5303318b106f67e5dc019a71cb29ad7aae52892f38b41d3ca1230930"
+      ]
+    },
+    {
+      "nuclide": "I-134",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "8d1aed3620d1ee43010df8cf9cb3195a6ddc627c43e508643ed8caf4357158fd"
+      ]
+    },
+    {
+      "nuclide": "I-134M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "beefed5bcf532a9794e65176c0ea2320e4ac92900ce024da76a197f6c3e2c260"
+      ]
+    },
+    {
+      "nuclide": "I-135",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "8f3ca45e9a1c89d90dff66c20b38f151a6bf2b8d608d500ff5dced9e84a403a7"
+      ]
+    },
+    {
+      "nuclide": "IN-111",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "6b2a6db4fffb05101c6ec3eb6a33d2c7efb173b387f460562fd4d856ed7d67d4"
+      ]
+    },
+    {
+      "nuclide": "IN-114",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "44781ba655f89579c7d2ff91729b76b29f21483ecbb0364d1a076a1f6cd1eeb4",
+        "55a5b8e62f76b1f0c77edde1d7a703dbc98492d73ab31e8ccda226ffb9497207"
+      ]
+    },
+    {
+      "nuclide": "IN-114M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "9f3902554cfe256829b5bb4c1f28d06733d1ef933ed532e2edddf3aa76acfbc8",
+        "bf8abdee768327b35bcae6e6c4aaf34554ba9c2115093ad995bc4c883ce8e734"
+      ]
+    },
+    {
+      "nuclide": "IN-115M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "ca2de514ccec50d1dbc93dad238cd04fe2ee51fa38b68484f3fb651c0281eb5f",
+        "6b94958d0b20a1a1da0a1225a87df805cf19d953fc088d7fb94c5878fefca1d1"
+      ]
+    },
+    {
+      "nuclide": "IR-192",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "834483afd2765ccef17287b1896344afb67b5b8a9717c35d88e3fc70562a8b9a",
+        "21b0dfdc3c8eb451c2e7c9271e678d4ea9edd37886418395af3b2e759b17f580"
+      ]
+    },
+    {
+      "nuclide": "IR-194",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "78eb5f222138504516416a38f18ab2946869327645b09a0e5e3c81f0dab711f5"
+      ]
+    },
+    {
+      "nuclide": "K-40",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "cf89d8507b43f7d61c886a3dc4082ed2bb420d45b8e96e822c6779013650158e"
+      ]
+    },
+    {
+      "nuclide": "K-42",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "fb9ca4eb1364f5ffd1f5e27b2b48bc04a4897c8eb549ec70f5353581cc48eb97"
+      ]
+    },
+    {
+      "nuclide": "K-43",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "17d64c6a234b21bfaa1210971cc6cb6e9d8e0953c520b65d59071342ec4dbc43"
+      ]
+    },
+    {
+      "nuclide": "KR-85",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "281afb04b81700784c15dfc32ecf117f4d2616ee5ea2815b720217bce2536387"
+      ]
+    },
+    {
+      "nuclide": "KR-88",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "bf1f1e89628d4b5e3a7cd7de147b39bf5cf1ae79f6382d0085eaf45ba66f2f3a"
+      ]
+    },
+    {
+      "nuclide": "LA-140",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "9a42f6f92f3eb85340b84763aa57834c9e6e7f299cf5ece76761c8a1618e9b3e"
+      ]
+    },
+    {
+      "nuclide": "LA-142",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "bb9d2bf941174e10370ab8785240d2a51bd055dbb05aa94cbc17a25383f7dc3c"
+      ]
+    },
+    {
+      "nuclide": "LU-176",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "a868cc92a939b5df001f9933b4310cd28250448155f69fede601b2fbe392f458"
+      ]
+    },
+    {
+      "nuclide": "LU-176M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "c584511d8d3a6123c0dcc0a4c824d82ee5099e45b29914cc62f4f1179dc8a01e",
+        "544e1eec35c710e5581f8e2ef5abdbce0b161c3addd1eb33fb8a4d806dbd2142"
+      ]
+    },
+    {
+      "nuclide": "LU-177",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "473715a49f62c9dd5306088accba06f43796e18ee4179aad7a1bc0f168b93740"
+      ]
+    },
+    {
+      "nuclide": "LU-177M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "a9236e188a3166d769a82a2f8dde0ca8e3c8f2738aa0cf2c9082b6507c367175",
+        "7d84917d91a8c4ed3009a99cabf001d7acb7a9a3fae7c40a1533186a41f6e64b"
+      ]
+    },
+    {
+      "nuclide": "MN-52",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "20d0b582c70bc971d24569094267deb914dca26a956a17745fed493972109350"
+      ]
+    },
+    {
+      "nuclide": "MN-52M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "c7305ab8ad37aedc885c64b8796521280c1d26b7171aaf78e554d4d93056b244",
+        "2e87db98d754cf163592ff0d129756c8b25e9720ab8c430e58ab6c3a7a0458d8"
+      ]
+    },
+    {
+      "nuclide": "MN-54",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "1a5be23936a6a8a2b40efb319ac191b3fc6bd959b94de4784b0b1e7d5f3b1f28"
+      ]
+    },
+    {
+      "nuclide": "MN-56",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "438c08fd5aefcdda7fbed72b3e8b4d858da71b438833b2a187711cd2d566bbcf"
+      ]
+    },
+    {
+      "nuclide": "MO-93",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "711cfdf548e8824450cfcc392f369aeb9aac340ca8b90f1d78d10e9267dfe852"
+      ]
+    },
+    {
+      "nuclide": "MO-99",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "977be9cc8096f589042131533cfd1b7d800653d8c1e499124046c0182226904a"
+      ]
+    },
+    {
+      "nuclide": "NA-22",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "742cdf9d967d7cca3a4ace49ea854cc8124df2909cf2020e0d0642fe443446b2"
+      ]
+    },
+    {
+      "nuclide": "NA-24",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "06447cd30da425ae8927a059dd1b863d31535fadfbe31884c67f8c1b07b52c0c"
+      ]
+    },
+    {
+      "nuclide": "NB-90",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "a56a98adbdc021613387ae8f86dbe799822e08166104d669bbdedceef716695a"
+      ]
+    },
+    {
+      "nuclide": "NB-93M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "e9212f752f4e81fc8dea67c9db019e2d6a3fd4cde372aa90aaa2fb1f797896f1"
+      ]
+    },
+    {
+      "nuclide": "NB-94",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "6030b86df04762e3a63e7f153eda69d23a9c573f7c13fb37056106d6928f99e0"
+      ]
+    },
+    {
+      "nuclide": "NB-95",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "7a480a65a86d9badfa4bb301f29f97d4d3e2538946f11aa6132fc55d42b1b75d"
+      ]
+    },
+    {
+      "nuclide": "NB-95M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "8903e359f8db1890c948368f3814fdbdd5726425d08f94c814b8a7628550dc74",
+        "527d5c19f1238db4fd726acfca3a967c7d63aad35c277bc289f030fce39a133e"
+      ]
+    },
+    {
+      "nuclide": "NB-97",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "ba609973d3d882a6c93fc9d54742664867aac150c9b7c26a6f73c1ddc4b2e945"
+      ]
+    },
+    {
+      "nuclide": "ND-147",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "03c7826544d416be1704179c4de2201cc58fcc578ee5b46e0d02ae663494116b"
+      ]
+    },
+    {
+      "nuclide": "NI-57",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "ed6c231b1d6331e406cabfffe60108569a99a0ba255d7624c8f16a34634681fe"
+      ]
+    },
+    {
+      "nuclide": "NI-65",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "d379995c018cbaa704001041db8bced7a0fd20f75614ac258ed59af6739b4cbd"
+      ]
+    },
+    {
+      "nuclide": "NP-235",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "8caef4dfa9aef1babace533210a5946795fe29ef2d64ba6f5028c99e3dd9929f"
+      ]
+    },
+    {
+      "nuclide": "NP-237",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "399fea46a7ea4082a3d9f660c3569985b747e56de89ca13bf56249e1088376c3"
+      ]
+    },
+    {
+      "nuclide": "NP-239",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "cbdf515371caf09267687a42a6972301e88a1c0995f9298a3e028c492eb2b9ad"
+      ]
+    },
+    {
+      "nuclide": "PA-233",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "0208c122fad9aeb5899adfeffd323a748216c9df71f221b608f45025fd65f6a0"
+      ]
+    },
+    {
+      "nuclide": "PA-234",
+      "uniform_response_check": "rejected",
+      "reason": "PA-234: invalid Decay_Data record: invalid or duplicate transition indices",
+      "decay_sha256": [
+        "ca0bdde9c78813be13617b9a843c9343d3faefcd3360a03b1f8af3f92e197237"
+      ]
+    },
+    {
+      "nuclide": "PA-234M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "712c2eb3b2d7a543b2c0412afe34566b900a173351de5b0c363786357dee2bbd",
+        "fb1a5203459eb5b2289f562a092d57cefb11c76da448ec76e919e8a118364f96"
+      ]
+    },
+    {
+      "nuclide": "PB-203",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "6eec9ad4076df743649b36557e00aa1a39c56b3c69913c789057b1e780845acb"
+      ]
+    },
+    {
+      "nuclide": "PB-210",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "787e1a284942a370f2a6db3401109a3d934defc3e262dde8596662d8d65b8b1f"
+      ]
+    },
+    {
+      "nuclide": "PB-212",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "c3ef8dbd469c5fa47f033f2d1d64ff68126cb0d49065f660da563e4905283de9"
+      ]
+    },
+    {
+      "nuclide": "PB-214",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "acdeffeebf8e84628964d2c1c5d04b283108cbefe2e2b8ffb12482d46454a254"
+      ]
+    },
+    {
+      "nuclide": "PM-147",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "678393015ae4cf1b4c0a77c3a025fe97377843652b435288ad95b6fa278f29dc"
+      ]
+    },
+    {
+      "nuclide": "PM-151",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "51d42ec69aee67dd015c80a88044cce4f3290d593a4f1bbbfd7d722edecf960f"
+      ]
+    },
+    {
+      "nuclide": "PM-156",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "fee4ca2ea591229e34f48a6d889a3ba299371b6c4163dea7aaac036935142d78"
+      ]
+    },
+    {
+      "nuclide": "PO-210",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "866fbd9a4254e9bb4457c1e8ef8c9130109fbc0bce13872f262e28ba2e3dfe9e"
+      ]
+    },
+    {
+      "nuclide": "PO-214",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "e3337e37bfcf6642ed113ec9ad5175e7eab01dbf3fffa27e957d4514b865d1c7"
+      ]
+    },
+    {
+      "nuclide": "PO-216",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "d245a2292ceb7c9e1f0b57c1d83ede23f2b868f12edc940b8479686663f82852"
+      ]
+    },
+    {
+      "nuclide": "PO-218",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "eea0764a8a052e896f3aa0a804ec8ccd8a87e9efa097376efb06de1b19cb1227"
+      ]
+    },
+    {
+      "nuclide": "PR-143",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "abbfd0bfff0722621cd67a93039cf81a50c663477bd4e0329da8508c8ab8a02a"
+      ]
+    },
+    {
+      "nuclide": "PR-144",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "9c61c83440a44530c4f17dab83bbaf9b9a1476c9829d96945e1c52c8508280d5"
+      ]
+    },
+    {
+      "nuclide": "PU-238",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "3ef12d402f49cd959962a90a010b80c1c01dda121f416a9c517e5bcf294617b2"
+      ]
+    },
+    {
+      "nuclide": "PU-239",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "b3e2c92126f409331f82a314a58d072e8fd859aada28949954165443926a05c0"
+      ]
+    },
+    {
+      "nuclide": "PU-240",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "78f503e4396f1d546d9c7ce832305b041567a3e42d53243b72a78612f9de5f92"
+      ]
+    },
+    {
+      "nuclide": "PU-241",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "0d240edb7d6285daac4e7c964118b923448222b20f89eb59da86a8776beff177"
+      ]
+    },
+    {
+      "nuclide": "PU-242",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "b67976f25935e52cafffd8e76b00d961526824a11439ffc81c8cafa8fa2a0451"
+      ]
+    },
+    {
+      "nuclide": "RA-224",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "1a513aa607115f0e2aee94a60b4df3f17300e24ddc63758012d5d1d6cc4e775e"
+      ]
+    },
+    {
+      "nuclide": "RA-226",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "e40d2d376c1e68266c68404669ee8830bb3d944b210bafe378ef14709582186f"
+      ]
+    },
+    {
+      "nuclide": "RA-228",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "989b8b68d8381f26a7f9507d346d44d64265bc52550b2613498b968013a2fc8a"
+      ]
+    },
+    {
+      "nuclide": "RB-81",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "0dd54601cb61d236b8b51fa8c11d25a300a3e524e6d8ffa06c8df2f3e976fcff"
+      ]
+    },
+    {
+      "nuclide": "RB-81M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "e18e8caced7c0989540168cb76c18c16a6b34ab2b658f9af23973874cd147356",
+        "437b199c17c8830dee24c2d600f2e941d1e177bdba3a584e70405f2ca2217b37"
+      ]
+    },
+    {
+      "nuclide": "RB-86",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "59212687699d4d5f4db462ad4d42e785809e5c6e9785bd1aceef5eb4b5dd337c"
+      ]
+    },
+    {
+      "nuclide": "RB-88",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "b0402456a3d73b5dde112138fe3afaf6b5744379af352d4bb965a94e87b685be"
+      ]
+    },
+    {
+      "nuclide": "RE-186",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "2962aa8f5fb25d73a47b6e162f1b861eb481803cefa6142eef7255f84b6d2016",
+        "dee7eb322b8924e8169e86d5e622110e79d036028b604a2f7a7c60b82c80fc94"
+      ]
+    },
+    {
+      "nuclide": "RE-188",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "e4625826da48c34c6dd42c3369cce607447f070afa14fefd92e6b39ee5ba33bd"
+      ]
+    },
+    {
+      "nuclide": "RH-105",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "36a784cdbfd182d3ff36318821e907382c5e5a2cc7484c0380e60a0eba049c1d"
+      ]
+    },
+    {
+      "nuclide": "RH-105M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "55b7b48c1a49f4327c0a08ffeebe24fbeefa7e7408a9dd720f617f48c4727016"
+      ]
+    },
+    {
+      "nuclide": "RH-106",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "0137d3c5989e771d3d1f3f0f9b50c205f87d6cfa6be89594a965f583d5cfbda9"
+      ]
+    },
+    {
+      "nuclide": "RN-220",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "214a5ae6588493723fa8589ea8ecf3cc2e82f7a0feb2696b83d2e2e1eedce954"
+      ]
+    },
+    {
+      "nuclide": "RN-222",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "0e26aaeb2229be68ecc9269396a99daa84617c0f8661e6e6f4232a7a0a3800fa"
+      ]
+    },
+    {
+      "nuclide": "RU-103",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "d3ca0bd0760cede267e30e6517892824f7ccc772d4c43f98a964e418b8110121"
+      ]
+    },
+    {
+      "nuclide": "SB-115",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "da7f4549b3625e58dcf3c224ecf75ef9fef4852472822406c8f32d71e9cf1f7c"
+      ]
+    },
+    {
+      "nuclide": "SB-122",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "634f593392964cf896b6930c1d9d170a6435f79cff7441c4a17c05e9f206e995",
+        "3e41c3246ec570c0e792297ee119c7092e70880cfe34c56304ca75fd2ae2b805"
+      ]
+    },
+    {
+      "nuclide": "SB-124",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "a5e65ce91581c8594f83bf27ca29abef7f879adfc1c8c9706ba399387dd1968c"
+      ]
+    },
+    {
+      "nuclide": "SB-125",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "4a1acc7f6f1191708260dcc4efa4d9c52c975ec6f197fc56ecc4587eef9f8174"
+      ]
+    },
+    {
+      "nuclide": "SB-126",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "8e187263213122f1c4dd027d107d2643b2c847f757542489dc15a37532e6d716"
+      ]
+    },
+    {
+      "nuclide": "SB-127",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "e6bc5b0e30a6cb8c23487768a0368d5cf642fc0a142518dcee9db3cb18dc5a10"
+      ]
+    },
+    {
+      "nuclide": "SB-129",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "a509ef3d472ea096449cc8d5510e31b39a796c2037fdd3a7f976cda08767e0bc"
+      ]
+    },
+    {
+      "nuclide": "SC-44",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "d4a95075639dd075314bbd9b2b3917cf2d7240298ad3e2847feda765062e6ecf"
+      ]
+    },
+    {
+      "nuclide": "SC-46",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "422a7e30a5e3fa525abcee2b544813d6daf24cd56b948a0265c1af1de733942f"
+      ]
+    },
+    {
+      "nuclide": "SC-47",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "cc32a0bfa40b188e569c59e7dde878e93412f7f36b60b41ae3482ccb8933ee1e"
+      ]
+    },
+    {
+      "nuclide": "SE-75",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "39ab3912b3c5799c26fdee64bf5e4cb7e9f6d7b6fa4962487f834bd0f82bfdf1"
+      ]
+    },
+    {
+      "nuclide": "SM-151",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "7165c59fc312b1f5e41e03e77ffa0a714eaf2815a86cbbbbcdd901bbcb576e0b"
+      ]
+    },
+    {
+      "nuclide": "SM-153",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "b0b3b0737a437c8309df570ed15100e242f98499a4c9b09ed2034236a43d8f01"
+      ]
+    },
+    {
+      "nuclide": "SN-113",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "7cbcd2d82beb5a4825c5e134808e67c7767def4b2248c981b7763aabd30dd0de"
+      ]
+    },
+    {
+      "nuclide": "SR-85",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "1181b0c6fdd3d7b74eeb6571934bdf3b80969e0d733440192936f6446d034b65"
+      ]
+    },
+    {
+      "nuclide": "SR-89",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "ec5a4fe77a6b643a52d0c18c4fb3c809f4d418469a94e4a4812724a9de62e6c9"
+      ]
+    },
+    {
+      "nuclide": "SR-91",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "9c430b7c8ed8418cb818245d0c589ff9b2a75be3acee30e03045e2aa9225771c"
+      ]
+    },
+    {
+      "nuclide": "SR-92",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "9a24dfdbbf299342dbe8c10f134865ecd10962b209deb27176ebdd504682ca1e"
+      ]
+    },
+    {
+      "nuclide": "TA-178",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "74b5e224647dbd532b38a3522031cadefb441e651858ff9999de107342a953b9"
+      ]
+    },
+    {
+      "nuclide": "TA-182",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "a2e09b8f570d5d10c34a99d32e77e1f5300b5445bed18878e0dae6d48accbd96"
+      ]
+    },
+    {
+      "nuclide": "TC-99",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "d5b1dc3dddddefd3d23ab9cc1aa1e8ffd1f4b2b09cc489a56aebbc7a00fb8f48"
+      ]
+    },
+    {
+      "nuclide": "TC-99M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "6575279d735ac65fdf283671df2b1e0e52e1b1855b075d2f5ee782978ca17e29",
+        "04497ff76927632494aa28411d97fb14dd9e78ed07718f7065b6fb342c9ae265"
+      ]
+    },
+    {
+      "nuclide": "TE-123M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "67cadda052369ceb8dc7629e0922e5fe5a98da886c33ce0d4dcdc410590cb01b"
+      ]
+    },
+    {
+      "nuclide": "TE-125M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "e0fb049a50147f85e9317d9845ebc05aa9129d0e5dd2bcc68a255dec616f4489"
+      ]
+    },
+    {
+      "nuclide": "TE-127",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "a07c7e9d964da94d7f96f4a9877e85806224b1c833a420801169e14f2a6acec9"
+      ]
+    },
+    {
+      "nuclide": "TE-127M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "889b98ad705d22a9ad454df9d3ebf0046d3807d81cde6633355c2c4ff8f29e73",
+        "85f3765e17e0c3b78947d92ae7092e327654bf69b45573da3d3cb6fdf57a904b"
+      ]
+    },
+    {
+      "nuclide": "TE-129",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "8310204058b548580c1f9ff6039458ecaf3023745a30cf6321d19726bedc1933"
+      ]
+    },
+    {
+      "nuclide": "TE-129M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "2b0ff4cf1deec3e4163a4cbe126352aa6212eeef7d71d43208d85ced0da93267",
+        "8ebffc09f7055710313742516c7c97da0e5f93ffd752fba5b3cbd04b597f5623"
+      ]
+    },
+    {
+      "nuclide": "TE-131",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "1bf5a6809f643a39f842233c0c06be9be76d2fc118afce58c9e26a391b79ce78"
+      ]
+    },
+    {
+      "nuclide": "TE-131M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "cb80a79ae4724795be83ded5c0ecc6b91566910242fdc6e431d92cf6aff22f33",
+        "3e415a17fdf357ced6951a77bb64a2ea9e811ca727472cc4eb1d4c70732331e4"
+      ]
+    },
+    {
+      "nuclide": "TE-132",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "e1c80ac405ddbc5cfeef776027c038c0dff1e2fc7f0ba2c35a499ba26a5126c4"
+      ]
+    },
+    {
+      "nuclide": "TE-133",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "2048c43bc1d2ca24fa2d792d8be5851c7b7638ad497ed7ba578b40c842af1cdd"
+      ]
+    },
+    {
+      "nuclide": "TE-134",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "feaa48669e2f564a212ffdbfdd7c714cda1b181cc6432e387ea454556b0c0cee"
+      ]
+    },
+    {
+      "nuclide": "TH-227",
+      "uniform_response_check": "rejected",
+      "reason": "TH-227: negative transition/feeding probability; incompatible decay data",
+      "decay_sha256": [
+        "5537eb9d54641c9684eb701b4e0ec33d8eac34ea8aa002f9dfc76d33c80f0801"
+      ]
+    },
+    {
+      "nuclide": "TH-228",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "61a16f48f094490036080a8e82ca3eecf8c034c092b628c827104fd22cb785cd"
+      ]
+    },
+    {
+      "nuclide": "TH-232",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "0c5cc7003d1fe8300ac7221184d8fd35aad4b7680ae419a2fbe2ab89f362e1dc"
+      ]
+    },
+    {
+      "nuclide": "TH-233",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "ed124697ebf7cbc4b6c1eeef3dcdaf0d3c9fa2273581b8238160e7799a09640f"
+      ]
+    },
+    {
+      "nuclide": "TH-234",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "c953b6b8e6c7be7882ccac2153c3956f68e5b9da9a8e08f4fa2aa64e57340a43"
+      ]
+    },
+    {
+      "nuclide": "TI-44",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "940d3e811bc48d6af6c8a007e4e69a46f492a874f8490e0860723a97ad0b7a80"
+      ]
+    },
+    {
+      "nuclide": "TL-201",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "ac16f0ddcf55582b3c74796a357218fb03657b1922d0de23926577cdfa98a41a"
+      ]
+    },
+    {
+      "nuclide": "TL-204",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "9d87ef5e0f6f55f0011cd3a2fa00a0c64a1556b08e0879e0577f236fa6acfe14"
+      ]
+    },
+    {
+      "nuclide": "TL-206",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "8fac2472bb13f8b667b11dd89d8ab0a7c6a12ff4265cbb462b82f43c5a355ea2"
+      ]
+    },
+    {
+      "nuclide": "TL-208",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "34b5f4e1084e54441946cd71d55d427e6b366936ecd3e048f74d8b74031d0f43"
+      ]
+    },
+    {
+      "nuclide": "TL-210",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "9ecaa5b23014457d21e2949ca7e693a2a1471848dcffdaeb95f6e54b4c1eac3e"
+      ]
+    },
+    {
+      "nuclide": "TM-170",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "54f60edff00d1eafdf6e7f26d6a436aa4fb924a6a2572e355affba22fffbd6bd",
+        "220bfd109a6c57bbe4f781ab63ca70dfcde585d274199d18511b32be4efd3e7c"
+      ]
+    },
+    {
+      "nuclide": "U-234",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "3e5df41f3ca23ca7ec3a5023643f0d8c957b91ffde2d7976c8f941550c0d69b5"
+      ]
+    },
+    {
+      "nuclide": "U-235",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "09983a7d3c66cf990a53303b7192a68b0bada3d550b44109164a34f6349baf1d"
+      ]
+    },
+    {
+      "nuclide": "U-236",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "1dcaca37c285e74e9a3aecb21f8812355e128a08102c73652bff139bb80e3181"
+      ]
+    },
+    {
+      "nuclide": "U-237",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "e520990b3b9ca7f4bb85ab01f45b67151ae82d1f8896babb2e9bc56df136ba27"
+      ]
+    },
+    {
+      "nuclide": "U-238",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "d36f8c94f7724fe011fcec6c3953cd71e1ef8a0bc776e49a290166d8682f0fa7"
+      ]
+    },
+    {
+      "nuclide": "W-187",
+      "uniform_response_check": "rejected",
+      "reason": "W-187: negative transition/feeding probability; incompatible decay data",
+      "decay_sha256": [
+        "71fa13888d9c8bd67601429eabf7bfc2c48952639031c1e461d53e3d0d159c59"
+      ]
+    },
+    {
+      "nuclide": "XE-127",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "5d64b6e237e8a75587804df45878271e5ca838d2e9ce7a1bab0c77307a42aa12"
+      ]
+    },
+    {
+      "nuclide": "XE-131M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "114ef5a49f5ef423348e59c121ea36defb5face2ffb1cd811b177b89f21acbad"
+      ]
+    },
+    {
+      "nuclide": "XE-133",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "fbfc2fc9b98cb2a6b95f44319a62fd902d421ca2a9d0b4ced1982b4b5a9db341"
+      ]
+    },
+    {
+      "nuclide": "XE-133M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "d403a32de205f215021a896ff42ebee3a52b260f46191dc134c310787bdabe9d"
+      ]
+    },
+    {
+      "nuclide": "XE-135",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "81ed10a6babecbceff5adcb95440a25cf2b52732b7602c759a4aa676863d41fa"
+      ]
+    },
+    {
+      "nuclide": "XE-135M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "e31dba152bc3fc84fae0341302a617429a842e8432589fd1448a715693be82e9",
+        "b19494ed55fca15d4df5b5cfff5550a0c85d46affd1d72851fedba28723cdbdb"
+      ]
+    },
+    {
+      "nuclide": "Y-88",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "b08edced8a671b56b3691e933e2877f4fc4efd3eed2807f8131d84840661f20b"
+      ]
+    },
+    {
+      "nuclide": "Y-91",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "a3fd6610e5833eba06f1d0c79f8db10f75763c1cf65b5154fd7081387fe39ea8"
+      ]
+    },
+    {
+      "nuclide": "Y-91M",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "ae62df959e62fdf9d36bf44e46eb79807afa07104a6ce86f4247b43add6375b2"
+      ]
+    },
+    {
+      "nuclide": "Y-92",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "d7c68e958bf036aaf5fa53dc547ed4d1394797e01a00ee07f894d3663091dc19"
+      ]
+    },
+    {
+      "nuclide": "Y-93",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "878c8336210e4a9a647aa2171d02aca32ee6777dcd13d4f844b815e3c6696185"
+      ]
+    },
+    {
+      "nuclide": "YB-169",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "aecb156025f46cb52ba4a2df22195d6300cab8a2ef40b37cb95795a5e96d9b0b"
+      ]
+    },
+    {
+      "nuclide": "YB-175",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "0dc38aba0062a6c80234cd855c797cec90390a290c5014f233e7a54b730c5462"
+      ]
+    },
+    {
+      "nuclide": "ZN-65",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "3a0f8139bcec355a72c95aba8d4308e65c9ac0b6635e2d63eed982255ae5e4ae"
+      ]
+    },
+    {
+      "nuclide": "ZR-88",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "c92760a9ff76160388dc036c79893f107536cca64a778ae97ee0d9c12d01daf0"
+      ]
+    },
+    {
+      "nuclide": "ZR-95",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "b0719594b8b11c60019c69e7dda44b9fff1194ca55429d4bd08e93a8e2440721"
+      ]
+    },
+    {
+      "nuclide": "ZR-97",
+      "uniform_response_check": "passed",
+      "decay_sha256": [
+        "fd562a06ad151903ff07211695e8d909523c31f88b3fb05b2467f4b773436d25"
+      ]
+    }
+  ]
+}
