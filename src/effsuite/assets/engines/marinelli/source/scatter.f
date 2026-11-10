@@ -17,13 +17,17 @@
       double precision rx,zlx,zux,dx,rx2
 
       double precision sr,st,sx,sh,pt
+      double precision rho,rho0
 
       double precision dist,u,pi
       double precision t(1000),sig(1000),rat,ratmax,unc
 
       character*60 smat
 
-      integer i,j,n
+      external left,right
+      integer left,right
+
+      integer i,j,n,l,r
 
       ne=1
       open(7,file='total.txt',status='old')
@@ -44,7 +48,10 @@
       read(7,*) sh
       read(7,*) pt
       read(7,55) smat
-      read(7,55) 
+      read(7,*)
+      rho=0.d0
+      read(7,*,end=88,err=88) rho
+88    continue
       close(7)
 55    format(a)
 
@@ -55,6 +62,21 @@
       unc=0.01
 
       call readin(smat,ns,se,smu,smuc)
+
+      l=left(smat)
+      r=right(smat)
+
+      open(7,file='.\\Composition\\'//smat(l:r)//'.txt',status='old')
+      read(7,*) rho0
+      close(7)
+
+      if (rho.le.0.d0) rho=rho0
+      if (rho0.le.0.d0) rho0=1.d-15
+
+      do j=1,ns
+        smu(j)=smu(j)+log(rho/rho0)
+        smuc(j)=smuc(j)+log(rho/rho0)
+      enddo
 
       zls=0
       zus=zls+st-pt
@@ -119,7 +141,7 @@
         sig(j)=(n-1)*sig(j)+u*u
         sig(j)=sig(j)/n
         rat=0.
-        if (t(j).gt.0.) rat=sqrt((sig(j)-t(j)*t(j))/n)/t(j)
+        if (t(j).gt.0.) rat=sqrt(max(0.d0,(sig(j)-t(j)*t(j))/n))/t(j)
         if (rat.gt.ratmax) ratmax=rat
       enddo
       
@@ -138,7 +160,7 @@
 
       implicit none
 
-      character*(70) fname
+      character*(*) fname
       character*(132) line
 
       integer n
@@ -314,7 +336,7 @@ C  (C) Copr. 1986-92 Numerical Recipes Software ,)+>.
       implicit none
       integer n,l
       character blank
-      character*(30) s
+      character*(*) s
       blank=' '
       l=len(s)
       n=1
@@ -329,7 +351,7 @@ C  (C) Copr. 1986-92 Numerical Recipes Software ,)+>.
       implicit none
       integer n
       character blank
-      character*(30) s
+      character*(*) s
       blank=' '
       n=len(s)
       do while (s(n:n).eq.blank.and.n.gt.1)

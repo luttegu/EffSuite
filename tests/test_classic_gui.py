@@ -248,3 +248,28 @@ class ClassicGuiTests(unittest.TestCase):
             self.assertIsNotNone(foot)
             self.assertTrue(foot.isVisible())
             self.assertLessEqual(foot.geometry().bottom(), page.height())
+
+    def test_source_density_gui_autofill_on_material_change_and_custom_preservation(self):
+        from effsuite.app_cli import example_path
+        # Verify 8 fields in SourceForm across all three geometries
+        for mode_name in ("cylinder", "marinelli", "well"):
+            self.window.apply_project(json.loads(example_path(mode_name).read_text()))
+            QApplication.processEvents()
+            vals = self.window.source_form.values("sample")
+            self.assertEqual(len(vals), 8)
+            # Selecting 'soil' in Source material auto-fills nominal density 1.4 g/cm³
+            mat_combo = self.window.source_form.inputs["sample", 5]
+            mat_combo.setCurrentText("soil")
+            QApplication.processEvents()
+            self.assertAlmostEqual(self.window.source_form.values("sample")[7], 1.4, places=4)
+            # Selecting 'HeavyWater' auto-fills nominal density 2.0 g/cm³
+            mat_combo.setCurrentText("HeavyWater")
+            QApplication.processEvents()
+            self.assertAlmostEqual(self.window.source_form.values("sample")[7], 2.0, places=4)
+            # Loading a source model with a custom density (e.g., water at 1.35 g/cm³) preserves 1.35
+            custom = list(self.window.source_form.values("sample"))
+            custom[5] = "water"
+            custom[7] = 1.35
+            self.window.source_form.set_values("sample", custom)
+            self.assertEqual(self.window.source_form.values("sample")[5], "water")
+            self.assertAlmostEqual(self.window.source_form.values("sample")[7], 1.35, places=4)

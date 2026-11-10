@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (QApplication,QMainWindow,QWidget,QVBoxLayout,QHBo
  QFormLayout,QGroupBox,QLabel,QLineEdit,QComboBox,QPushButton,QTabWidget,QTableWidget,QTableWidgetItem,
  QHeaderView,QFileDialog,QMessageBox,QPlainTextEdit,QSpinBox,QSplitter,QScrollArea,QCheckBox,QStyledItemDelegate,QFrame,QRadioButton,QButtonGroup,QDialog,QSizePolicy,QListView)
 
-from .model_io import ASSETS,COMMON_DATA,MODES,fields,read_model,model_bytes,calibration_rows,normalize_nuclides
+from .model_io import ASSETS,COMMON_DATA,MODES,fields,read_model,model_bytes,calibration_rows,normalize_nuclides,default_material_density
 from .suite import VERSION,run_project,validate_project
 from .parallel_coincidence import CoincidenceError
 
@@ -388,8 +388,8 @@ SHORT_LABELS={
 
 def _field_label(label,unit):
     short=SHORT_LABELS.get(label,label)
-    if unit=="mm":
-        lbl=QLabel(f"{short} <span style='color:#64748b;font-size:9pt;'>[mm]</span>")
+    if unit in ("mm","g/cm³"):
+        lbl=QLabel(f"{short} <span style='color:#64748b;font-size:9pt;'>[{unit}]</span>")
     else:
         lbl=QLabel(short)
     lbl.setToolTip(f"{label} ({unit})")
@@ -403,7 +403,7 @@ def form_value(edit,label,unit):
         if not value:raise ValueError(label+": choose a material")
         return value
     try:return edit.value()
-    except ValueError as exc:raise ValueError(label+": enter a finite number in mm") from exc
+    except ValueError as exc:raise ValueError(f"{label}: enter a finite number in {unit}") from exc
 
 
 class ModelForm(QWidget):
@@ -507,7 +507,7 @@ class SourceForm(QWidget):
     changed=Signal()
     kind_edited=Signal(str)
     def __init__(self,mode,owner=None):
-        super().__init__();self.mode=mode;self.owner=owner;self.inputs={}
+        super().__init__();self.mode=mode;self.owner=owner;self.inputs={};self._setting_values=False
         outer=QVBoxLayout(self);outer.setContentsMargins(0,0,0,0)
         card=QGroupBox("Geometry Parameters && Materials");g=QGridLayout(card);g.setHorizontalSpacing(20);g.setVerticalSpacing(8)
         hdr_param=QLabel("Parameter");hdr_param.setStyleSheet("font-weight:600;color:#475569;padding:6px 4px;background:transparent;")
@@ -519,7 +519,7 @@ class SourceForm(QWidget):
             hdr.setStyleSheet("background:#f1f5f9;color:#0f172a;border:1px solid #cbd5e1;border-radius:4px;padding:5px 8px;")
             g.addWidget(hdr,0,column)
             self._col_headers[kind]=hdr
-        order=[2,5,0,4,1,3,6] if mode=="marinelli" else [1,5,0,2,3,6,4]
+        order=[2,5,7,0,4,1,3,6] if mode=="marinelli" else [1,5,7,0,2,3,6,4]
         materials=sorted(p.stem for p in (COMMON_DATA/"Composition").glob('*.txt'))
         for row,index in enumerate(order,1):
             label,unit=fields(mode,"sample")[index]
@@ -532,16 +532,19 @@ class SourceForm(QWidget):
                     edit.setView(edit_view)
                     edit.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
                     edit.addItem("");edit.addItems(materials)
-                    edit.currentTextChanged.connect(lambda _t,k=kind:(self.kind_edited.emit(k.title()),self.changed.emit()))
+                    if index==5:
+                        edit.currentTextChanged.connect(lambda t,k=kind:self._on_source_material_changed(k,t))
+                    else:
+                        edit.currentTextChanged.connect(lambda _t,k=kind:(self.kind_edited.emit(k.title()),self.changed.emit()))
                     btn=QPushButton("✏️ Edit");btn.setFixedWidth(58)
                     btn.setStyleSheet("background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd;padding:2px 4px;font-size:8.5pt;")
-                    btn.setToolTip(f"Edit density [g/cm³] or composition of {kind.title()} {label.lower()}")
+                    btn.setToolTip(f"Edit chemical composition or nominal density [g/cm³] of {kind.title()} {label.lower()}")
                     btn.clicked.connect(partial(self.modify_material,kind,index))
                     cell=QWidget();cell.setStyleSheet("background:transparent;");cl=QHBoxLayout(cell);cl.setContentsMargins(0,0,0,0);cl.setSpacing(4)
                     cl.addWidget(edit,1);cl.addWidget(btn)
                     self.inputs[kind,index]=edit;g.addWidget(cell,row,column)
                 else:
-                    edit=NumberEdit();edit.setPlaceholderText("0.0 mm")
+                    edit=NumberEdit();edit.setPlaceholderText(f"0.0 {unit}")
                     edit.textEdited.connect(lambda _t,k=kind:(self.kind_edited.emit(k.title()),self.changed.emit()))
                     self.inputs[kind,index]=edit;g.addWidget(edit,row,column)
         row=len(order)+1
@@ -555,6 +558,15 @@ class SourceForm(QWidget):
         g.setColumnStretch(1,1);g.setColumnStretch(2,1)
         outer.addWidget(card)
         outer.addStretch(1)
+    def _on_source_material_changed(self,kind:str,material_name:str):
+        if not self._setting_values and (kind,7) in self.inputs:
+            mat=material_name.strip()
+            if mat:
+                data_dir=getattr(self.owner,"data_directory",None) if self.owner else None
+                rho=default_material_density(mat,data_dir)
+                self.inputs[kind,7].setText(str(float(rho)))
+        self.kind_edited.emit(kind.title())
+        self.changed.emit()
     def set_standard_enabled(self,enabled:bool):
         for (kind,idx),widget in self.inputs.items():
             if kind=="standard":widget.setEnabled(enabled)
@@ -571,10 +583,19 @@ class SourceForm(QWidget):
     def values(self,kind):
         return [form_value(self.inputs[kind,i],kind.title()+" — "+label,unit) for i,(label,unit) in enumerate(fields(self.mode,kind))]
     def set_values(self,kind,values):
-        for i,value in enumerate(values):
-            edit=self.inputs[kind,i]
-            if isinstance(edit,QComboBox):edit.setCurrentText(str(value))
-            else:edit.setText(str(float(value)))
+        vals=list(values)
+        if len(vals)==7:
+            data_dir=getattr(self.owner,"data_directory",None) if self.owner else None
+            vals.append(default_material_density(vals[5],data_dir))
+        self._setting_values=True
+        try:
+            for i,value in enumerate(vals):
+                if (kind,i) not in self.inputs:continue
+                edit=self.inputs[kind,i]
+                if isinstance(edit,QComboBox):edit.setCurrentText(str(value))
+                else:edit.setText(str(float(value)))
+        finally:
+            self._setting_values=False
     def clear(self):
         for edit in self.inputs.values():
             if isinstance(edit,QComboBox):edit.setCurrentIndex(0)
@@ -1256,14 +1277,15 @@ class MainWindow(QMainWindow):
              "<li><b>True Coincidence Summing Only:</b> Computes cascade summing factors <i>C</i> (where <i>A<sub>corr</sub> = C · A</i>) for the Sample geometry without requiring a reference calibration curve.</li>"
              "</ul>"
              "<p><b>2. Detector Tab:</b> Load your detector model (<code>Data/Detector/*.txt</code>) or enter crystal, dead-layer, window, and housing dimensions in mm. The live axial cross-section updates in real time with all quotes.</p>"
-             "<p><b>3. Source Tab:</b> Load or edit the <b>Standard</b> (reference calibration geometry) and <b>Sample</b> (measured sample geometry). Click <b>✏️ Edit</b> next to any material to verify or update its bulk density [g/cm³].</p>"
+             "<p><b>3. Source Tab:</b> Load or edit the <b>Standard</b> (reference calibration geometry) and <b>Sample</b> (measured sample geometry). Enter the apparent <b>Source density [g/cm³]</b> directly in the Source tab (auto-filled when selecting a material), or click <b>✏️ Edit</b> next to any material to define a new chemical composition.</p>"
              "<p><b>4. Efficiency (.CAL) &amp; Library (.NLB) / Certificate (.CTF) Tabs:</b> Import your Genie 2000 reference files, run the calculation, and export the corrected Genie files.</p>"),
             ("materials","🧪 Materials & Density (XCOM)",
              "<h3>Material Composition &amp; Bulk Density Guide</h3>"
              "<p>Self-attenuation in gamma-ray spectrometry depends on both the <b>chemical composition</b> (mass attenuation coefficient <i>μ/ρ</i>) and the <b>bulk density</b> <i>ρ</i> [g/cm³] of the sample matrix (<i>μ = (μ/ρ) · ρ</i>).</p>"
              "<ul>"
+             "<li><b>Direct Source Density Entry (EFFTRAN 4.9 / MEFFTRAN 1.8):</b> You can enter the apparent bulk density <i>ρ</i> [g/cm³] directly in the <b>Source density [g/cm³]</b> field of the Source tab without creating a separate material file. The engine scales the linear attenuation coefficient dynamically by <i>ρ / ρ<sub>0</sub></i>.</li>"
              "<li><b>Automatic XCOM Generation:</b> If a material exists in <code>Composition/</code> but is missing in <code>Material/</code>, EffSuite automatically runs NIST XCOM to generate its photon attenuation table before calculation.</li>"
-             "<li><b>Adjusting Sample Density:</b> When your sample filling height or mass changes (for example, <code>Glucose</code> compressed to <code>1.346 g/cm³</code>), click <b>✏️ Edit</b> next to the Sample material, enter the exact bulk density in <code>g/cm³</code>, and click <b>⚡ Create Material and Attenuation Table</b>.</li>"
+             "<li><b>Defining New Chemical Matrices:</b> Click <b>✏️ Edit</b> next to the Sample material (or open the <b>Material</b> tab), enter the chemical formulas and nominal density in <code>g/cm³</code>, and click <b>⚡ Create Material and Attenuation Table</b>.</li>"
              "<li><b>Formula Entry:</b> Up to 10 chemical compounds (e.g. <code>H2O</code>, <code>C6H12O6</code>, <code>SiO2</code>, <code>CaCO3</code>) with relative weights by mass (automatically normalized to 100%).</li>"
              "</ul>"),
             ("cli","💻 CLI & Batch Calculations",
@@ -1271,7 +1293,7 @@ class MainWindow(QMainWindow):
              "<p>Every operation available in the GUI can be executed directly from the command line or automated in batch scripts:</p>"
              "<p><b>1. Single Calculation with Inline Overrides (Height, Material, Density, Direct Outputs):</b></p>"
              "<pre style='background:#f1f5f9;padding:8px;border-radius:4px;'>"
-             "effsuite cylinder --detector DET002 --standard PET70_40 --sample PET70_40 \\\n"
+             "effsuite cylinder --detector High-energy --standard Solution --sample Water \\\n"
              "  --sample-height 33.4 --sample-material Glucose --sample-density 1.346 \\\n"
              "  --calibration TF400_268_2025.CAL --library NUTECH.NLB \\\n"
              "  --output-cal Sample_207724.CAL --output-nlb Sample_207724.NLB --plot-geometry"
@@ -1285,7 +1307,7 @@ class MainWindow(QMainWindow):
              "</pre>"
              "<p><b>3. Standalone Geometry Diagram Export (PNG / PDF / SVG):</b></p>"
              "<pre style='background:#f1f5f9;padding:8px;border-radius:4px;'>"
-             "effsuite plot-geometry --geometry cylinder --detector DET002 --sample PET70_40 --out geom.png"
+             "effsuite plot-geometry --geometry cylinder --detector High-energy --sample Water --out geom.png"
              "</pre>"),
             ("about","ℹ️ About & Qualification",
              "<h3>EffSuite — EFFTRAN • MEFFTRAN • WEFFTRAN</h3>"
@@ -1295,7 +1317,7 @@ class MainWindow(QMainWindow):
              "<b style='color:#991b1b;'>Disclaimer:</b><br>"
              "<span style='color:#7f1d1d;font-size:9pt;'>Provided strictly on an AS-IS basis. G. Lutter accepts NO responsibility or liability under any circumstances for incorrect calculations, inaccurate analytical results, or damages resulting from software use. Users must independently verify all results.</span>"
              "</div>"
-             "<p><b>Underlying Physics Engines:</b> Built on <b>EFFTRAN (v4.8, 2026)</b>, <b>MEFFTRAN (v1.7, 2026)</b>, and <b>WEFFTRAN (2018)</b> by Tim Vidmar (<a href='https://efftran.github.io/'>https://efftran.github.io/</a>), integrated with NIST XCOM photon cross-sections.</p>"
+             "<p><b>Underlying Physics Engines:</b> Built on <b>EFFTRAN (v4.9, 2026)</b>, <b>MEFFTRAN (v1.8, 2026)</b>, and <b>WEFFTRAN (2018)</b> by Tim Vidmar (<a href='https://efftran.github.io/'>https://efftran.github.io/</a>), integrated with NIST XCOM photon cross-sections.</p>"
              "<p><b>Features:</b> Simultaneous true coincidence summing calculation in one pass across all nuclides in the library, multi-process parallel orchestration, and spatial quadrature integration for well detectors.</p>"
              "<p><b>Default Installation:</b> <code>C:\\GENIE2K\\EffSuite</code></p>"
              "<p><b>Notice & Qualification:</b> Beta version (evaluation & qualification release). Whenever evaluating or changing detector or sample characterizations, verify all models and transfer factors against reference standards.</p>"

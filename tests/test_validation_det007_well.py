@@ -52,7 +52,7 @@ class Det007MonteCarloValidation(unittest.TestCase):
                        for e, eff in sorted({row[1]: row[4] for row in MC}.items())]
         project = {"schema_version": 1, "geometry": "well", "task": "both", "detector": DET007,
                    "standard": STANDARD, "sample": SAMPLE, "calibration": calibration,
-                   "nuclides": list(CASCADES), "workers": 2}
+                   "nuclides": list(CASCADES), "workers": 0}
         cls.result = run_project(project, Path(cls.tmp.name)/"det007")
 
     @classmethod

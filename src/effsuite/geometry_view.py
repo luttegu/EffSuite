@@ -210,6 +210,7 @@ def draw_geometry(ax,mode,d,s=None,kind='Sample',compact=False):
     r_track=geom_right+step*1.35
     src_quotes=[]
     if s:
+        rho_txt = f", ρ={float(s[7]):g} g/cm³" if len(s) > 7 and s[7] is not None else ""
         if mode=='marinelli':
             if hole_h>0:
                 quote_v(r_track,z,ceiling,f'Hole H: {hole_h:g} mm',hole,hole,'#b45309')
@@ -217,7 +218,7 @@ def draw_geometry(ax,mode,d,s=None,kind='Sample',compact=False):
             quote_v(r_track,z,source_top,f'Fill H: {height:g} mm',outer_s,outer_s,'#9a3412')
             callout((hole+wall/2,z+hole_h*0.25), (r_track,z-step*0.85), f'Container wall: {wall:g} mm', '#7c2d12')
             src_quotes=[
-                f'{kind}: Ø {diameter_s:g} mm, Fill H {height:g} mm ({s[5]})',
+                f'{kind}: Ø {diameter_s:g} mm, Fill H {height:g} mm ({s[5]}{rho_txt})',
                 f'Hole: Ø {hole_d:g} × {hole_h:g} mm | Wall: {wall:g} mm ({s[6]})',
             ]
         else:
@@ -231,7 +232,7 @@ def draw_geometry(ax,mode,d,s=None,kind='Sample',compact=False):
             callout((outer_s-wall/2,z-base/2), ((r_track_inner+r_track)/2,y_callout),
                     f'Wall: {wall:g} mm | Bot: {base:g} mm', '#7c2d12')
             src_quotes=[
-                f'{kind}: Ø {diameter_s:g} × {height:g} mm ({s[5]})',
+                f'{kind}: Ø {diameter_s:g} × {height:g} mm ({s[5]}{rho_txt})',
                 f'Container bottom / wall: {base:g} / {wall:g} mm ({s[6]})',
                 f'Positioning gap: {gap:g} mm | Active Ø: {2*inner:g} mm',
             ]
@@ -302,9 +303,9 @@ def _partial_source_values(owner,kind):
     except Exception:
         mode=owner.current_mode()
         defaults={
-            'well':[15.0,40.0,1.0,1.0,0.0,'water_liquid','polyethylene'],
-            'marinelli':[130.0,90.0,100.0,70.0,2.0,'water_liquid','polyethylene'],
-            'cylindrical':[70.0,40.0,1.0,1.0,0.0,'water_liquid','polyethylene'],
+            'well':[15.0,40.0,1.0,1.0,0.0,'water_liquid','polyethylene',1.0],
+            'marinelli':[130.0,90.0,100.0,70.0,2.0,'water_liquid','polyethylene',1.0],
+            'cylindrical':[70.0,40.0,1.0,1.0,0.0,'water_liquid','polyethylene',1.0],
         }[mode]
         out=list(defaults)
         any_typed=False

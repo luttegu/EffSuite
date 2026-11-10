@@ -46,6 +46,8 @@ scratch/
 
 Validation/
 installer_output/
+EFFTRAN_4.9_MEFFTRAN_1.8_Bug_Report_for_Author.docx
+*_Bug_Report*.docx
 
 # Cryptographic Keys & Secrets (Never commit private keys)
 *.pem

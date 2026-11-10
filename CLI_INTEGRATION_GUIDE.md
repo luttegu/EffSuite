@@ -44,13 +44,13 @@ Call the specific geometry subcommand (`cylinder` / `efftran`, `marinelli` / `me
 #### 1. Cylindrical Geometry (`cylinder` / `efftran`)
 ```bash
 EffSuite_CLI.exe cylinder ^
-  --detector "DET002" ^
-  --standard "PET70_40" ^
-  --sample "Glucose" ^
+  --detector "High-energy" ^
+  --standard "Solution" ^
+  --sample "Water" ^
   --sample-height 55.0 ^
-  --sample-density 1.346 ^
-  --sample-material "Glucose" ^
-  --calibration "C:\GENIE2K\CAMFILES\TF400_268_2025.CAL" ^
+  --sample-density 1.000 ^
+  --sample-material "water" ^
+  --calibration "C:\GENIE2K\CAMFILES\Standard.CAL" ^
   --library "C:\GENIE2K\CAMFILES\NUTECH.NLB" ^
   --output-cal "C:\Calculations\Job123\Sample_transferred.CAL" ^
   --output-nlb "C:\Calculations\Job123\Sample_corrected.NLB" ^
@@ -61,12 +61,12 @@ EffSuite_CLI.exe cylinder ^
 #### 2. Marinelli Beaker Geometry (`marinelli` / `mefftran`)
 ```bash
 EffSuite_CLI.exe marinelli ^
-  --detector "DET002" ^
-  --sample "MAR_1000" ^
-  --standard "MAR_1000" ^
-  --sample-height 99.74 ^
+  --detector "High-energy" ^
+  --sample "Sample" ^
+  --standard "Standard" ^
+  --sample-height 75.0 ^
   --sample-density 1.000 ^
-  --sample-material "water_liquid" ^
+  --sample-material "water" ^
   --calibration "C:\GENIE2K\CAMFILES\Standard_Marinelli.CAL" ^
   --library "C:\GENIE2K\CAMFILES\GammaLab.NLB" ^
   --output-cal "C:\Calculations\Job124\Marinelli_transferred.CAL" ^
@@ -78,10 +78,10 @@ EffSuite_CLI.exe marinelli ^
 #### 3. Well-Type Detector Geometry (`well` / `wefftran`)
 ```bash
 EffSuite_CLI.exe well ^
-  --detector "DET007" ^
-  --sample "Vial_50mm" ^
-  --standard "Vial_20mm" ^
-  --sample-height 58.46 ^
+  --detector "well" ^
+  --sample "Sample" ^
+  --standard "Standard" ^
+  --sample-height 32.50 ^
   --sample-density 1.000 ^
   --calibration "C:\GENIE2K\CAMFILES\Well_Standard.CAL" ^
   --library "C:\GENIE2K\CAMFILES\NUTECH.NLB" ^
@@ -118,7 +118,7 @@ EffSuite_CLI.exe doctor
 Returns exit code 0 and prints a machine-readable JSON object:
 ```json
 {
-  "version": "0.1.0-beta",
+  "version": "0.1.3",
   "dependencies": {
     "numpy": true,
     "matplotlib": true,
@@ -151,7 +151,7 @@ Returns exit code 0 and prints a machine-readable JSON object:
 | `--output-nlb` | String (path) | Target file path for the summing-corrected nuclide library (`.NLB`). |
 | `--output-ctf` | String (path) | Target file path for the summing-corrected certificate (`.CTF`). |
 | `--sample-height` | Float (mm) | **Dynamic override**: Sample filling height in mm. |
-| `--sample-density`| Float (g/cm³) | **Dynamic override**: Sample bulk density. Automatically triggers XCOM attenuation recalculation if non-standard. |
+| `--sample-density`| Float (g/cm³) | **Dynamic override**: Sample bulk density (sets the 8th source parameter `rho`, scaling sample attenuation $\mu(E)$ by $\rho / \rho_0$ across EFFTRAN 4.9, MEFFTRAN 1.8, and WEFFTRAN without mutating global `Composition/*.txt` files). |
 | `--sample-material`| String | **Dynamic override**: Matrix material name (must exist in `Data/Composition` or `assets/common/Composition`). |
 | `--sample-diameter`| Float (mm) | **Dynamic override**: Outer container diameter in mm. |
 | `--sample-gap` | Float (mm) | **Dynamic override**: Endcap/crystal-to-container face distance in mm. |
@@ -324,11 +324,11 @@ $outCal = "C:\Data\Output\Sample.CAL"
 $outNlb = "C:\Data\Output\Corrected.NLB"
 
 & $cli cylinder `
-  --detector "DET002" `
-  --sample "Glucose" `
-  --standard "PET70_40" `
+  --detector "High-energy" `
+  --sample "Water" `
+  --standard "Solution" `
   --sample-height 55.0 `
-  --sample-density 1.346 `
+  --sample-density 1.000 `
   --calibration "C:\Data\Standard.CAL" `
   --library "C:\Data\Master.NLB" `
   --output-cal $outCal `

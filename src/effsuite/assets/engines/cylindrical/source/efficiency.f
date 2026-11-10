@@ -19,8 +19,8 @@
       read(7,*,end=44) e,tot,tot2
       n=e+0.5
       x=ptt(n)
-      peak=tot*x
-      peak2=tot2*x
+      peak=max(1.e-15,tot*x)
+      peak2=max(1.e-15,tot2*x)
       write(9,77) e,peak,peak2
 77    format(3e15.5)
       goto 33

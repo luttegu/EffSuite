@@ -30,7 +30,8 @@
     1.0,
     0.0,
     "water",
-    "polystyrene"
+    "polystyrene",
+    1.0
   ],
   "standard": [
     90.0,
@@ -39,7 +40,8 @@
     1.0,
     0.0,
     "water",
-    "polystyrene"
+    "polystyrene",
+    1.0
   ],
   "calibration": [
     {

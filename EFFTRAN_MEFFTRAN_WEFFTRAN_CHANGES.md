@@ -1,7 +1,7 @@
 # Technical Summary of Enhancements, Fixes, and Architectural Changes in EffSuite
 
-**Compared to the Original EFFTRAN, MEFFTRAN, and WEFFTRAN Distribution**  
-*Document Version: 1.0 — November 2026*  
+**Compared to the Original EFFTRAN (v4.8 & v4.9), MEFFTRAN (v1.7 & v1.8), and WEFFTRAN Distributions, and Previous EffSuite Releases**  
+*Document Version: 1.1 — EffSuite v0.1.3 (November 2026)*  
 *Author: EffSuite Development Team (built by ChatGPT & Gemini under the supervision of G. Lutter)*  
 *Target Audience: Original Author, Maintainers, and Scientific Evaluators of EFFTRAN / MEFFTRAN / WEFFTRAN*  
 
@@ -11,14 +11,65 @@
 
 ## Executive Summary
 
-**EffSuite** is an open-source modernization and cross-platform reimplementation of the gamma-spectrometry efficiency transfer and true coincidence summing framework originally established by **EFFTRAN** (cylindrical geometries), **MEFFTRAN** (Marinelli beaker geometries), and **WEFFTRAN** (well-type detectors).
+**EffSuite (v0.1.3)** is an open-source modernization and cross-platform reimplementation of the gamma-spectrometry efficiency transfer and true coincidence summing framework originally established by **EFFTRAN** (v4.9, cylindrical geometries), **MEFFTRAN** (v1.8, Marinelli beaker geometries), and **WEFFTRAN** (well-type detectors).
 
 The objective of this work was **not** to alter the validated core physical models of the original Fortran engines, but rather to:
-1. Preserve 100% numerical agreement with validated EFFTRAN/MEFFTRAN reference cases.
-2. Resolve a known numerical singularity/instability in legacy WEFFTRAN for tall sample geometries extending above the detector crystal.
-3. Eliminate dependencies on legacy 32-bit Microsoft Excel, VBA macros, and Windows-only 16/32-bit execution boundaries.
-4. Provide a cross-platform (Windows, Linux, macOS) architecture with parallel multi-core calculation, headless CLI batch capabilities, interactive CAD-style cross-section visualization, and automated Genie 2000 CAM file processing.
-5. Unify redundant data assets (attenuation tables, compositions, and 260+ radionuclide decay schemes) into a clean, shared hierarchy with automated NIST XCOM cross-section generation.
+1. Preserve 100% numerical agreement with validated EFFTRAN/MEFFTRAN reference cases while fixing upstream numerical bugs discovered in EFFTRAN 4.9 and MEFFTRAN 1.8.
+2. Integrate the new 8th-line explicit **Source Bulk Density (`rho` [g/cm³])** model format introduced in EFFTRAN 4.9 and MEFFTRAN 1.8, and extend it uniformly to WEFFTRAN (`well`), the desktop GUI, and the headless CLI with full backward compatibility for 7-line models.
+3. Resolve the known numerical singularity/instability in legacy WEFFTRAN for tall sample geometries extending above the detector crystal.
+4. Eliminate dependencies on legacy 32-bit Microsoft Excel, VBA macros, and Windows-only 16/32-bit execution boundaries.
+5. Provide a cross-platform (Windows, Linux, macOS) architecture with parallel multi-core calculation, headless CLI batch capabilities, interactive CAD-style cross-section visualization, and automated Genie 2000 CAM file processing.
+6. Unify redundant data assets (attenuation tables, compositions, and 260+ radionuclide decay schemes) into a clean, shared hierarchy with automated NIST XCOM cross-section generation.
+
+---
+
+## 0. Integration of Upstream EFFTRAN 4.9 & MEFFTRAN 1.8 in EffSuite v0.1.3
+
+### 0.1 What Changed Upstream in `EFFTRAN 4.9` (from `4.8`) and `MEFFTRAN 1.8` (from `1.7`)
+1. **Explicit Sample Bulk Density (`rho`) in Source Models (8th Line)**:
+   - All source geometry files (`Sample/*.txt` and `Standard/*.txt`) were extended from 7 lines to **8 lines**, adding the sample bulk density `rho` in $\text{g/cm}^3$ as line 8 (e.g., `1.00` for water solutions, `1.40` for `Soil.txt`, `0.00` for `Point.txt`).
+   - The Fortran routines `mine.f`, `total.f`, `scatter.f`, and `eta.f` read `rho` from line 8 of `source.txt`, read the nominal reference material density `rho0` from line 1 of `.\Composition\<smat>.txt`, and shift the logarithmic linear attenuation coefficients $\ln(\mu)$ by $\ln(\rho / \rho_0)$:
+     $$\ln \mu(E, \rho) = \ln \mu(E, \rho_0) + \ln\left(\frac{\rho}{\rho_0}\right) \implies \mu(E, \rho) = \mu(E, \rho_0) \cdot \frac{\rho}{\rho_0}$$
+   - If the 8th line is omitted (`end=88, err=88`), the Fortran code falls back to unscaled $\mu(E, \rho_0)$ ($\rho = \rho_0$).
+2. **New `HeavyWater` Reference Material**:
+   - Added `Composition\HeavyWater.txt` ($\text{H}_2\text{O}$ with $\rho_0 = 2.0\text{ g/cm}^3$) and `Material\HeavyWater.txt` to test density scaling against `Water` with $\rho = 2.0\text{ g/cm}^3$.
+3. **In-Memory Caching of `coin.txt` in `EFFTRAN_4.9/gv.f`**:
+   - Instead of reopening and scanning `coin.txt` from disk on every call to `coincidence(j)`, `gv.f` loads `coin.txt` once into `common /tabela/ start,stop,n(nn),p(nn)` and slices `start..stop` in memory.
+
+### 0.2 Upstream Bugs Found in `EFFTRAN 4.9` & `MEFFTRAN 1.8` and Fixed in `EffSuite v0.1.3`
+
+During line-by-line audit of `EFFTRAN_4.9` and `MEFFTRAN_1.8`, three upstream defects were identified and corrected in `EffSuite v0.1.3`:
+
+| # | Upstream Defect in `EFFTRAN 4.9` & `MEFFTRAN 1.8` | Physical / Numerical Impact | Fix Implemented in `EffSuite v0.1.3` |
+| :-: | :--- | :--- | :--- |
+| **1** | **Wrong Loop Upper Bound (`do j=1,ne` instead of `do j=1,ns`) in `mine.f` and `scatter.f`**<br>• `mine.f` (line 108 in EFFTRAN 4.9; line 101 in MEFFTRAN 1.8)<br>• `scatter.f` (line 67 in EFFTRAN 4.9; line 70 in MEFFTRAN 1.8) | While `total.f` and `eta.f` loop `do j=1,ns` over all $ns \approx 80\text{–}105$ XCOM energy rows, `mine.f` and `scatter.f` loop `do j=1,ne`:<br>• In `mine.f`, `ne` is **uninitialized (`0`)**, so **0 rows** are scaled and `mine.exe` ignores `rho`.<br>• In `scatter.f`, `ne = 25` (from `total.txt`), so only the first 25 XCOM points ($E \lesssim 30\text{ keV}$) are scaled by $\rho / \rho_0$, while **all energies above $\sim 30\text{ keV}$ remain unscaled at $\rho_0$**! Consequently, `Water` at $\rho = 2.0$ disagrees with `HeavyWater` ($\rho_0 = 2.0$) in scattered/buildup and peak-to-total calculations. | Fixed loop bounds to `do j=1,ns` in both `mine.f` and `scatter.f` across `cylindrical`, `marinelli`, and `well` Fortran sources. With this fix, `Water` with $\rho = 2.0$ matches `HeavyWater` ($\rho_0 = 2.0$) to 100% precision across all engine stages. |
+| **2** | **`Point.txt` (`vacuum`, `rho = 0.00`) Triggers `log(0.0) = -Infinity` and `NaN`** | `Standard\Point.txt` specifies `vacuum` ($\rho_0 = 10^{-12}\text{ g/cm}^3$) on line 6 and `0.00` on line 8. Evaluating `log(rho/rho0)` computes `log(0.0) = -Infinity`, corrupting `smu(j)` and producing `NaN` (`-Inf - (-Inf)`) during spline interpolation in `inter`/`interpol`. | Added positivity guard `if (rho.le.0.) rho=rho0` in `mine.f`, `total.f`, `scatter.f`, and `eta.f` across all engines. |
+| **3** | **Loss of Gamma Energy Precision (`f12.1`) & Embedded `system('total.exe')` in `EFFTRAN_4.9/transfer.f`** | Upstream `EFFTRAN_4.9/transfer.f` changed output formatting from `format(3e15.5)` to `format(f12.1,e15.5,f12.1)` (truncating energies such as $46.539\text{ keV}$ to $46.5\text{ keV}$) and embedded `call system('total.exe')` inside `transfer.f`. | Retained EffSuite's stage-isolated `transfer.f` with full scientific precision `format(3e15.5)`. |
+
+### 0.3 Comparison of `EffSuite v0.1.3` vs. `EffSuite v0.1.2`
+
+1. **8-Field Source Model Across All Geometries (`model_io.py`, `suite.py`)**:
+   - Extended `CYLINDER_SOURCE`, `MARINELLI_SOURCE`, and `well` source definitions from 7 fields to 8 fields by adding `("Source density", "g/cm³")` as the 8th line.
+   - Full backward compatibility: existing 7-line `.txt` files and 7-element `.effsuite.json` project files automatically populate `Source density` from the nominal density in `Composition/<material>.txt`.
+   - Updated all 39 bundled `.txt` models in `Sample/` and `Standard/` and all example `.effsuite.json` projects to 8 fields, and added `HeavyWater.txt` to `assets/common/Composition/` and `assets/common/Material/`.
+2. **Extension of 8th-Line Density Scaling to WEFFTRAN (`spatial_summing.py` & `well/source/*.f`)**:
+   - Updated `_xcom_table`, `material_mu`, and `well_local_response` in `src/effsuite/spatial_summing.py` so WEFFTRAN's 3D ray-traced response and coincidence summing engine scales sample mass attenuation by $\rho / \rho_0$ using `source[7]`, matching the native `well` Fortran routines (`mine.f`, `total.f`, `scatter.f`).
+3. **Desktop GUI (`gui.py`) & CAD View (`geometry_view.py`)**:
+   - Added `Source density [g/cm³]` spinbox directly below `Source material` in the `Source` tab (for both Standard and Sample columns across Cylindrical, Marinelli, and Well modes).
+   - Selecting a different `Source material` in the GUI dropdown automatically populates `Source density [g/cm³]` with the material's nominal density from `Composition/<material>.txt`, while preserving custom densities when loading saved source files or projects.
+   - Live 2D CAD cross-section view (`geometry_view.py`) now displays `ρ=<val> g/cm³` in the sample matrix callout.
+4. **Headless CLI (`app_cli.py`)**:
+   - `--sample-density <val>` now sets the 8th source parameter (`source[7]`) directly on the sample model in memory without mutating global `Composition/*.txt` files on disk.
+5. **Standardized Official Model Library & Generic WEFFTRAN Example**:
+   - Cleaned bundled `Standard/` model directories in Cylindrical (`EFFTRAN`: `Point.txt`, `Solution.txt`) and Marinelli (`MEFFTRAN`: `Standard.txt`) to match official distributions.
+   - Standardized WEFFTRAN (`well`) bundled models to generic names (`Detector/well.txt`, `Sample/Sample.txt`, `Standard/Standard.txt`) using generic `Plastic_vial` container material.
+6. **Multithreaded WEFFTRAN 3D Spatial Ray-Tracing & Parallel Test Runner**:
+   - Multithreaded spatial quadrature ray-tracing (`spatial_summing.py`) and nuclide cascade evaluation (`well_spatial.py`), reducing 3D well calculation times by ~3x while preserving exact serial equivalence (`--verify-serial`).
+   - Added `tools/run_tests.py` (invoked by `Run_Tests_Windows.bat`) to execute all 14 test suites concurrently across CPU cores.
+7. **Preserved & Hardened EffSuite Scientific Fixes**:
+   - Explicitly zeroed `s(3000)` and `s1(3000)` prior to nuclide loop label `123 continue` in `cylindrical` and `marinelli` `coincidence.f` to prevent uninitialized memory carry-over.
+   - Kept Monte Carlo variance cancellation floor `max(0., (sig(j)-t(j)*t(j))/n)` and $10^{-15}$ efficiency positivity clamp in `total.f` and `efficiency.f`.
+   - Kept corrected `kordaten.txt` (9,870 lines, including the `PA-234` `41 15` level index fix and additional `NB-94` and `W-187` nuclides missing from upstream's 9,754-line file).
 
 ---
 
@@ -295,30 +346,29 @@ effsuite material create --name Glucose_1346 --density 1.346 --formula C6H12O6=1
 
 ## 8. Summary Table of Differences
 
-| Feature / Component | Original EFFTRAN / MEFFTRAN / WEFFTRAN | EffSuite Modernization |
+| Feature / Component | Original EFFTRAN (4.8/4.9) / MEFFTRAN (1.7/1.8) / WEFFTRAN | EffSuite v0.1.3 Modernization |
 | :--- | :--- | :--- |
 | **Runtime Environment** | 32-bit Microsoft Excel + VBA Macros | Cross-platform Python 3.10+ & compiled native engines |
 | **Supported Operating Systems** | Windows only (legacy 32-bit execution) | Windows 10/11 (64-bit), Linux (x86_64), macOS |
 | **Execution Sandboxing** | Runs directly in current working directory | Isolated temporary job sandboxes (`results.json` + SHA-256) |
 | **Multi-Core Scheduling** | Single-threaded serial execution | 1–64 worker processes with atomic cascade grouping |
+| **Sample Bulk Density (`rho`)** | Added in EFFTRAN 4.9 / MEFFTRAN 1.8 (with `do j=1,ne` loop bug in `mine.f`/`scatter.f` and `log(0)` crash on `Point.txt`; absent in WEFFTRAN) | Full 8-line source density scaling ($\rho / \rho_0$) across Cylindrical, Marinelli, and Well (`WEFFTRAN`) with fixed `do j=1,ns` loop bounds, `Point.txt` guard, and GUI auto-fill |
 | **WEFFTRAN Tall Samples** | Numerical denominator singularity ($C < 0$ or $C \gg 10^3$) | Replaced by convergent source-guided spatial quadrature |
-| **Radionuclide Decay Data** | Dispersed, duplicate files across engines | Unified 260+ radionuclide repository in `assets/common/` |
+| **Radionuclide Decay Data** | Dispersed files; `PA-234` `41 43` typo in `kordaten.txt` | Unified 260+ radionuclide repository in `assets/common/` with `PA-234`, `NB-94`, and `W-187` included |
 | **Material Attenuation Tables** | Static pre-computed tables | Dynamic on-the-fly generation via integrated NIST XCOM |
-| **Sample Bulk Density** | Fixed in table; manual recalculation required | Parametric override via GUI, CLI, or batch CSV |
 | **Genie 2000 Integration** | Overwrites input files in place | Non-destructive export with immediate CAM verification |
-| **Geometry Visualization** | None or static bitmap sketches | Interactive real-time CAD cross-section with dimension quotes |
+| **Geometry Visualization** | None or static bitmap sketches | Interactive real-time CAD cross-section with dimension & density quotes |
 | **Batch Capabilities** | Manual workbook repetition | High-throughput CLI (`effsuite batch`) with CSV matrices |
 | **Display Support** | Fixed low-res dialogs | Dynamic $1920 \times 1080$ layout with resizable `QSplitter` log |
 | **Numerical Stability (MC variance & log)** | Occasional `NaN` from $\sigma - t^2 < 0$ and $\ln(0)$ crashes | Strict `max(0, ...)` variance floor and $10^{-15}$ efficiency clamp |
-| **Test Suite** | None | 117 automated regression and unit tests |
+| **Test Suite** | None | Automated regression, GUI, and laboratory benchmark test suite |
 
 ---
 
 ## Conclusion & Invitation for Review
 
-EffSuite was developed with deep appreciation for the foundational physics and pioneering achievements of EFFTRAN, MEFFTRAN, and WEFFTRAN. All changes have been made with strict documentation, zero logic alterations to the verified cylindrical and Marinelli Fortran algorithms, and full mathematical justification for the well-detector spatial integration fix.
+EffSuite was developed with deep appreciation for the foundational physics and pioneering achievements of EFFTRAN, MEFFTRAN, and WEFFTRAN. All changes have been made with strict documentation, full mathematical justification for the well-detector spatial integration fix, and careful verification of the new EFFTRAN 4.9 / MEFFTRAN 1.8 sample density scaling across all calculation stages.
 
 We welcome feedback, review, and collaboration from the original author and the broader gamma-spectrometry community.
 
-*Repository: [c:/PGM/EffSuite](file:///c:/PGM/EffSuite)*  
-*Test Evidence: All 117 tests passing (`commit 7a2bae0`)*
+*Repository: [c:/PGM/EffSuite](file:///c:/PGM/EffSuite)*

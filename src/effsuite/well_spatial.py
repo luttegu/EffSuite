@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import argparse
-from concurrent.futures import ProcessPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from contextlib import ExitStack
 from hashlib import sha256
 import json
@@ -110,15 +110,11 @@ def load_groups(installation, names, beta_plus_pl=("NA-22",)):
 def calculate_groups(groups, local, resolving_time, workers, verify_serial=False, cancel=None):
     from .parallel_coincidence import CalculationCancelled
     if cancel is not None and cancel.is_set():raise CalculationCancelled("Calculation cancelled")
-    if workers == 1:
+    if workers <= 1:
         results = {name: integrated_counts(records, local, resolving_time) for name, records in groups}
     else:
-        # Spawn avoids inheriting a live BLAS/Qt runtime. Large response arrays
-        # are read only, bounded by the explicitly selected spatial grid.
-        with ProcessPoolExecutor(max_workers=workers, mp_context=multiprocessing.get_context("spawn"),
-                                 initializer=_initialize_spatial_worker,
-                                 initargs=(local, resolving_time)) as pool:
-            futures = {pool.submit(_calculate_spatial_group, records): name
+        with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="well-nuclide") as pool:
+            futures = {pool.submit(integrated_counts, records, local, resolving_time): name
                        for name, records in groups}
             results = {}
             for future in as_completed(futures):
@@ -149,14 +145,14 @@ def calculate_spatial(installation: Path, prepared: Path, names: tuple[str, ...]
     started = time.monotonic()
     if progress:
         progress("Calculating local detector response")
-    local = prepare_local(installation, prepared, energies, order,cancel)
+    local = prepare_local(installation, prepared, energies, order, cancel, workers=workers)
     initial = calculate_groups(groups, local, resolving_time, count, verify_serial,cancel)
     convergence = {"requested": check_convergence, "passed": None, "rtol": rtol,
                    "meaning": "Numerical refinement only; not model uncertainty"}
     if check_convergence:
         if progress:
             progress("Refining spatial and angular quadrature")
-        fine = prepare_local(installation, prepared, energies, order.refined(),cancel)
+        fine = prepare_local(installation, prepared, energies, order.refined(), cancel, workers=workers)
         refined = calculate_groups(groups, fine, resolving_time, count, verify_serial,cancel)
         previous = {name: {row["energy_kev"]: row for row in item["corrections"]} for name, item in initial}
         differences = []

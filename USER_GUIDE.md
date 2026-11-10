@@ -1,4 +1,4 @@
-# EffSuite user guide — 0.3.1 evaluation
+# EffSuite User Guide — v0.1.3
 
 > **Important Compatibility Notice:**  
 > EffSuite **only supports Canberra / Mirion file formats** (`.CAL`, `.NLB`, `.CTF`, and `.CNF`). Other gamma spectrometry software formats (such as ORTEC Maestro, GammaVision, etc.) are **not supported**.
@@ -6,11 +6,11 @@
 > **WEFFTRAN Qualification Status Notice:**  
 > The WEFFTRAN (Well detector) engine has been patched for Fortran ray boundary handling and 3D spatial summing, but is **not yet fully tested or qualified in the laboratory**. Treat all well-type detector outputs as experimental and independently verify all values.
 
-## Reproduce an original EFFTRAN case
+## Reproduce an original EFFTRAN / MEFFTRAN / WEFFTRAN case
 
-Choose the matching application at the top. In Detector, load the original
+Choose the matching application at the top (`EFFTRAN` 4.9, `MEFFTRAN` 1.8, or `WEFFTRAN`). In Detector, load the original
 detector text file. In Source, load the original Standard and Sample text
-files. Do not infer dimensions from the model name. Original cylinder,
+files (7-line legacy models and 8-line models with explicit `Source density [g/cm³]` are both supported; when you change `Source material` in the GUI, `Source density [g/cm³]` automatically fills with the nominal density from `Composition/<material>.txt` and can be freely adjusted). Do not infer dimensions from the model name. Original cylinder,
 Marinelli and well formats differ and are checked separately.
 
 Use your original installation's data folder when comparing against its

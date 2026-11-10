@@ -2,41 +2,44 @@
 
 **To:** Scientific Author & Maintainer of EFFTRAN, MEFFTRAN, and WEFFTRAN (Dr. Tim Vidmar)  
 **From:** EffSuite Engineering & Validation Team (built by ChatGPT & Gemini under the supervision of G. Lutter)  
-**Date:** November 9, 2026  
+**Date:** November 10, 2026  
 **Disclaimer:** Provided strictly on an AS-IS basis. G. Lutter accepts NO responsibility or liability under any circumstances for incorrect calculations, inaccurate analytical results, or damages resulting from software use. Users must independently verify all results.  
 **Subject:** Precise Technical Audit of Physics Changes, Bug Fixes, Code Adjustments, and Architectural Modernization  
 **Analyzed Reference Distributions:**
-* Original EFFTRAN: `C:\PGM\EFFTRAN\EFFTRAN_4.8` (Version 4.8, September 2026)
-* Original MEFFTRAN: `C:\PGM\EFFTRAN\MEFFTRAN_1.7` (Version 1.7, September 2026)
+* Original EFFTRAN: `C:\PGM\EFFTRAN\EFFTRAN_4.8` (Version 4.8) & `C:\PGM\EFFTRAN\EFFTRAN_4.9` (Version 4.9, 2026)
+* Original MEFFTRAN: `C:\PGM\EFFTRAN\MEFFTRAN_1.7` (Version 1.7) & `C:\PGM\EFFTRAN\MEFFTRAN_1.8` (Version 1.8, 2026)
 * Original WEFFTRAN: `C:\PGM\EFFTRAN\WEFFTRAN` (Version 0.8 / 4.4.4, January 2018)
-* EffSuite: Version 0.1.0-beta (`C:\PGM\EffSuite`)
+* EffSuite: Version 0.1.3 (`C:\PGM\EffSuite`)
 
 ---
 
 ## Executive Summary
 
-A comprehensive file-by-file and line-by-line comparison was conducted across all Fortran mathematical source routines, decay data schemes, chemical composition definitions, mass attenuation tables, and workflow orchestration between the original distributions and **EffSuite**.
+A comprehensive file-by-file and line-by-line comparison was conducted across all Fortran mathematical source routines, decay data schemes, chemical composition definitions, mass attenuation tables, and workflow orchestration between the original distributions and **EffSuite v0.1.3**.
 
 The core findings are:
-1. **EFFTRAN 4.8 (Cylindrical)**: The 13 Fortran physics routines in EffSuite are **100% bitwise identical** to original EFFTRAN 4.8.
-2. **MEFFTRAN 1.7 (Marinelli)**: The 13 Fortran physics routines in EffSuite are **100% bitwise identical** to original MEFFTRAN 1.7.
-3. **WEFFTRAN (Well-Type)**: 12 of the 14 Fortran files are identical. Critical physical bug fixes were required in `total.f` and `peak.f`, and a spatial quadrature solver was developed to resolve the **tall-sample numerical singularity** and **high-efficiency positron ($^{22}\text{Na}$) cascade breakdown**.
-4. **Decay Data & Library Fixes**: Corrections were made to $^{234}\text{Pa}$ branch level indices and $^{22}\text{Na}$ feeding definitions.
-5. **Modernization & Automation**: Complete removal of dependencies on legacy 32-bit Excel / VBA macros, introduction of parallelized multi-core calculations, automated NIST XCOM execution, and headless CLI batch capabilities.
+1. **EFFTRAN 4.9 (Cylindrical) & MEFFTRAN 1.8 (Marinelli)**: EffSuite v0.1.3 integrates the new 8-line source model (`Source density [g/cm³]` on line 8) and `HeavyWater` reference material from `EFFTRAN 4.9` and `MEFFTRAN 1.8`, while **fixing two critical upstream bugs** in the new density-scaling routines (`do j=1,ne` instead of `do j=1,ns` in `mine.f` and `scatter.f`, and the `log(0.0)` singularity on `Point.txt` with `rho = 0.00`).
+2. **WEFFTRAN (Well-Type)**: Extended the 8th-line sample bulk density scaling (`rho / rho0`) to WEFFTRAN (`spatial_summing.py` and native `well` Fortran sources), in addition to the physical bug fixes in `total.f` and `peak.f` and the 3D spatial quadrature solver resolving the **tall-sample numerical singularity** and **high-efficiency positron ($^{22}\text{Na}$) cascade breakdown**.
+3. **Decay Data & Library Fixes**: Corrections were made to $^{234}\text{Pa}$ branch level indices (`41 43` $\rightarrow$ `41 15`), $^{22}\text{Na}$ feeding definitions, and addition of $^{94}\text{Nb}$ and $^{187}\text{W}$ to `kordaten.txt`.
+4. **Modernization & Automation**: Complete removal of dependencies on legacy 32-bit Excel / VBA macros, introduction of parallelized multi-core calculations, automated NIST XCOM execution, and headless CLI batch capabilities.
 
 ---
 
 ## 1. Engine & Physics Differences: Fortran Source Code Audit
 
-### 1.1 EFFTRAN 4.8 vs. EffSuite (`cylindrical`)
-Comparison between `C:\PGM\EFFTRAN\EFFTRAN_4.8\*.f` and `src\effsuite\assets\engines\cylindrical\source\*.f`:
-- `buildup.f`, `coin.f`, `coincidence.f`, `efficiency.f`, `energy.f`, `eta.f`, `gv.f`, `mine.f`, `ptt.f`, `scatter.f`, `total.f`, `trans.f`, `transfer.f`: **100% IDENTICAL**.
-- *Physics Status*: **No physics modifications**. Numerical results for transfer factors $F_\varepsilon(E)$ and coincidence summing factors $C$ strictly match EFFTRAN 4.8.
+### 1.1 EFFTRAN 4.9 vs. EffSuite v0.1.3 (`cylindrical`)
+Comparison between `C:\PGM\EFFTRAN\EFFTRAN_4.9\*.f` and `src\effsuite\assets\engines\cylindrical\source\*.f`:
+- Integrated the 8th-line sample density `rho` (`read(7,*,end=88,err=88) rho`) and nominal material density `rho0` (`from .\Composition\<smat>.txt`) in `mine.f`, `total.f`, `scatter.f`, and `eta.f`, plus in-memory `coin.txt` caching in `gv.f`.
+- **Fixed Upstream Bug #1 (`mine.f` line 108 & `scatter.f` line 67)**: Upstream `EFFTRAN 4.9` wrote `do j=1,ne` instead of `do j=1,ns` when adding `log(rho/rho0)` to `smu(j)` and `smuc(j)`. In `mine.f`, `ne` is uninitialized (`0`), so 0 rows were scaled; in `scatter.f`, `ne = 25` (from `total.txt`), so only the first 25 of ~82–104 XCOM points ($E \lesssim 30\text{ keV}$) were scaled while all higher energies remained unscaled at `rho0`. Fixed to `do j=1,ns` in EffSuite.
+- **Fixed Upstream Bug #2 (`Point.txt` `rho = 0.00` `log(0)` crash)**: Added `if (rho.le.0.) rho=rho0` so `Point.txt` (`vacuum`, `rho = 0.00`) does not evaluate `log(0.0) = -Infinity`.
+- **Preserved Full Precision & Numerical Floor**: Kept `format(3e15.5)` in `transfer.f` (instead of upstream's `f12.1` truncation) and preserved `max(0., (sig(j)-t(j)*t(j))/n)` and `1e-15` efficiency floors in `total.f` and `efficiency.f`.
 
-### 1.2 MEFFTRAN 1.7 vs. EffSuite (`marinelli`)
-Comparison between `C:\PGM\EFFTRAN\MEFFTRAN_1.7\*.f` and `src\effsuite\assets\engines\marinelli\source\*.f`:
-- `buildup.f`, `coin.f`, `coincidence.f`, `efficiency.f`, `energy.f`, `eta.f`, `gv.f`, `mine.f`, `ptt.f`, `scatter.f`, `total.f`, `trans.f`, `transfer.f`: **100% IDENTICAL**.
-- *Physics Status*: **No physics modifications**. Numerical results strictly match MEFFTRAN 1.7.
+### 1.2 MEFFTRAN 1.8 vs. EffSuite v0.1.3 (`marinelli`)
+Comparison between `C:\PGM\EFFTRAN\MEFFTRAN_1.8\*.f` and `src\effsuite\assets\engines\marinelli\source\*.f`:
+- Integrated the 8th-line sample density `rho` and `rho0` scaling in `mine.f`, `total.f`, `scatter.f`, and `eta.f`.
+- **Fixed Upstream Bug #1 (`mine.f` line 101 & `scatter.f` line 70)**: Changed `do j=1,ne` to `do j=1,ns` so all `ns` XCOM energy rows are scaled by `log(rho/rho0)`.
+- **Fixed Upstream Bug #2 (`rho <= 0` guard)**: Added `if (rho.le.0.) rho=rho0`.
+- **Preserved Numerical Floor**: Kept Monte Carlo variance floor `max(0., (sig(j)-t(j)*t(j))/n)` and `1e-15` efficiency floor in `total.f` and `efficiency.f`.
 
 ---
 
@@ -182,11 +185,13 @@ A cross-check between `WEFFTRAN\Decay_Data\*.txt` and EffSuite shared assets rev
 
 ## 5. Summary Recommendations for the Scientific Author
 
-1. **Adopt WEFFTRAN `total.f` Clamping Fix**:
+1. **Fix Loop Upper Bound (`do j=1,ns` instead of `do j=1,ne`) in `EFFTRAN 4.9` and `MEFFTRAN 1.8` (`mine.f` & `scatter.f`)**:
+   In `EFFTRAN 4.9` and `MEFFTRAN 1.8`, `mine.f` and `scatter.f` loop `do j=1,ne` instead of `do j=1,ns` when scaling `smu(j)` and `smuc(j)` by `log(rho/rho0)`. Changing `ne` to `ns` fixes `mine.exe` (where `ne=0`) and `scatter.exe` (where `ne=25` left energies above $\sim 30\text{ keV}$ unscaled).
+2. **Guard Against `rho = 0.00` in `Point.txt` (`EFFTRAN 4.9`)**:
+   Adding `if (rho.le.0.) rho=rho0` in `mine.f`, `total.f`, `scatter.f`, and `eta.f` (or setting line 8 of `Point.txt` to `1.0E-12`) prevents `log(0.0) = -Infinity` and `NaN` on point sources.
+3. **Adopt WEFFTRAN `total.f` Clamping Fix**:
    The fix in `path()` (clamping $z_a$ to $[z_{lo}, z_{up}]$) resolves an unphysical geometric artifact when sample heights exceed the detector crystal. We recommend including this in any future WEFFTRAN release.
-2. **Review Positron Annihilation Modelling in Well Detectors**:
+4. **Review Positron Annihilation Modelling in Well Detectors**:
    The inclusion of $(2\varepsilon_{511} - \varepsilon_{511}^2)$ in `peak.f` provides accurate coincidence summing factors for $^{22}\text{Na}$ in $4\pi$ geometry.
-3. **Adopt $^{234}\text{Pa}$ Index Fix**:
-   Updating line 219 of `PA-234.txt` from level `43` to `15` prevents index out-of-range errors in standard decay decoders.
-4. **Complete Numerical Conformance**:
-   EFFTRAN and MEFFTRAN physics engines in EffSuite remain 100% faithful to original versions 4.8 and 1.7, providing exact scientific reproducibility.
+5. **Adopt $^{234}\text{Pa}$ Index Fix**:
+   Updating line 219 of `PA-234.txt` (and `kordaten.txt`) from level `43` to `15` prevents index out-of-range errors in standard decay decoders.

@@ -122,7 +122,7 @@
         sig(j)=(n-1)*sig(j)+u*u
         sig(j)=sig(j)/n
         rat=0.
-        if (t(j).gt.0.) rat=sqrt((sig(j)-t(j)*t(j))/n)/t(j)
+        if (t(j).gt.0.) rat=sqrt(max(0.d0,(sig(j)-t(j)*t(j))/n))/t(j)
         if (rat.gt.ratmax) ratmax=rat
       enddo
       
@@ -141,7 +141,7 @@
 
       implicit none
 
-      character*(70) fname
+      character*(*) fname
       character*(132) line
 
       integer n
@@ -315,7 +315,7 @@ C  (C) Copr. 1986-92 Numerical Recipes Software ,)+>.
       implicit none
       integer n,l
       character blank
-      character*(30) s
+      character*(*) s
       blank=' '
       l=len(s)
       n=1
@@ -330,7 +330,7 @@ C  (C) Copr. 1986-92 Numerical Recipes Software ,)+>.
       implicit none
       integer n
       character blank
-      character*(30) s
+      character*(*) s
       blank=' '
       n=len(s)
       do while (s(n:n).eq.blank.and.n.gt.1)

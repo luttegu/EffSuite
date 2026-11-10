@@ -41,6 +41,7 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
       double precision crl,crr
       double precision at
       double precision sr,st,pbt,pst,sdist
+      double precision rho,rho0
 
       double precision u1(100),u2(100)
       double precision t(100),sig(100),t2(100)
@@ -53,7 +54,10 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
       character*70 dmat,wmat,cmat,hmat,smat,bmat,airmat,amat
 
       integer nbul
-      integer i,j,n
+      integer i,j,n,l,r
+
+      external left,right
+      integer left,right
 
     
       ne=1
@@ -92,6 +96,9 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
       read(7,*) sdist
       read(7,77) smat
       read(7,77) bmat
+      rho=0.d0
+      read(7,*,end=88,err=88) rho
+88    continue
       close(7)
 
       sr=sr/2.
@@ -105,6 +112,20 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
         call inter(na,ae,amu,e(j),mua(j))
         call inter(ns,se,smu,e(j),mus(j))
         call inter(np,pe,pmu,e(j),mup(j))
+      enddo
+
+      l=left(smat)
+      r=right(smat)
+
+      open(7,file='.\\Composition\\'//smat(l:r)//'.txt',status='old')
+      read(7,*) rho0
+      close(7)
+
+      if (rho.le.0.d0) rho=rho0
+      if (rho0.le.0.d0) rho0=1.d-15
+
+      do j=1,ne
+        mus(j)=mus(j)*rho/rho0
       enddo
 
       zld=0.
@@ -243,7 +264,7 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
         sig(j)=(n-1)*sig(j)+u*u
         sig(j)=sig(j)/n
         rat=0.
-        if (t(j).gt.0.) rat=sqrt((sig(j)-t(j)*t(j))/n)/t(j)
+        if (t(j).gt.0.) rat=sqrt(max(0.d0,(sig(j)-t(j)*t(j))/n))/t(j)
         if (rat.gt.ratmax) ratmax=rat
       enddo
      
@@ -257,7 +278,8 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
       open(7,file='total.txt',status='unknown')
       do i=1,ne
-        write(7,99) exp(e(i)),t(i),sqrt(t2(i))
+        write(7,99) exp(e(i)),max(1.d-15,t(i)),
+     +              max(1.d-15,sqrt(max(0.d0,t2(i))))
    
         enddo
       close(7)

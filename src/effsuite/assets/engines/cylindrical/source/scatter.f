@@ -16,6 +16,7 @@
       real rs,zls,zus,ds,rs2
       real sr,st,sden
       real cb,cs
+      real rho,rho0
       real dist,u,pi
       real t(1000),sig(1000),rat,ratmax,unc
 
@@ -46,6 +47,9 @@
       read(7,*) 
       read(7,55) smat
       read(7,*)
+      rho=0.
+      read(7,*,end=88,err=88) rho
+88    continue
       close(7)
 55    format(a)
 
@@ -58,6 +62,18 @@
 
       l=left(smat)
       r=right(smat)
+
+      open(7,file='.\\Composition\\'//smat(l:r)//'.txt',status='old')
+      read(7,*) rho0
+      close(7)
+
+      if (rho.le.0.) rho=rho0
+      if (rho0.le.0.) rho0=1.e-15
+
+      do j=1,ns
+        smu(j)=smu(j)+log(rho/rho0)
+        smuc(j)=smuc(j)+log(rho/rho0)
+      enddo
 
       zls=0.
       zus=zls+st
@@ -110,7 +126,7 @@
         sig(j)=(n-1)*sig(j)+u*u
         sig(j)=sig(j)/n
         rat=0.
-        if (t(j).gt.0.) rat=sqrt((sig(j)-t(j)*t(j))/n)/t(j)
+        if (t(j).gt.0.) rat=sqrt(max(0.,(sig(j)-t(j)*t(j))/n))/t(j)
         if (rat.gt.ratmax) ratmax=rat
       enddo
       

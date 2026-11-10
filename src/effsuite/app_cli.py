@@ -12,7 +12,7 @@ import sys
 
 import tempfile
 
-from .model_io import ASSETS, COMMON_DATA, MODES, mode_name, find_model, read_model, calibration_rows, normalize_nuclides
+from .model_io import ASSETS, COMMON_DATA, MODES, mode_name, find_model, read_model, calibration_rows, normalize_nuclides, default_material_density
 from .parallel_coincidence import CoincidenceError, CalculationCancelled, _publish_new
 from .paths import get_results_dir, get_data_dir, get_effsuite_root
 from .suite import VERSION, engine_folder, run_project, validate_project
@@ -159,6 +159,8 @@ def _resolve_file(path_or_name, subfolder, data_dir):
 
 def _apply_sample_overrides(mode, sample_values, *, height=None, diameter=None, gap=None, material=None, density=None, container_material=None, data_dir=None, progress=None):
     out=list(sample_values)
+    if len(out)==7:
+        out.append(default_material_density(out[5], data_dir))
     if diameter is not None:
         out[0]=float(diameter)
     if height is not None:
@@ -168,39 +170,12 @@ def _apply_sample_overrides(mode, sample_values, *, height=None, diameter=None, 
         out[4]=float(gap)
     if material:
         out[5]=str(material).strip()
+        if density is None:
+            out[7]=default_material_density(out[5], data_dir)
     if container_material:
         out[6]=str(container_material).strip()
     if density is not None:
-        from .materials import load_composition, create_material, default_library
-        mat_name=out[5]
-        lib_dir=Path(data_dir) if data_dir else (default_data_dir() or default_library())
-        comp_candidates=[lib_dir/"Composition"/f"{mat_name}.txt", COMMON_DATA/"Composition"/f"{mat_name}.txt"]
-        comp_file=next((c for c in comp_candidates if c.is_file()), None)
-        if comp_file is None:
-            raise CoincidenceError(f"Cannot override density for '{mat_name}': composition file not found in {lib_dir/'Composition'}")
-        d=load_composition(comp_file)
-        d["name"]=mat_name
-        d["density_g_cm3"]=float(density)
-
-        # If lib_dir is read-only (e.g. on a network share), redirect output writing to local user library
-        target_lib = lib_dir
-        mat_dir = target_lib / "Material"
-        is_writable = False
-        try:
-            mat_dir.mkdir(parents=True, exist_ok=True)
-            test_probe = mat_dir / f".effsuite_probe_{os.getpid()}"
-            test_probe.write_text("probe")
-            test_probe.unlink(missing_ok=True)
-            is_writable = True
-        except (OSError, PermissionError):
-            is_writable = False
-
-        if not is_writable:
-            target_lib = default_data_dir() or default_library()
-            (target_lib / "Material").mkdir(parents=True, exist_ok=True)
-            (target_lib / "Composition").mkdir(parents=True, exist_ok=True)
-
-        create_material(d, target_lib, geometry=mode, base_directory=data_dir, progress=progress, overwrite=True)
+        out[7]=float(density)
     return out
 
 
@@ -308,7 +283,7 @@ def _run_batch(args, progress):
         with tpl.open("w",newline="",encoding="utf-8") as f:
             w=csv.writer(f)
             w.writerow(BATCH_COLUMNS)
-            w.writerow(["Sample_001","cylinder","DET002","PET70_40","33.4","Glucose","1.346","0","PET70_40","TF400_268_2025.CAL","NUTECH.NLB","","","Sample_001.CAL","Sample_001.NLB",""])
+            w.writerow(["Sample_001","cylinder","High-energy","Water","33.4","water","1.0","0","Solution","TF400_268_2025.CAL","NUTECH.NLB","","","Sample_001.CAL","Sample_001.NLB",""])
         print(f"Created batch template: {tpl}",file=sys.stderr)
         return 0
     if not args.batch_file or not args.batch_file.is_file():

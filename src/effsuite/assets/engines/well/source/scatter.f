@@ -32,12 +32,16 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
       double precision rs,zls,zus,ds,rs2
       double precision sr,st,sden
       double precision cb,cs
+      double precision rho,rho0
       double precision dist,u,pi
       double precision t(1000),sig(1000),rat,ratmax,unc
 
       character*60 smat
 
-      integer i,j,n
+      external left,right
+      integer left,right
+
+      integer i,j,n,l,r
 
       ne=1
       open(7,file='total.txt',status='old')
@@ -58,6 +62,10 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
       read(7,*) cs
       read(7,*) 
       read(7,55) smat
+      read(7,*,end=88,err=88)
+      rho=0.d0
+      read(7,*,end=88,err=88) rho
+88    continue
       close(7)
 55    format(a)
 
@@ -67,6 +75,21 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
       unc=0.01
 
       call readin(smat,ns,se,smu,smuc)
+
+      l=left(smat)
+      r=right(smat)
+
+      open(7,file='.\\Composition\\'//smat(l:r)//'.txt',status='old')
+      read(7,*) rho0
+      close(7)
+
+      if (rho.le.0.d0) rho=rho0
+      if (rho0.le.0.d0) rho0=1.d-15
+
+      do j=1,ns
+        smu(j)=smu(j)+log(rho/rho0)
+        smuc(j)=smuc(j)+log(rho/rho0)
+      enddo
 
       zls=0.
       zus=zls+st
@@ -119,7 +142,7 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
         sig(j)=(n-1)*sig(j)+u*u
         sig(j)=sig(j)/n
         rat=0.
-        if (t(j).gt.0.) rat=sqrt((sig(j)-t(j)*t(j))/n)/t(j)
+        if (t(j).gt.0.) rat=sqrt(max(0.d0,(sig(j)-t(j)*t(j))/n))/t(j)
         if (rat.gt.ratmax) ratmax=rat
       enddo
       

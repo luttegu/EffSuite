@@ -44,6 +44,7 @@
       real wd,crl,crr,hol,dist,bt,tt
       real ar,at
       real sr,st,pbt,pst,sdist
+      real rho,rho0
 
       real u1(1000),u2(1000)
       real t(1000),t2(1000),sig(1000),s(1000)
@@ -116,6 +117,9 @@
       read(7,*) sdist
       read(7,77) smat
       read(7,77) bmat
+      rho=0.
+      read(7,*,end=88,err=88) rho
+88    continue
       close(7)
 
       sr=sr/2.
@@ -142,6 +146,17 @@
 
       l=left(smat)
       r=right(smat)
+
+      open(7,file='.\\Composition\\'//smat(l:r)//'.txt',status='old')
+      read(7,*) rho0
+      close(7)
+
+      if (rho.le.0.) rho=rho0
+      if (rho0.le.0.) rho0=1.e-15
+
+      do j=1,ne
+        mus(j)=mus(j)*rho/rho0
+      enddo
 
       bt=0.001
       tt=bt
@@ -453,7 +468,8 @@
 
       open(7,file='total.txt',status='unknown')
       do i=1,ne
-        write(7,99) exp(e(i)),t(i),sqrt(t2(i))
+        write(7,99) exp(e(i)),max(1.e-15,t(i)),
+     +              max(1.e-15,sqrt(max(0.,t2(i))))
       enddo
       close(7)
 99    format(3e15.5)

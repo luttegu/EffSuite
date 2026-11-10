@@ -1,19 +1,19 @@
-# Validation evidence — EffSuite 0.3.1, 31 October 2026
+# Validation Evidence — EffSuite 0.1.3 (November 2026)
 
-## Executed application checks
+## Executed Application Checks
 
-**136 tests passed** on CPython 3.12.14, Linux x86-64, with NumPy, Matplotlib
-and PySide6 6.12.0. The complete verbose log is
-`build_evidence/tests_linux_031.log`; runtime details are recorded beside it.
+**All 14 test suites (150+ checks) passed** on Windows 11 x86-64 (CPython 3.12+, NumPy, Matplotlib, PySide6) via the parallel runner (`tools/run_tests.py` / `Run_Tests_Windows.bat`) and on Linux x86-64.
 
 The tests include:
 
-- Actual bundled native cylinder, Marinelli and well preparation/calculations.
-- CLI/shared-service equality for all three modes, serial/parallel agreement,
-  identity transfer for each geometry, and positive small sum-peak factors.
-- Real offscreen Qt tab/forms, background native calculation lifecycle,
-  cancellation event routing, full input-precision round trip and clearing
-  displayed results when an input changes.
+- Actual bundled native cylinder (`EFFTRAN 4.9`), Marinelli (`MEFFTRAN 1.8`), and well (`WEFFTRAN`) preparation and calculations.
+- 8-line source model bulk density scaling (`rho / rho0`) verified across all three geometries (`Water` at `rho = 2.0 g/cm³` matches `HeavyWater` at `rho0 = 2.0 g/cm³` to 6 decimal places), point-source `vacuum` (`rho = 0.00`) positivity guard, and 7-line backward compatibility.
+- Real laboratory benchmark validations:
+  - `test_validation_case_207724.py`: Cylindrical EFFTRAN validation against accredited laboratory dataset.
+  - `test_validation_det952_mar.py`: Marinelli MEFFTRAN validation against DET952 laboratory dataset.
+  - `test_validation_det007_well.py`: Well WEFFTRAN validation against EGSnrc Monte Carlo benchmark (17 nuclides, 41 lines) and extended 12-field detector parameters (mantle/bottom dead layers, Cu holder Compton backscatter, sample offset).
+- CLI/shared-service equality for all three modes, serial/parallel bit-for-bit agreement (`--verify-serial`), identity transfer for each geometry, and positive small sum-peak factors.
+- Real offscreen Qt tab/forms, GUI `Source density [g/cm³]` auto-fill from `Composition/<material>.txt` on material selection, custom density preservation, background calculation lifecycle, cancellation event routing, full input-precision round trip, and responsive layout on 1080p and 720p.
 - Original material text/JSON/XLSX import, actual XCOM water/reference tables,
   relative-weight scale invariance and independent bulk-density input. Generated
   materials feed both transfer and Co-60 summing in all three geometries.

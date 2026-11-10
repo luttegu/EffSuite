@@ -26,9 +26,9 @@
         integer*2 backpt2(10000),forept2(10000)
         integer*2 bnucpt(10000),fnucpt(10000)
 
-	character*12 nuc
-	real*4 e,f,x
-	integer*2 l1,r1
+	character*12 nuc(10000)
+	real*4 e(10000),x(10000)
+	integer*2 nn,l1(10000),r1(10000)
 
 	real*4 de,demax,gamprdold,z
 
@@ -102,6 +102,21 @@
 
 	call system('coin.exe')
 
+	open(7,file='coin.txt',status='old')
+	nn=1
+15	continue
+	read(7,*,end=16) nuc(nn),e(nn),x(nn)
+	nn=nn+1
+	goto 15
+16	continue
+	nn=nn-1
+	close(7)
+
+	do j=1,nn
+	  l1(j)=left(nuc(j))
+	  r1(j)=right(nuc(j))
+	enddo
+
 	open(11,file='gv.txt',status='unknown')
 
 	do n=1,nnuc
@@ -111,6 +126,24 @@
 	l=left(name(n))
 	r=right(name(n))
 
+	start=0
+	do j=1,nn
+	  if (name(n)(l:r).eq.nuc(j)(l1(j):r1(j))) then
+	    start=j
+	    goto 12 
+          endif
+	enddo
+
+12	continue
+	stop=start
+	if (start.gt.0) then
+	  do while(stop.le.nn .and.
+     +      name(n)(l:r).eq.nuc(stop)(l1(stop):r1(stop)))
+	    stop=stop+1
+	  enddo
+	  stop=stop-1
+	endif
+
 	do k=1,npeak
 
 	if (nucpt(k).ne.selfpt(n)) goto 77
@@ -118,27 +151,22 @@
 	gamprdold=gamprd(k)
 	demax=1.e30
 	c=0
-	x=1.
 	z=1.
 
-	open(7,file='coin.txt',status='old')
-15	continue
-	read(7,*,end=16) nuc,e,f
-	l1=left(nuc)
-	r1=right(nuc)
-	de=abs(e-kev(k))
-	if ((name(n)(l:r).eq.nuc(l1:r1)).and.(de.lt.demax)) then
-	  demax=de
-	  x=f
-        endif
-	goto 15
-16      continue
-	close(7)
+	if (start.gt.0) then
+	  do j=start,stop
+	    de=abs(e(j)-kev(k))
+	    if (de.lt.demax) then
+	      demax=de
+	      m=j
+            endif
+	  enddo
+	endif
 
         if (demax.lt.1.0) then
-	  gamprd(k)=gamprd(k)/x
+	  gamprd(k)=gamprd(k)/x(m)
 	  c=1
-	  z=x
+	  z=x(m)
 	endif
 
 	write(11,55) name(n)

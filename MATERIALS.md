@@ -1,9 +1,11 @@
-# Material composition — EffSuite 0.3.1
+# Material composition — EffSuite v0.1.3
 
 The original Material.xls takes up to ten chemical formulas, relative weights
 and a separately entered bulk density. Its Save action runs XCOM to create a
 mass-attenuation table, then stores the density/composition text. EffSuite now
 implements that complete workflow through one shared GUI/CLI service.
+
+Starting with **EffSuite v0.1.3** (integrating `EFFTRAN 4.9` and `MEFFTRAN 1.8` and extending the feature to `WEFFTRAN`), you only need to generate a new XCOM material when the **chemical composition** changes. If you only need to change the **bulk density** of an existing sample matrix (such as soil or aqueous solution at a different packing density), simply enter the new `Source density [g/cm³]` directly in the **Source** tab (or on line 8 of the source `.txt` file, or via `--sample-density` in the CLI); the engine scales the linear attenuation coefficient $\mu(E)$ by $\rho / \rho_0$ automatically.
 
 ## GUI
 
@@ -59,8 +61,8 @@ MEFFTRAN and WEFFTRAN; they share a single common directory (defaulting to
 Use the resulting data directory in an ordinary calculation:
 
 ```bat
-CLI.bat cylinder --detector High-energy --sample my_sample.txt --standard Solution --calibration reference.csv --data-dir D:\EffSuite_Data
-CLI.bat well --detector DET07 --sample my_sample.txt --nuclides Co60 Cs134 Eu152 --data-dir D:\EffSuite_Data
+CLI.bat cylinder --detector High-energy --sample Water --standard Solution --calibration reference.csv --data-dir D:\EffSuite_Data
+CLI.bat well --detector well --sample Sample --nuclides Co60 Cs134 Eu152 --data-dir D:\EffSuite_Data
 ```
 
 The source model must name the newly created material in the relevant original

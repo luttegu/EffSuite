@@ -18,7 +18,8 @@
     1.5,
     10.0,
     "water",
-    "Plastic_vial_det07"
+    "Plastic_vial",
+    1.0
   ],
   "standard": [
     17.0,
@@ -27,7 +28,8 @@
     1.5,
     10.0,
     "water",
-    "Plastic_vial_det07"
+    "Plastic_vial",
+    1.0
   ],
   "calibration": [
     {

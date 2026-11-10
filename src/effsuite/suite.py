@@ -27,12 +27,13 @@ def validate_project(project):
     if project.get("schema_version")!=1:raise CoincidenceError("Unsupported project file version")
     out=json.loads(json.dumps(project,allow_nan=False))
     mode=mode_name(out.get("geometry","cylindrical"));out["geometry"]=mode
-    out["detector"]=validate_model(mode,"detector",out.get("detector",[]))
-    out["sample"]=validate_model(mode,"sample",out.get("sample",[]))
+    data_dir=out.get("data_directory")
+    out["detector"]=validate_model(mode,"detector",out.get("detector",[]),data_directory=data_dir)
+    out["sample"]=validate_model(mode,"sample",out.get("sample",[]),data_directory=data_dir)
     task=out.get("task","both")
     if task not in {"transfer","summing","both"}:raise CoincidenceError("Choose efficiency transfer, summing, or both")
     if task in {"transfer","both"}:
-        out["standard"]=validate_model(mode,"standard",out.get("standard",[]))
+        out["standard"]=validate_model(mode,"standard",out.get("standard",[]),data_directory=data_dir)
         out["calibration"]=validate_calibration(out.get("calibration",[]))
     if mode=="well":
         for kind in ("sample","standard"):
@@ -109,8 +110,12 @@ def _prepare_folder(mode,project,destination,source_kind):
         if (engine_dir/name).is_file():shutil.copyfile(engine_dir/name,destination/name)
         elif (ASSETS/mode/name).is_file():shutil.copyfile(ASSETS/mode/name,destination/name)
     if not (destination/"param.txt").exists():(destination/"param.txt").write_text("10.\n")
-    (destination/"detector.txt").write_bytes(model_bytes(mode,"detector",project["detector"]))
-    (destination/"source.txt").write_bytes(model_bytes(mode,source_kind,project[source_kind]))
+    det_bytes=model_bytes(mode,"detector",project["detector"])
+    src_bytes=model_bytes(mode,source_kind,project[source_kind])
+    (destination/"detector.txt").write_bytes(det_bytes)
+    (destination/"det.txt").write_bytes(det_bytes)
+    (destination/"source.txt").write_bytes(src_bytes)
+    (destination/"src.txt").write_bytes(src_bytes)
     for name in ("sample","standard"):
         if project.get(name):(destination/(name+".txt")).write_bytes(model_bytes(mode,name,project[name]))
     # Validate every named material before invoking any numerical executable.
@@ -218,9 +223,9 @@ def run_project(project,output:Path,*,cancel=None,progress=None):
                 energies=np.asarray([row["energy_keV"] for row in project["calibration"]],dtype=float)
                 zz_aa=_crystal_zz_aa(folder,folder,project["detector"][5])
                 if progress:progress("WEFFTRAN: ray-traced efficiency transfer (standard)")
-                standard=well_peak_efficiencies(folder,project["detector"],project["standard"],energies,cancel=stop,zz_aa=zz_aa)
+                standard=well_peak_efficiencies(folder,project["detector"],project["standard"],energies,cancel=stop,zz_aa=zz_aa,workers=project["workers"])
                 if progress:progress("WEFFTRAN: ray-traced efficiency transfer (sample)")
-                sample=well_peak_efficiencies(folder,project["detector"],project["sample"],energies,cancel=stop,zz_aa=zz_aa)
+                sample=well_peak_efficiencies(folder,project["detector"],project["sample"],energies,cancel=stop,zz_aa=zz_aa,workers=project["workers"])
                 if np.any(standard<=0) or np.any(~np.isfinite(sample/standard)):raise CoincidenceError("Standard well efficiency is zero")
                 transferred=[[row["energy_keV"],row["efficiency"]*float(ratio),math.sqrt(row["u_rel_percent"]**2+.5**2+.5**2)]
                              for row,ratio in zip(project["calibration"],sample/standard)]
@@ -228,7 +233,9 @@ def run_project(project,output:Path,*,cancel=None,progress=None):
                 result["engine_sha256"]["well_transfer"] = _safe_py_sha256("spatial_summing.py")
             else:
                 for kind in ("sample","standard"):
-                    (folder/"source.txt").write_bytes(model_bytes(mode,kind,project[kind]))
+                    src_bytes=model_bytes(mode,kind,project[kind])
+                    (folder/"source.txt").write_bytes(src_bytes)
+                    (folder/"src.txt").write_bytes(src_bytes)
                     (folder/"total.txt").unlink(missing_ok=True)
                     _stage("total",mode,folder,stop,project["timeout_seconds"],progress,result["engine_sha256"])
                     shutil.copyfile(folder/"total.txt",folder/(kind+"-efficiency.txt"))

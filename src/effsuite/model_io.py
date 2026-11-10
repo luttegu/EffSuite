@@ -34,10 +34,39 @@ WELL_DETECTOR_OPTIONAL = [("Mantle (side) dead layer", "mm"),
 CYLINDER_SOURCE = [("Container diameter", "mm"), ("Source filling height", "mm"),
                    ("Container bottom thickness", "mm"), ("Container side wall thickness", "mm"),
                    ("Container-to-absorber gap", "mm"), ("Source material", "material"),
-                   ("Container material", "material")]
+                   ("Container material", "material"), ("Source density", "g/cm³")]
 MARINELLI_SOURCE = [("Container diameter", "mm"), ("Container hole diameter", "mm"),
                     ("Source filling height", "mm"), ("Container hole length", "mm"),
-                    ("Container thickness", "mm"), ("Source material", "material"), ("Container material", "material")]
+                    ("Container thickness", "mm"), ("Source material", "material"),
+                    ("Container material", "material"), ("Source density", "g/cm³")]
+
+
+def default_material_density(material_name: str, data_directory: str | Path | None = None) -> float:
+    name = str(material_name).strip()
+    if not name or name.lower() == "vacuum":
+        return 0.0
+    roots = []
+    if data_directory:
+        roots.append(Path(data_directory).expanduser() / "Composition")
+    roots.append(Path.home() / "Documents/EffSuite/Data/Composition")
+    roots.append(COMMON_DATA / "Composition")
+    for root in roots:
+        if not root.is_dir():
+            continue
+        direct = root / f"{name}.txt"
+        target = direct if direct.is_file() else next(
+            (p for p in root.glob("*.txt") if p.stem.lower() == name.lower()),
+            None,
+        )
+        if target is not None:
+            try:
+                for line in target.read_text(encoding="utf-8", errors="ignore").splitlines():
+                    if line.strip():
+                        val = float(line.strip().split()[0])
+                        return 0.0 if val <= 1e-12 else val
+            except (ValueError, OSError):
+                pass
+    return 1.0
 
 
 def mode_name(value):
@@ -57,7 +86,7 @@ def fields(mode, kind, extended=False):
     return CYLINDER_SOURCE
 
 
-def validate_model(mode, kind, values):
+def validate_model(mode, kind, values, data_directory=None):
     if isinstance(values, dict):
         if mode == "well" and kind == "detector":
             dr = values.get("crystal_diameter", values.get("dr", values.get("Crystal diameter")))
@@ -76,6 +105,8 @@ def validate_model(mode, kind, values):
         else:
             definition = fields(mode, kind)
             values = [values.get(label, values.get(label.lower().replace(" ", "_"))) for label, _ in definition]
+            if kind != "detector" and len(values) == 8 and values[7] is None:
+                values[7] = default_material_density(values[5] if values[5] is not None else "water", data_directory=data_directory)
 
     if mode == "well" and kind == "detector":
         if not (7 <= len(values) <= 12):
@@ -131,15 +162,17 @@ def validate_model(mode, kind, values):
             values = list(values[:12]) + [0.0, 0.0, values[12], values[13], values[14], values[15], "copper"]
 
     definition = fields(mode, kind)
+    if kind != "detector" and len(values) == 7:
+        values = list(values) + [default_material_density(values[5], data_directory=data_directory)]
     if len(values) != len(definition):
         raise CoincidenceError(f"{MODES[mode]} {kind}: expected {len(definition)} fields, got {len(values)}")
     out=[]
     for (label, unit), value in zip(definition, values):
-        if unit == "mm":
+        if unit in ("mm", "g/cm³"):
             try: numeric = float(value)
-            except (ValueError, TypeError) as exc: raise CoincidenceError(f"{label}: enter a number in mm") from exc
+            except (ValueError, TypeError) as exc: raise CoincidenceError(f"{label}: enter a number in {unit}") from exc
             if isinstance(value,bool) or not math.isfinite(numeric) or numeric < 0:
-                raise CoincidenceError(f"{label}: enter a finite, nonnegative dimension")
+                raise CoincidenceError(f"{label}: enter a finite, nonnegative value")
             out.append(numeric)
         else:
             name=str(value).strip()

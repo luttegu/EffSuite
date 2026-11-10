@@ -49,6 +49,11 @@
 
 	oldnuc=''
 
+	do i=1,3000
+	  s(i)=0.
+	  s1(i)=0.
+	enddo
+
 123	continue
 	
 	do i=1,100

@@ -61,7 +61,7 @@ class MaterialTests(unittest.TestCase):
             with self.subTest(mode=mode):
                 library=self.root/(mode+'_data');create_material(dict(self.water,density_g_cm3=2.),library,geometry=mode)
                 p=json.loads(example_path(mode).read_text());p.update(task='both',nuclides=['CO-60'],workers=1,data_directory=str(library),standard=list(p['sample']),calibration=[{'energy_keV':100.,'efficiency':.01,'u_rel_percent':3.},{'energy_keV':1000.,'efficiency':.005,'u_rel_percent':3.}])
-                p['standard'][5]='water';p['sample'][5]='Test_water'
+                p['standard'][5]='water';p['sample'][5]='Test_water';p['sample']=p['sample'][:7]
                 result=run_project(p,self.root/(mode+'_result'))
                 self.assertLess(result['efficiency'][0]['transfer_factor'],1.)
                 co=next(row for row in result['summing'] if row['nuclide']=='CO-60' and row['energy_keV']==1173)

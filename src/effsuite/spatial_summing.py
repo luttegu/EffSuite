@@ -16,9 +16,11 @@ Carlo simulation. See EFFTRAN_MEFFTRAN_WEFFTRAN_CHANGES.md for validation.
 """
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from hashlib import sha256
 import math
+import os
 from pathlib import Path
 
 import numpy as np
@@ -107,11 +109,13 @@ def log_interpolate(x, y, query):
     return np.exp(ly[indices] + (ly[indices+1]-ly[indices]) / width * (np.log(query)-lx[indices]))
 
 
-def material_mu(installation: Path, name: str, energy: np.ndarray) -> np.ndarray:
+def material_mu(installation: Path, name: str, energy: np.ndarray, density_override: float | None = None) -> np.ndarray:
     comp_path = installation / "Composition" / (name+".txt")
     if not comp_path.is_file():
         comp_path = COMMON_DATA / "Composition" / (name+".txt")
     density = float(comp_path.read_text().split()[0])
+    if density_override is not None and math.isfinite(float(density_override)) and float(density_override) > 0:
+        density = float(density_override)
     rows = []
     mat_path = installation / "Material" / (name+".txt")
     if not mat_path.is_file():
@@ -183,13 +187,15 @@ class LocalEfficiencies:
     pair_single_peak: np.ndarray | None = None
 
 
-def _xcom_table(installation: Path, name: str) -> np.ndarray:
+def _xcom_table(installation: Path, name: str, density_override: float | None = None) -> np.ndarray:
     """XCOM table in 1/mm: energy [keV], Rayleigh, Compton, photoelectric, pair,
     total with coherent, total without coherent (the legacy attenuation)."""
     comp_path = installation / "Composition" / (name+".txt")
     if not comp_path.is_file():
         comp_path = COMMON_DATA / "Composition" / (name+".txt")
     density = float(comp_path.read_text().split()[0])
+    if density_override is not None and math.isfinite(float(density_override)) and float(density_override) > 0:
+        density = float(density_override)
     mat_path = installation / "Material" / (name+".txt")
     if not mat_path.is_file():
         mat_path = COMMON_DATA / "Material" / (name+".txt")
@@ -362,7 +368,7 @@ def _crystal_model(dr, dl, dd, well_d, well_h, table, zz, aa,
 
 
 def well_local_response(installation: Path, detector, source, energies, order=Quadrature(),
-                        cancel=None, zz_aa=(32., 72.63)):
+                        cancel=None, zz_aa=(32., 72.63), workers: int = 0):
     """Local peak and total efficiency for every sample node.
 
     Physics (all first principles, no fitted constants):
@@ -388,8 +394,12 @@ def well_local_response(installation: Path, detector, source, energies, order=Qu
     det_sample_offset = float(detector[10]) if len(detector) > 10 and str(detector[10]).strip() != "" else 0.0
     holder_material = str(detector[11]).strip() if len(detector) > 11 and str(detector[11]).strip() != "" else "copper"
 
-    tables = [_xcom_table(installation, str(name).strip()) for name in (dmat, amat, source[5], source[6])]
-    ge_t, al_t, sm_t, bm_t = tables
+    rho = float(source[7]) if len(source) > 7 and source[7] is not None and str(source[7]).strip() != "" else None
+    ge_t = _xcom_table(installation, dmat)
+    al_t = _xcom_table(installation, amat)
+    sm_t = _xcom_table(installation, str(source[5]).strip(), density_override=rho)
+    bm_t = _xcom_table(installation, str(source[6]).strip())
+    tables = [ge_t, al_t, sm_t, bm_t]
     hl_t = _xcom_table(installation, holder_material) if holder_thickness > 0 else None
     model = _crystal_model(dr, dl, dd, well_d, well_h, ge_t, *zz_aa,
                            mantle_dead=mantle_dead, bottom_dead=bottom_dead)
@@ -517,13 +527,20 @@ def well_local_response(installation: Path, detector, source, energies, order=Qu
         b = (zq-z_ax[j])/np.maximum(z_ax[j+1]-z_ax[j], 1e-9)
         return (1-a)*((1-b)*grid[i, j, cols]+b*grid[i, j+1, cols])+a*((1-b)*grid[i+1, j, cols]+b*grid[i+1, j+1, cols])
 
+    p_ge_absorb = None
+    if holder_thickness > 0 and hl is not None:
+        eb = energies / (1.0 + 1.4 * energies / 511.0)
+        mu_ge_back = _xcom(ge_t, eb)[5]
+        p_ge_absorb = -np.expm1(-25.0 * mu_ge_back[None, :])
+
     peak = np.zeros((len(points), len(energies)))
     total = np.zeros_like(peak)
     pair_miss, pair_single = np.zeros(len(points)), np.zeros(len(points))
     i511 = int(np.argmin(np.abs(energies-511.)))
     has511 = abs(energies[i511]-511.) < 1e-6
-    raw_max = 0.
-    for index, (r, z) in enumerate(points):
+
+    def _eval_point(index_rz):
+        index, (r, z) = index_rz
         if cancel is not None and cancel.is_set():
             raise CalculationCancelled("Calculation cancelled")
         crystal, entry, bore, sa, co, up0, up1, dead_ge, holder = trace(float(r), float(z), dirs)
@@ -563,18 +580,16 @@ def well_local_response(installation: Path, detector, source, energies, order=Qu
                     (1-kn[None, :]**2)*interp(piso_e1, r_sc, z_sc, r_cav, z_cav))
         tot = np.exp(-tau)*p_dir-np.expm1(-tau)*(rayl/safe*det_rayl+comp/safe*det_comp)
 
-        if holder_thickness > 0 and hl is not None:
+        if p_ge_absorb is not None:
             # Mount cup (holder) Compton backscatter
             p_reach_holder = np.exp(-tau) * np.exp(-crystal[:, None]*mu_ge[None, :]) * np.exp(-dead_ge[:, None]*mu_ge[None, :])
             p_holder_comp = -np.expm1(-holder[:, None]*hl[1][None, :])
-            eb = energies / (1.0 + 1.4 * energies / 511.0)
-            mu_ge_back = _xcom(ge_t, eb)[5]
-            p_ge_absorb = -np.expm1(-25.0 * mu_ge_back[None, :])
             tot = tot + p_reach_holder * p_holder_comp * 0.40 * p_ge_absorb
 
-        raw_max = max(raw_max, float(tot.max()))
+        pt_raw_max = float(tot.max())
         tot = np.clip(np.maximum(tot, pk), 0., 1.)
-        peak[index], total[index] = np.sum(pk*dw[:, None], axis=0), np.sum(tot*dw[:, None], axis=0)
+        pk_row, tot_row = np.sum(pk*dw[:, None], axis=0), np.sum(tot*dw[:, None], axis=0)
+        pm, ps = 0.0, 0.0
         if has511:
             # Gauss-Legendre polar nodes are symmetric and the azimuth count is even, so the
             # antiparallel direction of ray (i, j) is (P-1-i, j+A/2): no extra ray tracing.
@@ -582,8 +597,27 @@ def well_local_response(installation: Path, detector, source, energies, order=Qu
             t_p, p_p = tot[:, i511], pk[:, i511]
             t_o = np.roll(t_p.reshape(P, A)[::-1, :], A//2, axis=1).ravel()
             p_o = np.roll(p_p.reshape(P, A)[::-1, :], A//2, axis=1).ravel()
-            pair_miss[index] = float(np.sum(dw*(1-t_p)*(1-t_o)))
-            pair_single[index] = float(np.sum(dw*(p_p*(1-t_o)+p_o*(1-t_p))))
+            pm = float(np.sum(dw*(1-t_p)*(1-t_o)))
+            ps = float(np.sum(dw*(p_p*(1-t_o)+p_o*(1-t_p))))
+        return index, pk_row, tot_row, pm, ps, pt_raw_max
+
+    auto_threads = max(1, min(16, (os.cpu_count() or 4)))
+    num_threads = min(workers or auto_threads, len(points))
+    raw_max = 0.
+    if num_threads <= 1:
+        for item in enumerate(points):
+            idx, pk_row, tot_row, pm, ps, pt_raw_max = _eval_point(item)
+            peak[idx], total[idx] = pk_row, tot_row
+            if has511:
+                pair_miss[idx], pair_single[idx] = pm, ps
+            raw_max = max(raw_max, pt_raw_max)
+    else:
+        with ThreadPoolExecutor(max_workers=num_threads, thread_name_prefix="well-raytrace") as pool:
+            for idx, pk_row, tot_row, pm, ps, pt_raw_max in pool.map(_eval_point, enumerate(points)):
+                peak[idx], total[idx] = pk_row, tot_row
+                if has511:
+                    pair_miss[idx], pair_single[idx] = pm, ps
+                raw_max = max(raw_max, pt_raw_max)
     return LocalEfficiencies(energies, weights, peak, total, points,
                              {"quadrature": vars(order), "spatial_points": len(points),
                               "angular_directions": len(dirs), "sample_bottom_mm": bottom,
@@ -594,15 +628,15 @@ def well_local_response(installation: Path, detector, source, energies, order=Qu
 
 
 def well_peak_efficiencies(installation: Path, detector, source, energies, order=Quadrature(),
-                           cancel=None, zz_aa=(32., 72.63)) -> np.ndarray:
+                           cancel=None, zz_aa=(32., 72.63), workers: int = 0) -> np.ndarray:
     """Volume-averaged full-energy-peak efficiency of a well sample (up to a common scale)."""
     local = well_local_response(installation, detector, source, np.asarray(energies, dtype=float),
-                                order, cancel, zz_aa)
+                                order, cancel, zz_aa, workers=workers)
     return np.sum(local.weights[:, None]*local.peak, axis=0)
 
 
 def prepare_local(installation: Path, prepared: Path, energies: np.ndarray,
-                  order: Quadrature = Quadrature(), cancel=None) -> LocalEfficiencies:
+                  order: Quadrature = Quadrature(), cancel=None, workers: int = 0) -> LocalEfficiencies:
     if any(type(value) is not int or value < 2 or (name == "azimuth" and value % 2)
            for name, value in vars(order).items()):
         raise CoincidenceError("Quadrature orders must be integers of at least two (azimuth even)")
@@ -627,7 +661,8 @@ def prepare_local(installation: Path, prepared: Path, energies: np.ndarray,
         material_names.append(detector[11].strip())
     local = well_local_response(installation, detector,
                                 source, np.asarray(energies, dtype=float), order,
-                                cancel, _crystal_zz_aa(installation, prepared, detector[5].strip()))
+                                cancel, _crystal_zz_aa(installation, prepared, detector[5].strip()),
+                                workers=workers)
     hashes = {}
     for name in material_names:
         for category in ("Material", "Composition"):

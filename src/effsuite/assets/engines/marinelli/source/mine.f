@@ -32,11 +32,17 @@
 
       real sr,st,sx,sh,pt,t
       real e1,e2,emin,acc
+      real rho,rho0
 
       character*70 dmat,wmat,cmat,hmat,smat,bmat,airmat,amat
 
       real rtbis
       external rtbis
+
+      external left,right
+      integer left,right
+
+      integer j,l,r
 
       open(7,file='detector.txt',status='old')
       read(7,*) cr
@@ -71,6 +77,9 @@
       read(7,*) pt
       read(7,77) smat
       read(7,77) bmat
+      rho=0.
+      read(7,*,end=88,err=88) rho
+88    continue
       close(7)
 
       sr=sr/2.
@@ -83,6 +92,20 @@
       call readin(hmat,nh,he,hmu)
       call readin(smat,ns,se,smu)
       call readin(bmat,np,pe,pmu)
+
+      l=left(smat)
+      r=right(smat)
+
+      open(7,file='.\\Composition\\'//smat(l:r)//'.txt',status='old')
+      read(7,*) rho0
+      close(7)
+
+      if (rho.le.0.) rho=rho0
+      if (rho0.le.0.) rho0=1.e-15
+
+      do j=1,ns
+        smu(j)=smu(j)+log(rho/rho0)
+      enddo
 
       e1=0.1
       e2=3000.

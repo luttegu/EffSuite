@@ -1,17 +1,19 @@
-# EffSuite 0.3.1 implementation
+# EffSuite 0.1.3 Architecture & Implementation
 
 `app_cli.py` and `gui.py` call `suite.run_project` using the same versioned
-JSON project. `model_io.py` validates original model fields and calibration
+JSON project. `model_io.py` validates 8-field source models (with 7-line backward
+compatibility and nominal density lookup from `Composition/<material>.txt`),
+detector models (including optional 12-field extended well parameters), and calibration
 units. The service prepares native inputs automatically in a private job
 folder, supervises cancellable executable stages, and publishes completed
 JSON/CSV/HTML output in a new directory.
 
 Cylinder and Marinelli summing use `parallel_coincidence.py`; parent/continuation
 records run together in isolated subprocess directories. Well summing uses
-`well_spatial.py` and `spatial_summing.py`, with response preparation once per
-quadrature and immutable per-worker arrays. `genie.py` calls the installed
-vendor CAM components through the bundled PowerShell bridge and verifies
-exported copies by reopening them.
+`well_spatial.py` and `spatial_summing.py`, with multithreaded 3D spatial-angular
+ray-tracing across quadrature points and thread-pooled nuclide cascade evaluation.
+`genie.py` calls the installed vendor CAM components through the bundled PowerShell
+bridge and verifies exported copies by reopening them.
 
 The desktop uses Qt Widgets and the original workbook tab/form arrangement.
 A QObject worker in a QThread supervises jobs; scientific native routines run
