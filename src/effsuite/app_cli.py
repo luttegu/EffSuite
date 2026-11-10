@@ -382,12 +382,201 @@ def _run_batch(args, progress):
     return 0 if all_ok else 1
 
 
+def print_cli_banner():
+    """Print clean guide banner for laboratory technicians."""
+    print("=" * 72)
+    print("                 EFFSUITE — GAMMA SPECTROMETRY CLI")
+    print(f"       Efficiency Transfer & True Coincidence Summing (v{VERSION})")
+    print("       EFFTRAN (v4.8) • MEFFTRAN (v1.7) • WEFFTRAN • NIST XCOM")
+    print("=" * 72)
+    print(" Supervisor : G. Lutter")
+    print(" Engineering: Pair-programmed with ChatGPT & Gemini")
+    print(" Disclaimer : Provided strictly AS-IS; users must verify analytical results.")
+    print("=" * 72)
+    print()
+
+
+def _pause_if_interactive():
+    """Keep console window open on Windows when launched interactively."""
+    if sys.stdin.isatty():
+        try:
+            input("\nPress Enter to continue...")
+        except (KeyboardInterrupt, EOFError):
+            pass
+
+
+def _run_interactive_project(path: Path):
+    print(f"\n--- Loading and Executing Project: {path.name} ---")
+    progress = lambda s: print(s, file=sys.stderr, flush=True)
+    out_dir = default_output()
+    try:
+        project = load_project(path)
+        result = run_project(project, out_dir, progress=progress)
+        print(f"\n[SUCCESS] Calculation complete! Results saved to:\n  {result['output_directory']}")
+        print(f"  All reported factors valid: {result['all_reported_factors_valid']}")
+    except Exception as exc:
+        print(f"\n[ERROR] Calculation failed: {exc}", file=sys.stderr)
+    _pause_if_interactive()
+    return 0
+
+
+def _run_interactive_batch(path: Path):
+    print(f"\n--- Starting Batch Run: {path.name} ---")
+    progress = lambda s: print(s, file=sys.stderr, flush=True)
+    class BatchArgs:
+        batch_file = path
+        out = default_output()
+        workers = 0
+        data_dir = None
+        plot_geometry = False
+        template = None
+    try:
+        ret = _run_batch(BatchArgs(), progress)
+        print(f"\n[SUCCESS] Batch run complete (exit code {ret}).")
+    except Exception as exc:
+        print(f"\n[ERROR] Batch run failed: {exc}", file=sys.stderr)
+    _pause_if_interactive()
+    return 0
+
+
+def _run_interactive_example(name: str):
+    ex_file = example_path(name)
+    print(f"\n--- Running Built-in Example: {name.title()} ({ex_file.name}) ---")
+    return _run_interactive_project(ex_file)
+
+
+def interactive_cli():
+    """Interactive console menu when EffSuite_CLI is launched with no arguments."""
+    print_cli_banner()
+    while True:
+        print("Available Operations:")
+        print("  [1] Run a Saved Project (.json) — [or drag-and-drop a file here]")
+        print("  [2] Run Batch Calculations (.csv / .json table)")
+        print("  [3] Run a Built-in Validation Example (Cylinder / Marinelli / Well)")
+        print("  [4] Run System Diagnostics (doctor check)")
+        print("  [5] View Full CLI Command Line Help & Syntax (--help)")
+        print("  [6] Launch Graphical Desktop Interface (GUI)")
+        print("  [0] Exit")
+        print()
+        try:
+            choice = input("Select an option [0-6] or enter a file path: ").strip().strip('"').strip("'")
+        except (KeyboardInterrupt, EOFError):
+            print("\nExiting.")
+            return 0
+
+        if not choice:
+            continue
+
+        # Check if the user entered/dragged a file directly
+        candidate_path = Path(choice)
+        if candidate_path.is_file():
+            if candidate_path.suffix.lower() == ".json":
+                return _run_interactive_project(candidate_path)
+            elif candidate_path.suffix.lower() == ".csv":
+                return _run_interactive_batch(candidate_path)
+            else:
+                print(f"[ERROR] Unsupported file format '{candidate_path.suffix}'. Expected .json or .csv\n")
+                continue
+
+        if choice == "1":
+            try:
+                p_in = input("Enter path to project .json file (or drag-and-drop here): ").strip().strip('"').strip("'")
+            except (KeyboardInterrupt, EOFError):
+                return 0
+            if not p_in:
+                print("No file specified.\n")
+                continue
+            path = Path(p_in)
+            if not path.is_file():
+                print(f"[ERROR] File not found: {path}\n")
+                continue
+            return _run_interactive_project(path)
+
+        elif choice == "2":
+            try:
+                b_in = input("Enter path to batch .csv or .json file: ").strip().strip('"').strip("'")
+            except (KeyboardInterrupt, EOFError):
+                return 0
+            if not b_in:
+                print("No file specified.\n")
+                continue
+            path = Path(b_in)
+            if not path.is_file():
+                print(f"[ERROR] File not found: {path}\n")
+                continue
+            return _run_interactive_batch(path)
+
+        elif choice == "3":
+            print("\nBuilt-in Validation Examples:")
+            print("  [c] Cylindrical sample on coaxial detector")
+            print("  [m] Marinelli beaker geometry")
+            print("  [w] Well-type detector geometry")
+            try:
+                ex_choice = input("Choose example [c/m/w]: ").strip().lower()
+            except (KeyboardInterrupt, EOFError):
+                return 0
+            mapping = {"c": "cylinder", "cylinder": "cylinder",
+                       "m": "marinelli", "marinelli": "marinelli",
+                       "w": "well", "well": "well"}
+            ex_name = mapping.get(ex_choice)
+            if not ex_name:
+                print("Invalid example choice.\n")
+                continue
+            return _run_interactive_example(ex_name)
+
+        elif choice == "4":
+            print("\nRunning EffSuite System Diagnostics...\n")
+            doc = doctor()
+            print(json.dumps(doc, indent=2))
+            _pause_if_interactive()
+            print()
+            continue
+
+        elif choice == "5":
+            print()
+            parser().print_help()
+            _pause_if_interactive()
+            print()
+            continue
+
+        elif choice == "6":
+            print("\nLaunching Graphical Desktop Interface (GUI)...\n")
+            from .gui import main as gui_main
+            return gui_main()
+
+        elif choice in {"0", "q", "exit", "quit"}:
+            print("Goodbye.")
+            return 0
+
+        else:
+            print(f"Unknown option '{choice}'. Please select 0 to 6.\n")
+
+
 def main(argv=None):
     argv=list(sys.argv[1:] if argv is None else argv)
+
+    # If user passed a single file without a subcommand (e.g. drag & drop onto CLI.exe):
+    if len(argv) == 1 and not argv[0].startswith("-"):
+        candidate = Path(argv[0].strip('"').strip("'"))
+        if candidate.is_file():
+            if candidate.suffix.lower() == ".json":
+                argv = ["run", str(candidate)]
+            elif candidate.suffix.lower() == ".csv":
+                argv = ["batch", str(candidate)]
+
+    # If no parameters are provided:
+    if not argv:
+        if sys.stdin.isatty():
+            return interactive_cli()
+        else:
+            print_cli_banner()
+            parser().print_help()
+            return 0
+
     args=parser().parse_args(argv)
     progress=lambda s:print(s,file=sys.stderr,flush=True)
     try:
-        if args.command in {None,"gui"}:
+        if args.command=="gui":
             from .gui import main as gui_main
             return gui_main()
         if args.command=="doctor":
