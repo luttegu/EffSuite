@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "effsuite"
-version = "0.1.3"
+version = "0.1.4"
 description = "Beta version: gamma spectrometry efficiency transfer and coincidence summing suite for cylindrical, Marinelli and well geometries"
 requires-python = ">=3.11"
 dependencies = ["numpy>=1.26,<3", "matplotlib>=3.8,<4", "xlrd>=2,<3"]

@@ -27,7 +27,7 @@ When executing `EffSuite_CLI.exe` as a subprocess, evaluate the process exit cod
 | Exit Code | Meaning | Software Handling Recommendation |
 | :---: | :--- | :--- |
 | **0** | **Success (Complete)** | All calculations completed successfully. All library gamma lines received positive summing corrections. |
-| **1** | **Success (Valid with Uncorrected Lines)** | Valid completion. The transferred `.CAL` and corrected `.NLB`/`.CTF` were created and verified. However, certain low-energy lines below the detector/calibration operational limit (e.g., transitions < 40 keV) could not receive summing corrections and are marked with `*` (standard GenTran convention). **Treat as success if expected output files exist.** |
+| **1** | **Success (Valid with Uncorrected Lines)** | Valid completion. The transferred `.CAL` / `.EFT` and corrected `.NLB` / `.LIB` / `.CTF` were created and verified. However, certain low-energy lines below the detector/calibration operational limit (e.g., transitions < 40 keV) could not receive summing corrections and are marked with `*` (standard GenTran / EFFTRAN convention). **Treat as success if expected output files exist.** |
 | **2** | **Fatal Execution Error** | Runtime failure (e.g., missing engine binary, file I/O error, invalid syntax, or unhandled exception). Inspect `stderr` for details. |
 | **>2** | **OS / Subprocess Abort** | Abnormal termination (e.g., process killed by timeout, permission failure). |
 
@@ -91,6 +91,23 @@ EffSuite_CLI.exe well ^
   --workers 4
 ```
 
+#### 4. GammaVision Invocation (`.EFT` Efficiency + `.LIB` Nuclide Library — *Untested*)
+> **GammaVision Notice:** GammaVision support has been implemented as EFFTRAN is doing it, but I cannot test it because I do not have the software. Volunteers are welcome to test and provide feedback.
+```bash
+EffSuite_CLI.exe cylinder ^
+  --detector "High-energy" ^
+  --standard "Solution" ^
+  --sample "Water" ^
+  --sample-height 55.0 ^
+  --sample-density 1.000 ^
+  --calibration "C:\Data\EFFTRAN.EFT" ^
+  --library "C:\Data\EFFTRAN.Lib" ^
+  --output-cal "C:\Calculations\Job126\Sample_transferred.EFT" ^
+  --output-nlb "C:\Calculations\Job126\Sample_corrected.LIB" ^
+  --out "C:\Calculations\Job126\Results" ^
+  --software gammavision
+```
+
 ---
 
 ### Mode B: Project File Replay (`run`)
@@ -118,7 +135,7 @@ EffSuite_CLI.exe doctor
 Returns exit code 0 and prints a machine-readable JSON object:
 ```json
 {
-  "version": "0.1.3",
+  "version": "0.1.4",
   "dependencies": {
     "numpy": true,
     "matplotlib": true,
@@ -143,13 +160,14 @@ Returns exit code 0 and prints a machine-readable JSON object:
 | `--detector` | String (path or name) | Detector model file path (`.txt`) or name matching a file in `Data/Detector`. |
 | `--sample` | String (path or name) | Sample geometry file path (`.txt`) or name in `Data/Sample`. |
 | `--standard` | String (path or name) | Standard reference geometry file path (`.txt`) or name in `Data/Standard`. Defaults to `--sample` if omitted. |
-| `--calibration` | String (path) | Reference efficiency calibration file (`.CAL`, `.txt`, or `.csv`). |
-| `--library` | String (path) | Genie 2000 Nuclide Library (`.NLB`) to apply cascade summing corrections to. |
+| `--calibration` | String (path) | Reference efficiency calibration file (Genie `.CAL`, GammaVision `.EFT`, `.txt`, or `.csv`). |
+| `--library` | String (path) | Genie 2000 Nuclide Library (`.NLB`) or GammaVision library (`.LIB`) to apply cascade summing corrections to. |
+| `--software` | `genie` \| `gammavision` | Force the vendor backend. Default: auto-detect from the extension (`.LIB`/`.EFT` = GammaVision). **GammaVision is untested** (see README). |
 | `--certificate` | String (path) | Genie 2000 Certificate File (`.CTF`) to apply cascade summing corrections to. |
 | `--nuclides` | Space- or comma-separated | Specific nuclides to calculate (e.g. `--nuclides "Co-60,Cs-134,Eu-152"`). If omitted, all library nuclides are computed. |
-| `--output-cal` | String (path) | Target file path for the transferred sample calibration (`.CAL`). |
-| `--output-nlb` | String (path) | Target file path for the summing-corrected nuclide library (`.NLB`). |
-| `--output-ctf` | String (path) | Target file path for the summing-corrected certificate (`.CTF`). |
+| `--output-cal` | String (path) | Target file path for the transferred sample calibration (Genie `.CAL` or GammaVision `.EFT`). |
+| `--output-nlb` | String (path) | Target file path for the summing-corrected nuclide library (Genie `.NLB` or GammaVision `.LIB`). |
+| `--output-ctf` | String (path) | Target file path for the summing-corrected Genie certificate (`.CTF`). |
 | `--sample-height` | Float (mm) | **Dynamic override**: Sample filling height in mm. |
 | `--sample-density`| Float (g/cm³) | **Dynamic override**: Sample bulk density (sets the 8th source parameter `rho`, scaling sample attenuation $\mu(E)$ by $\rho / \rho_0$ across EFFTRAN 4.9, MEFFTRAN 1.8, and WEFFTRAN without mutating global `Composition/*.txt` files). |
 | `--sample-material`| String | **Dynamic override**: Matrix material name (must exist in `Data/Composition` or `assets/common/Composition`). |
@@ -163,6 +181,8 @@ Returns exit code 0 and prints a machine-readable JSON object:
 ---
 
 ## 5. Output Files & Formats
+
+Every exported spectrometry file explicitly identifies whether it is for **Genie 2000** (`.CAL`, `.NLB`, `.CTF`) or **GammaVision** (`.EFT`, `.LIB`, plus `<name>_gv.txt`) both by its file extension and inside `results.json` (`"software": "Genie"` or `"GammaVision"`) and `report.html`.
 
 In addition to the destination files specified by `--output-cal` and `--output-nlb`, the directory given to `--out` contains structured outputs for programmatic ingestion:
 

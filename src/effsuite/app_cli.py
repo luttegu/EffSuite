@@ -41,9 +41,9 @@ def _add_common_calc_args(c):
     c.add_argument("--container-material",metavar="NAME",help="Override sample container material name on the fly")
     c.add_argument("--standard",help="Reference standard source model (.txt path or name in Data/Standard)")
     c.add_argument("--calibration",type=Path,help="Reference efficiency .CAL, .txt or .csv (in Data/Calibration)")
-    c.add_argument("--export-cal",action="store_true",help="Export transferred Genie .CAL (automatic when --calibration is a .CAL file)")
-    c.add_argument("--cal-template",type=Path,help="Genie .CAL template when using a .txt/.csv calibration")
-    c.add_argument("--library",type=Path,help="Process a Genie Nuclide Library (.NLB) and export a summing-corrected .NLB")
+    c.add_argument("--export-cal",action="store_true",help="Export the transferred sample calibration: Genie .CAL or GammaVision .EFT (automatic when --calibration is a .CAL/.EFT file)")
+    c.add_argument("--cal-template",type=Path,help="Genie .CAL or GammaVision .EFT template when using a .txt/.csv calibration")
+    c.add_argument("--library",type=Path,help="Process a Genie Nuclide Library (.NLB) or GammaVision library (.LIB) and export a summing-corrected copy")
     c.add_argument("--certificate",type=Path,help="Process a Genie Certificate (.CTF) and export a summing-corrected .CTF")
     c.add_argument("--nuclides",nargs="+",default=[],metavar="Co-60",help="One or more nuclides (comma or space separated)")
     c.add_argument("--output-cal",type=Path,metavar="FILE.CAL",help="Copy the exported Sample .CAL directly to this file path")
@@ -53,6 +53,7 @@ def _add_common_calc_args(c):
     c.add_argument("--out",type=Path,help="Result folder (default: Documents/EffSuite/Results/<timestamp>)")
     c.add_argument("--save-project",type=Path,help="Save the resolved project JSON for one-command repeat")
     c.add_argument("--workers",type=int,default=0,help="Worker processes: 0 = automatic, 1 = serial")
+    c.add_argument("--software",choices=["genie","gammavision"],help="Library software (default: auto-detect; .LIB = GammaVision)")
     c.add_argument("--data-dir",type=Path,help="Data directory (default: Documents/EffSuite/Data if present)")
     c.add_argument("--verify-serial",action="store_true",help="Verify parallel coincidence results against serial execution")
 
@@ -196,15 +197,24 @@ def _save_geometry_plot(project, dest_path, kind="Sample"):
     return str(dest.resolve())
 
 
+def _export_path(result, kind):
+    """Path of the exported file for kind ('cal','nlb','ctf') inside the published output directory."""
+    info=(result.get("genie_exports") or {}).get(kind)
+    if isinstance(info,dict) and info.get("file") and result.get("output_directory"):
+        path=Path(result["output_directory"])/info["file"]
+        return str(path) if path.is_file() else ""
+    return ""
+
+
 def _copy_direct_outputs(result, *, output_cal=None, output_nlb=None, output_ctf=None):
-    exports=result.get("genie_exports") or {}
     copied={}
-    for key,target in [("cal_output",output_cal),("nlb_output",output_nlb),("ctf_output",output_ctf)]:
-        if target and exports.get(key) and Path(exports[key]).is_file():
+    for key,target in [("cal",output_cal),("nlb",output_nlb),("ctf",output_ctf)]:
+        source=_export_path(result,key)
+        if target and source:
             target_path=Path(target).expanduser().resolve()
             target_path.parent.mkdir(parents=True,exist_ok=True)
-            shutil.copy2(exports[key],target_path)
-            copied[key]=str(target_path)
+            shutil.copy2(source,target_path)
+            copied[key+"_output"]=str(target_path)
     if copied:
         result["direct_outputs"]=copied
 
@@ -222,7 +232,7 @@ def _build_project_from_args(mode, args, progress=None):
     lib_records=None
     for kind,path in (("nlb",nlb_path),("ctf",ctf_path)):
         if path:
-            from .genie import read_library,read_certificate
+            from .software import read_library,read_certificate
             rows=(read_library if kind=="nlb" else read_certificate)(path)
             names=normalize_nuclides(names+[str(row["nuclide"]) for row in rows])
             genie_sources[kind]=str(path.resolve())
@@ -253,12 +263,12 @@ def _build_project_from_args(mode, args, progress=None):
     if has_transfer:
         project["standard"]=read_model(mode,"standard",find_model(mode,"standard",args.standard,data_dir))
         project["calibration"]=calibration_rows(cal_path)
-        if cal_path.suffix.lower()==".cal":
+        if cal_path.suffix.lower() in {".cal",".eft"}:
             project["calibration_template"]=str(cal_path.resolve())
         if args.cal_template:
             tpl=_resolve_file(args.cal_template,"Calibration",data_dir)
             project["calibration_template"]=str(tpl.resolve())
-        if project.get("calibration_template") and (args.export_cal or args.output_cal or cal_path.suffix.lower()==".cal"):
+        if project.get("calibration_template") and (args.export_cal or args.output_cal or cal_path.suffix.lower() in {".cal",".eft"}):
             genie_sources["cal"]=project["calibration_template"]
     elif args.export_cal:
         raise CoincidenceError("--export-cal needs --standard and a .CAL calibration input or --cal-template")
@@ -342,9 +352,9 @@ def _run_batch(args, progress):
             "sample_material":project["sample"][5],
             "sample_height_mm":project["sample"][2 if geom=="marinelli" else 1],
             "output_directory":res["output_directory"],
-            "cal_output":res.get("direct_outputs",{}).get("cal_output") or exports.get("cal_output",""),
-            "nlb_output":res.get("direct_outputs",{}).get("nlb_output") or exports.get("nlb_output",""),
-            "ctf_output":res.get("direct_outputs",{}).get("ctf_output") or exports.get("ctf_output",""),
+            "cal_output":res.get("direct_outputs",{}).get("cal_output") or _export_path(res,"cal"),
+            "nlb_output":res.get("direct_outputs",{}).get("nlb_output") or _export_path(res,"nlb"),
+            "ctf_output":res.get("direct_outputs",{}).get("ctf_output") or _export_path(res,"ctf"),
             "valid":res.get("all_reported_factors_valid",True),
         })
     summary_csv=master_out/"batch_summary.csv"
@@ -549,6 +559,7 @@ def main(argv=None):
             return 0
 
     args=parser().parse_args(argv)
+    if getattr(args,"software",None):os.environ["EFFSUITE_SOFTWARE"]=args.software
     progress=lambda s:print(s,file=sys.stderr,flush=True)
     try:
         if args.command=="gui":

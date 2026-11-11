@@ -1,6 +1,7 @@
 """EFFTRAN-style desktop: original tabs and forms, shared executable workflows."""
 from __future__ import annotations
 from functools import partial
+import os
 import json
 import math
 import multiprocessing
@@ -712,6 +713,11 @@ class MainWindow(QMainWindow):
         top.addWidget(app_lbl);self.mode=QComboBox();self.mode.setMinimumWidth(185)
         for key,name in MODES.items():self.mode.addItem(name+{"cylindrical":" — Cylindrical","marinelli":" — Marinelli","well":" — Well"}[key],key)
         top.addWidget(self.mode)
+        sw_lbl=QLabel("<b>Software:</b>");sw_lbl.setStyleSheet("border:none;background:transparent;");top.addWidget(sw_lbl)
+        self.software=QComboBox();self.software.setToolTip("Spectrometry software: Auto selects GammaVision for .LIB / .EFT files and Genie 2000 for .CAL / .NLB / .CTF files")
+        for label,key in (("Auto (.CAL/.NLB/.CTF vs .EFT/.LIB)",""),("Genie 2000 (.CAL/.NLB/.CTF)","genie"),("GammaVision (.EFT/.LIB — untested)","gammavision")):self.software.addItem(label,key)
+        self.software.currentIndexChanged.connect(lambda *_:os.environ.__setitem__("EFFSUITE_SOFTWARE",self.software.currentData()))
+        top.addWidget(self.software)
         sep_v=QFrame();sep_v.setFrameShape(QFrame.Shape.VLine);sep_v.setStyleSheet("color:#cbd5e1;");top.addWidget(sep_v)
         self.data_button=QPushButton("📁 Data Folder…");self.data_button.setToolTip("Select the folder containing Composition, Material, Detector, Standard, and NuclideLibrary");self.data_button.clicked.connect(self.choose_data);top.addWidget(self.data_button)
         self.data_label=QLabel("Data library: "+(self.data_directory if self.data_directory else "bundled original files"))
@@ -884,7 +890,7 @@ class MainWindow(QMainWindow):
     # ---------------------------------------------------------------- guided workflow
     STEP_KEYS=("welcome","detector","source","efficiency","ctf","nlb")
     STEP_TITLES={"welcome":"Choose calculation","detector":"Detector","source":"Source (Standard / Sample)",
-                 "efficiency":"Efficiency (.CAL)","ctf":"Certificate (.CTF)","nlb":"Nuclide library (.NLB)"}
+                 "efficiency":"Efficiency (.CAL / .EFT)","ctf":"Certificate (.CTF)","nlb":"Nuclide library (.NLB / .LIB)"}
     RUN_LABELS={"transfer":"▶ Run Efficiency Transfer","summing":"▶ Run Coincidence Summing","both":"🚀 Run Complete Analysis"}
     def tab_index(self,key):return self.STEP_KEYS.index(key)
     def visible_steps(self):
@@ -952,7 +958,7 @@ class MainWindow(QMainWindow):
             self.source_form.set_standard_enabled(self.workflow!="summing")
         if getattr(self,"btn_export_sum_on_eff",None) is not None:
             self.btn_export_sum_on_eff.setVisible(self.workflow=="both")
-            self.btn_export_sum_on_eff.setText("💾 Export Corrected "+("Library (.NLB)…" if self.summing_source=="nlb" else "Certificate (.CTF)…"))
+            self.btn_export_sum_on_eff.setText("💾 Export Corrected "+("Library (.NLB / .LIB)…" if self.summing_source=="nlb" else "Certificate (.CTF)…"))
         if hasattr(self,"btn_export_cal_on_sum"):
             for btn in self.btn_export_cal_on_sum.values():
                 btn.setVisible(self.workflow=="both")
@@ -962,11 +968,11 @@ class MainWindow(QMainWindow):
                "<b>Sample (.txt)</b> — geometry, matrix & density from <code>Data/Standard</code> or <code>Data/Sample</code>"]
         if self.workflow in ("transfer","both"):
             items+=["<b>Standard (.txt)</b> — calibration source geometry from <code>Data/Standard</code>",
-                    "<b>Reference Calibration (.CAL)</b> — from <code>Data/Calibration</code> → <i>exports Sample .CAL</i>"]
+                    "<b>Reference Calibration (.CAL / .EFT / .txt / .csv)</b> — from <code>Data/Calibration</code> → <i>exports Sample .CAL or .EFT</i>"]
         if self.workflow in ("summing","both"):
-            items.append("<b>Certificate (.CTF)</b> → <i>exports corrected .CTF</i>"
+            items.append("<b>Genie Certificate (.CTF)</b> → <i>exports corrected .CTF</i>"
                          if self.summing_source=="ctf" else
-                         "<b>Nuclide Library (.NLB)</b> — from <code>Data/NuclideLibrary</code> → <i>exports corrected .NLB</i>")
+                         "<b>Nuclide Library (Genie .NLB / GammaVision .LIB)</b> — from <code>Data/NuclideLibrary</code> → <i>exports corrected .NLB or .LIB</i>")
         return "<ol style='margin:0px;line-height:1.35;'>"+"".join(f"<li>{i}</li>" for i in items)+"</ol>"
     def step_done(self,key):
         try:
@@ -991,12 +997,12 @@ class MainWindow(QMainWindow):
             try:self.source_form.values("standard")
             except Exception as exc:out.append(("source",str(exc)))
             try:
-                if not self.calibration():out.append(("efficiency","Efficiency — import the reference calibration (.CAL)"))
+                if not self.calibration():out.append(("efficiency","Efficiency — import the reference calibration (.CAL / .EFT / .txt / .csv)"))
             except Exception as exc:out.append(("efficiency","Efficiency — "+str(exc)))
         if self.workflow in ("summing","both"):
             if self.summing_source=="ctf" and not self.certificate_rows:out.append(("ctf","Certificate — open the Genie certificate (.CTF)"))
             if self.summing_source=="nlb" and not self.library_rows and not self.nuclides.text().strip():
-                out.append(("nlb","Nuclide library — open the Genie library (.NLB) or type a nuclide list"))
+                out.append(("nlb","Nuclide library — open the Genie (.NLB) or GammaVision (.LIB) library or type a nuclide list"))
         return out
     def sync_nuclides(self):
         rows=self.certificate_rows if self.summing_source=="ctf" else self.library_rows
@@ -1041,9 +1047,9 @@ class MainWindow(QMainWindow):
         # ---- Welcome: choose calculation and summing input
         page,l=self._page("Welcome — Select Calculation Workflow")
         box=QGroupBox("A. Calculation Mode");bl=QVBoxLayout(box);bl.setSpacing(1);bl.setContentsMargins(12,10,12,8);group=QButtonGroup(box)
-        for value,title,desc in [("both","Complete Analysis — Efficiency Transfer + Coincidence Summing (Recommended)","Outputs transferred Sample .CAL and summing-corrected .NLB or .CTF."),
-                                 ("transfer","Efficiency Transfer Only","Computes F_ε(E) = ε_sample / ε_standard and exports transferred Sample .CAL."),
-                                 ("summing","True Coincidence Summing Only","Computes cascade summing factors C and exports corrected .NLB or .CTF.")]:
+        for value,title,desc in [("both","Complete Analysis — Efficiency Transfer + Coincidence Summing (Recommended)","Outputs transferred Sample .CAL / .EFT and summing-corrected .NLB / .LIB or .CTF."),
+                                 ("transfer","Efficiency Transfer Only","Computes F_ε(E) = ε_sample / ε_standard and exports transferred Sample .CAL / .EFT."),
+                                 ("summing","True Coincidence Summing Only","Computes cascade summing factors C and exports corrected .NLB / .LIB or .CTF.")]:
             radio=PaintedRadio(title)
             group.addButton(radio);bl.addWidget(radio);self._workflow_radios[value]=radio
             radio.toggled.connect(lambda checked,v=value:checked and self.set_workflow(workflow=v))
@@ -1051,8 +1057,8 @@ class MainWindow(QMainWindow):
             note.setStyleSheet("color:#59677a;font-size:9pt;background:transparent;margin-left:26px;margin-bottom:5px;");bl.addWidget(note)
         bl.addStretch(1)
         self._source_box=QGroupBox("B. Coincidence Summing Target File");sl=QVBoxLayout(self._source_box);sl.setSpacing(1);sl.setContentsMargins(12,10,12,8);group2=QButtonGroup(self._source_box)
-        for value,title,desc in [("nlb","Nuclide Library (.NLB) — Default for Sample Analysis","Updates gamma abundances (P_corr = P / C). Uncomputed lines (*) are preserved unchanged."),
-                                 ("ctf","Certificate File (.CTF) — For Calibration Certificates","Updates certificate emission rates (R_corr = R / C).")]:
+        for value,title,desc in [("nlb","Nuclide Library (Genie .NLB / GammaVision .LIB) — Default for Sample Analysis","Updates gamma abundances (P_corr = P / C). Uncomputed lines (*) are preserved unchanged."),
+                                 ("ctf","Genie Certificate File (.CTF) — For Calibration Certificates","Updates certificate emission rates (R_corr = R / C).")]:
             radio=PaintedRadio(title)
             group2.addButton(radio);sl.addWidget(radio);self._source_radios[value]=radio
             radio.toggled.connect(lambda checked,v=value:checked and self.set_workflow(summing_source=v))
@@ -1105,13 +1111,13 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(page,"Source")
         # ---- Efficiency
         page,l=self._page("Efficiency Transfer")
-        l.addWidget(self._step_banner("efficiency","Reference efficiency calibration (.CAL)",input_req="Data\\Calibration\\*.CAL (0 &lt; ε &le; 1)"))
+        l.addWidget(self._step_banner("efficiency","Reference efficiency calibration (.CAL / .EFT)",input_req="Data\\Calibration\\*.CAL, *.EFT, *.txt, *.csv (0 &lt; ε &le; 1)"))
         controls=QHBoxLayout()
-        load=QPushButton("① Import Standard Efficiency (.CAL)…");load.setStyleSheet("font-weight:600;background:#2563eb;color:#ffffff;border:1px solid #1d4ed8;padding:6px 14px;")
+        load=QPushButton("① Import Standard Efficiency (.CAL / .EFT / CSV)…");load.setStyleSheet("font-weight:600;background:#2563eb;color:#ffffff;border:1px solid #1d4ed8;padding:6px 14px;")
         load.clicked.connect(self.import_calibration)
         transfer=QPushButton("▶ Check Transfer Only");transfer.clicked.connect(partial(self.calculate,"transfer"))
-        export=QPushButton("💾 Export Sample Efficiency (.CAL)…");export.setStyleSheet("font-weight:600;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;");export.clicked.connect(self.export_calibration)
-        self.btn_export_sum_on_eff=QPushButton("💾 Export Corrected Library (.NLB)…");self.btn_export_sum_on_eff.setStyleSheet("font-weight:600;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;");self.btn_export_sum_on_eff.clicked.connect(lambda:self.export_genie(self.summing_source))
+        export=QPushButton("💾 Export Sample Efficiency (.CAL / .EFT)…");export.setStyleSheet("font-weight:600;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;");export.clicked.connect(self.export_calibration)
+        self.btn_export_sum_on_eff=QPushButton("💾 Export Corrected Library (.NLB / .LIB)…");self.btn_export_sum_on_eff.setStyleSheet("font-weight:600;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;");self.btn_export_sum_on_eff.clicked.connect(lambda:self.export_genie(self.summing_source))
         for b in (load,transfer,export,self.btn_export_sum_on_eff):controls.addWidget(b)
         controls.addStretch()
         l.addLayout(controls)
@@ -1136,28 +1142,28 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(page,"Efficiency")
         # ---- Coincidence summing: Certificate or Library (only the chosen one is shown)
         for kind,title in [("ctf","Certificate"),("nlb","Library")]:
-            page,l=self._page("True Coincidence Summing — "+("Certificate (.CTF)" if kind=="ctf" else "Nuclide Library (.NLB)"))
-            need="Data\\Certificates\\*.CTF" if kind=="ctf" else "Data\\NuclideLibrary\\*.NLB"
-            l.addWidget(self._step_banner(kind,"Coincidence summing — "+("Certificate (.CTF)" if kind=="ctf" else "Nuclide library (.NLB)"),input_req=need))
+            page,l=self._page("True Coincidence Summing — "+("Genie Certificate (.CTF)" if kind=="ctf" else "Nuclide Library (Genie .NLB / GammaVision .LIB)"))
+            need="Data\\Certificates\\*.CTF (Genie)" if kind=="ctf" else "Data\\NuclideLibrary\\*.NLB (Genie), *.LIB (GammaVision)"
+            l.addWidget(self._step_banner(kind,"Coincidence summing — "+("Certificate (.CTF)" if kind=="ctf" else "Nuclide library (.NLB / .LIB)"),input_req=need))
             bar=QHBoxLayout()
-            load=QPushButton("① Open Genie "+("Certificate (.CTF)…" if kind=="ctf" else "Library (.NLB)…"))
+            load=QPushButton("① Open "+("Genie Certificate (.CTF)…" if kind=="ctf" else "Library (.NLB / GammaVision .LIB)…"))
             load.setStyleSheet("font-weight:600;background:#2563eb;color:#ffffff;border:1px solid #1d4ed8;padding:6px 14px;")
             load.clicked.connect(partial(self.import_genie,kind))
             process=QPushButton("▶ Check Summing Only");process.clicked.connect(partial(self.process_genie,kind))
-            export=QPushButton("💾 Export Corrected "+("Certificate (.CTF)…" if kind=="ctf" else "Library (.NLB)…"))
+            export=QPushButton("💾 Export Corrected "+("Certificate (.CTF)…" if kind=="ctf" else "Library (.NLB / .LIB)…"))
             export.setStyleSheet("font-weight:600;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;")
             export.clicked.connect(partial(self.export_genie,kind))
-            export_cal=QPushButton("💾 Export Sample Efficiency (.CAL)…")
+            export_cal=QPushButton("💾 Export Sample Efficiency (.CAL / .EFT)…")
             export_cal.setStyleSheet("font-weight:600;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;")
             export_cal.clicked.connect(self.export_calibration);self.btn_export_cal_on_sum[kind]=export_cal
-            switch=QPushButton("⇄ Switch to "+("Nuclide Library (.NLB)" if kind=="ctf" else "Certificate (.CTF)"))
+            switch=QPushButton("⇄ Switch to "+("Nuclide Library (.NLB / .LIB)" if kind=="ctf" else "Certificate (.CTF)"))
             other="nlb" if kind=="ctf" else "ctf"
             switch.clicked.connect(lambda checked=False,o=other:(self.set_workflow(summing_source=o),self.tabs.setCurrentIndex(self.tab_index(o))))
             for b in (load,process,export,export_cal):bar.addWidget(b)
             bar.addStretch();bar.addWidget(switch)
             l.addLayout(bar)
             if kind=="nlb":
-                self.nuclides=QLineEdit();self.nuclides.setPlaceholderText("e.g. Co-60, Cs-134, Eu-152, Ba-133, Y-88 (auto-populated from .NLB)");self.nuclides.textEdited.connect(self.changed)
+                self.nuclides=QLineEdit();self.nuclides.setPlaceholderText("e.g. Co-60, Cs-134, Eu-152, Ba-133, Y-88 (auto-populated from .NLB / .LIB)");self.nuclides.textEdited.connect(self.changed)
                 nbar=QHBoxLayout();nlbl=QLabel("<b>Nuclides:</b>");nlbl.setStyleSheet("background:transparent;");nbar.addWidget(nlbl);nbar.addWidget(self.nuclides,1);l.addLayout(nbar)
             table=QTableWidget(0,4)
             table.setAlternatingRowColors(True)
@@ -1270,15 +1276,20 @@ class MainWindow(QMainWindow):
         topics=[
             ("workflow","📖 Workflow Guide",
              "<h3>Step-by-Step Calculation Guide</h3>"
+             "<div style='background:#fffbeb;border:1px solid #fde68a;border-left:4px solid #d97706;border-radius:4px;padding:8px;margin:6px 0;'>"
+             "<b style='color:#92400e;'>⚠️ GammaVision Notice (Untested — Volunteers Welcome):</b><br>"
+             "<span style='color:#78350f;font-size:9pt;'>ORTEC GammaVision support (<code>.EFT</code> efficiency &amp; <code>.LIB</code> nuclide library) has been implemented exactly as EFFTRAN and MEFFTRAN do it, "
+             "but cannot be tested by the author because GammaVision software is not available. Volunteers are welcome to test and provide feedback.</span>"
+             "</div>"
              "<p><b>1. Welcome Tab — Choose Calculation Mode:</b></p>"
              "<ul>"
-             "<li><b>Complete Analysis (Recommended):</b> Performs both Efficiency Transfer (<i>Standard → Sample</i>) and True Coincidence Summing corrections in one run. Produces the transferred Sample <code>.CAL</code> and the summing-corrected Genie Nuclide Library (<code>.NLB</code>) or Certificate (<code>.CTF</code>).</li>"
-             "<li><b>Efficiency Transfer Only:</b> Computes transfer factors <i>F<sub>ε</sub>(E) = ε<sub>sample</sub>(E) / ε<sub>standard</sub>(E)</i> and exports the Sample <code>.CAL</code>.</li>"
+             "<li><b>Complete Analysis (Recommended):</b> Performs both Efficiency Transfer (<i>Standard → Sample</i>) and True Coincidence Summing corrections in one run. Produces the transferred Sample <code>.CAL</code> (Genie 2000) or <code>.EFT</code> (GammaVision) and the summing-corrected Nuclide Library (<code>.NLB</code> / <code>.LIB</code>) or Genie Certificate (<code>.CTF</code>).</li>"
+             "<li><b>Efficiency Transfer Only:</b> Computes transfer factors <i>F<sub>ε</sub>(E) = ε<sub>sample</sub>(E) / ε<sub>standard</sub>(E)</i> and exports the Sample <code>.CAL</code> or <code>.EFT</code>.</li>"
              "<li><b>True Coincidence Summing Only:</b> Computes cascade summing factors <i>C</i> (where <i>A<sub>corr</sub> = C · A</i>) for the Sample geometry without requiring a reference calibration curve.</li>"
              "</ul>"
              "<p><b>2. Detector Tab:</b> Load your detector model (<code>Data/Detector/*.txt</code>) or enter crystal, dead-layer, window, and housing dimensions in mm. The live axial cross-section updates in real time with all quotes.</p>"
              "<p><b>3. Source Tab:</b> Load or edit the <b>Standard</b> (reference calibration geometry) and <b>Sample</b> (measured sample geometry). Enter the apparent <b>Source density [g/cm³]</b> directly in the Source tab (auto-filled when selecting a material), or click <b>✏️ Edit</b> next to any material to define a new chemical composition.</p>"
-             "<p><b>4. Efficiency (.CAL) &amp; Library (.NLB) / Certificate (.CTF) Tabs:</b> Import your Genie 2000 reference files, run the calculation, and export the corrected Genie files.</p>"),
+             "<p><b>4. Efficiency (.CAL / .EFT) &amp; Library (.NLB / .LIB) / Certificate (.CTF) Tabs:</b> Import your Genie 2000 (<code>.CAL</code> / <code>.NLB</code> / <code>.CTF</code>) or GammaVision (<code>.EFT</code> / <code>.LIB</code>) reference files, run the calculation, and export the corrected files. Every exported file explicitly displays whether it targets <b>Genie 2000</b> or <b>GammaVision</b>.</p>"),
             ("materials","🧪 Materials & Density (XCOM)",
              "<h3>Material Composition &amp; Bulk Density Guide</h3>"
              "<p>Self-attenuation in gamma-ray spectrometry depends on both the <b>chemical composition</b> (mass attenuation coefficient <i>μ/ρ</i>) and the <b>bulk density</b> <i>ρ</i> [g/cm³] of the sample matrix (<i>μ = (μ/ρ) · ρ</i>).</p>"
@@ -1290,19 +1301,25 @@ class MainWindow(QMainWindow):
              "</ul>"),
             ("cli","💻 CLI & Batch Calculations",
              "<h3>Command-Line Interface (CLI) &amp; Batch Runner</h3>"
-             "<p>Every operation available in the GUI can be executed directly from the command line or automated in batch scripts:</p>"
-             "<p><b>1. Single Calculation with Inline Overrides (Height, Material, Density, Direct Outputs):</b></p>"
+             "<p>Every operation available in the GUI can be executed directly from the command line or automated in batch scripts (supporting both <b>Genie 2000</b> <code>.CAL</code>/<code>.NLB</code>/<code>.CTF</code> and <b>GammaVision</b> <code>.EFT</code>/<code>.LIB</code>):</p>"
+             "<p><b>1a. Genie 2000 Single Calculation with Inline Overrides:</b></p>"
              "<pre style='background:#f1f5f9;padding:8px;border-radius:4px;'>"
              "effsuite cylinder --detector High-energy --standard Solution --sample Water \\\n"
              "  --sample-height 33.4 --sample-material Glucose --sample-density 1.346 \\\n"
              "  --calibration TF400_268_2025.CAL --library NUTECH.NLB \\\n"
              "  --output-cal Sample_207724.CAL --output-nlb Sample_207724.NLB --plot-geometry"
              "</pre>"
+             "<p><b>1b. GammaVision Single Calculation (<code>.EFT</code> + <code>.LIB</code>, auto-detected or <code>--software gammavision</code>):</b></p>"
+             "<pre style='background:#f1f5f9;padding:8px;border-radius:4px;'>"
+             "effsuite cylinder --detector High-energy --standard Solution --sample Water \\\n"
+             "  --calibration EFFTRAN.EFT --library EFFTRAN.Lib \\\n"
+             "  --output-cal Sample_transferred.EFT --output-nlb Sample_corrected.LIB"
+             "</pre>"
              "<p><b>2. Batch Processing from a CSV or JSON Table:</b></p>"
              "<pre style='background:#f1f5f9;padding:8px;border-radius:4px;'>"
              "# Generate a ready-to-fill CSV template:\n"
              "effsuite batch --template my_samples.csv\n\n"
-             "# Run all samples in the CSV and export batch_summary.csv + all .CAL/.NLB files:\n"
+             "# Run all samples in the CSV and export batch_summary.csv + all .CAL/.EFT and .NLB/.LIB files:\n"
              "effsuite batch my_samples.csv --out BatchResults_2026 --plot-geometry"
              "</pre>"
              "<p><b>3. Standalone Geometry Diagram Export (PNG / PDF / SVG):</b></p>"
@@ -1316,6 +1333,11 @@ class MainWindow(QMainWindow):
              "<div style='background:#fef2f2;border:1px solid #fecaca;border-left:4px solid #dc2626;border-radius:4px;padding:8px;margin:8px 0;'>"
              "<b style='color:#991b1b;'>Disclaimer:</b><br>"
              "<span style='color:#7f1d1d;font-size:9pt;'>Provided strictly on an AS-IS basis. G. Lutter accepts NO responsibility or liability under any circumstances for incorrect calculations, inaccurate analytical results, or damages resulting from software use. Users must independently verify all results.</span>"
+             "</div>"
+             "<div style='background:#fffbeb;border:1px solid #fde68a;border-left:4px solid #d97706;border-radius:4px;padding:8px;margin:8px 0;'>"
+             "<b style='color:#92400e;'>GammaVision Support (v0.1.4 — Untested, Volunteers Welcome):</b><br>"
+             "<span style='color:#78350f;font-size:9pt;'>GammaVision support (<code>.EFT</code> efficiency &amp; <code>.LIB</code> nuclide library) has been implemented as EFFTRAN is doing it, "
+             "but I cannot test it because I do not have the software. Volunteers are welcome to test and provide feedback.</span>"
              "</div>"
              "<p><b>Underlying Physics Engines:</b> Built on <b>EFFTRAN (v4.9, 2026)</b>, <b>MEFFTRAN (v1.8, 2026)</b>, and <b>WEFFTRAN (2018)</b> by Tim Vidmar (<a href='https://efftran.github.io/'>https://efftran.github.io/</a>), integrated with NIST XCOM photon cross-sections.</p>"
              "<p><b>Features:</b> Simultaneous true coincidence summing calculation in one pass across all nuclides in the library, multi-process parallel orchestration, and spatial quadrature integration for well detectors.</p>"
@@ -1435,10 +1457,10 @@ class MainWindow(QMainWindow):
                 self.efficiency.setItem(index,col,_num_item(str(float(row[key])),editable=True))
         self.efficiency.blockSignals(False)
     def import_calibration(self,*unused):
-        filename,_=QFileDialog.getOpenFileName(self,"Import standard efficiency",str(documents("Data/Calibration")),"Calibration (*.CAL *.cal *.txt *.csv);;Genie calibration (*.CAL *.cal);;Text calibration (*.txt *.csv);;All files (*)")
+        filename,_=QFileDialog.getOpenFileName(self,"Import standard efficiency",str(documents("Data/Calibration")),"Calibration (*.CAL *.cal *.EFT *.eft *.txt *.csv);;Genie calibration (*.CAL *.cal);;GammaVision efficiency (*.EFT *.eft);;Text calibration (*.txt *.csv);;All files (*)")
         if not filename:return
         def accepted(rows):
-            self.set_calibration(rows);self.calibration_template=filename if Path(filename).suffix.lower()==".cal" else None;self.changed();self.draw_chart()
+            self.set_calibration(rows);self.calibration_template=filename if Path(filename).suffix.lower() in {".cal",".eft"} else None;self.changed();self.draw_chart()
             self.append_log(f"Imported calibration from {Path(filename).name} ({len(rows)} energy points)")
         self.start_task(lambda log:calibration_rows(filename),accepted)
     def start_task(self,operation,callback,cancellable=False):
@@ -1519,27 +1541,35 @@ class MainWindow(QMainWindow):
         bl=QVBoxLayout(banner);bl.setSpacing(4)
         t=QLabel("<b>✔ Complete Analysis Finished Successfully</b>")
         t.setStyleSheet("font-size:12pt;color:#065f46;border:none;background:transparent;")
-        d=QLabel("Both required Genie 2000 output files have been calculated and are ready for export:")
+        d=QLabel("Both required output files (Genie 2000 / GammaVision) have been calculated and are ready for export:")
         d.setStyleSheet("color:#047857;font-size:9.5pt;border:none;background:transparent;")
         bl.addWidget(t);bl.addWidget(d)
         vl.addWidget(banner)
-        box=QGroupBox("Available Genie 2000 Exports")
+        box=QGroupBox("Available Exports")
         fl=QVBoxLayout(box);fl.setSpacing(10)
+        from .software import label as sw_label
+        cal_is_gv=Path(self.calibration_template or "").suffix.lower()==".eft" or os.environ.get("EFFSUITE_SOFTWARE","").strip().lower()=="gammavision"
+        cal_sw="GammaVision" if cal_is_gv else "Genie 2000"
+        cal_ext=".EFT" if cal_is_gv else ".CAL"
         row1=QHBoxLayout()
-        info1=QLabel("<b>1. Corrected Sample Efficiency (.CAL)</b><br><span style='color:#475569;font-size:9pt;'>Transferred efficiency calibration for the sample geometry</span>")
+        info1=QLabel(f"<b>1. Corrected Sample Efficiency ({cal_sw} {cal_ext})</b><br><span style='color:#475569;font-size:9pt;'>Transferred efficiency calibration for the sample geometry</span>")
         info1.setStyleSheet("background:transparent;")
-        btn1=QPushButton("💾 Export Sample .CAL…")
+        btn1=QPushButton(f"💾 Export Sample {cal_ext} ({cal_sw})…")
         btn1.setStyleSheet("font-weight:600;background:#2563eb;color:#ffffff;border:1px solid #1d4ed8;padding:6px 14px;border-radius:4px;")
         btn1.clicked.connect(self.export_calibration)
         row1.addWidget(info1,1);row1.addWidget(btn1)
         fl.addLayout(row1)
         sep=QFrame();sep.setFrameShape(QFrame.Shape.HLine);sep.setStyleSheet("color:#e2e8f0;");fl.addWidget(sep)
         row2=QHBoxLayout()
-        kind_name="Nuclide Library (.NLB)" if self.summing_source=="nlb" else "Certificate (.CTF)"
+        sum_src=self.library_file if self.summing_source=="nlb" else self.certificate_file
+        lib_is_gv=(self.summing_source=="nlb" and (Path(sum_src or "").suffix.lower()==".lib" or os.environ.get("EFFSUITE_SOFTWARE","").strip().lower()=="gammavision"))
+        lib_sw="GammaVision" if lib_is_gv else "Genie 2000"
+        lib_ext=".LIB" if lib_is_gv else (".NLB" if self.summing_source=="nlb" else ".CTF")
+        kind_name=f"Nuclide Library ({lib_sw} {lib_ext})" if self.summing_source=="nlb" else "Certificate (Genie 2000 .CTF)"
         desc_sum="Yields P / C corrected for cascade coincidence summing" if self.summing_source=="nlb" else "Emission rates R / C corrected for cascade coincidence summing"
         info2=QLabel(f"<b>2. Corrected {kind_name}</b><br><span style='color:#475569;font-size:9pt;'>{desc_sum}</span>")
         info2.setStyleSheet("background:transparent;")
-        btn2=QPushButton(f"💾 Export Corrected {self.summing_source.upper()}…")
+        btn2=QPushButton(f"💾 Export Corrected {lib_ext} ({lib_sw})…")
         btn2.setStyleSheet("font-weight:600;background:#2563eb;color:#ffffff;border:1px solid #1d4ed8;padding:6px 14px;border-radius:4px;")
         btn2.clicked.connect(lambda:self.export_genie(self.summing_source))
         row2.addWidget(info2,1);row2.addWidget(btn2)
@@ -1574,9 +1604,9 @@ class MainWindow(QMainWindow):
         folder="NuclideLibrary" if kind=="nlb" else "Certificates"
         camfiles = Path("C:/GENIE2K/CAMFILES")
         default_dir = camfiles if (kind == "nlb" and camfiles.is_dir()) else documents("Data/" + folder)
-        filename,_=QFileDialog.getOpenFileName(self,"Open Genie file",str(default_dir),"Genie files (*."+kind.upper()+" *."+kind+")")
+        filename,_=QFileDialog.getOpenFileName(self,"Open Genie / GammaVision file",str(default_dir),"Genie / GammaVision files (*."+kind.upper()+" *."+kind+(" *.LIB *.lib" if kind=="nlb" else "")+")")
         if not filename:return
-        from .genie import read_library,read_certificate
+        from .software import read_library,read_certificate
         def accepted(rows):
             if kind=="nlb":self.library_file=filename;self.library_rows=rows
             else:self.certificate_file=filename;self.certificate_rows=rows
@@ -1587,7 +1617,7 @@ class MainWindow(QMainWindow):
         if rows:self.nuclides.setText(", ".join(dict.fromkeys(str(r["nuclide"]) for r in rows)))
         self.calculate("summing")
     def populate_summing(self):
-        from .genie import match_factor
+        from .software import match_factor
         for table,records in [(self.library_table,self.library_rows),(self.certificate_table,self.certificate_rows)]:
             rows=records if records else ([dict(nuclide=r["nuclide"],energy=r["energy_keV"]) for r in self.summing_result["summing"]] if self.summing_result else [])
             table.setRowCount(len(rows))
@@ -1609,16 +1639,20 @@ class MainWindow(QMainWindow):
         if not self.transfer_result:self.error("Calculate efficiency transfer first.");return
         default_dir=documents("Export");default_dir.mkdir(parents=True,exist_ok=True)
         stem=Path(self.calibration_template).stem if self.calibration_template else "sample_efficiency"
-        default_path=str(default_dir/(stem+"_sample.CAL"))
-        filename,selected=QFileDialog.getSaveFileName(self,"Export sample efficiency calibration",default_path,"Genie calibration (*.CAL);;CSV (*.csv);;All files (*.*)")
+        is_gv=Path(self.calibration_template or "").suffix.lower()==".eft" or os.environ.get("EFFSUITE_SOFTWARE","").strip().lower()=="gammavision"
+        default_path=str(default_dir/(stem+"_sample"+(".EFT" if is_gv else ".CAL")))
+        cal_filters=("GammaVision efficiency (*.EFT);;Genie 2000 calibration (*.CAL);;CSV (*.csv);;All files (*.*)"
+                     if is_gv else
+                     "Genie 2000 calibration (*.CAL);;GammaVision efficiency (*.EFT);;CSV (*.csv);;All files (*.*)")
+        filename,selected=QFileDialog.getSaveFileName(self,"Export sample efficiency calibration ("+("GammaVision .EFT" if is_gv else "Genie 2000 .CAL")+")",default_path,cal_filters)
         if not filename:return
-        if Path(filename).suffix.lower()==".cal":
+        if Path(filename).suffix.lower() in {".cal",".eft"}:
             source=self.calibration_template
             if not source:
-                source,_=QFileDialog.getOpenFileName(self,"Choose a CAL template with the same point count",str(documents("Data/Calibration")),"Genie calibration (*.CAL *.cal)")
+                source,_=QFileDialog.getOpenFileName(self,"Choose a CAL/EFT template with the same point count",str(documents("Data/Calibration")),"Genie 2000 calibration (*.CAL *.cal);;GammaVision efficiency (*.EFT *.eft)")
             if not source:return
-            from .genie import export_copy
-            self.start_task(lambda log:export_copy(source,filename,self.transfer_result,"cal"),lambda r:self.status.setText(f"Genie CAL exported to {Path(filename).name} successfully"))
+            from .software import export_copy,label
+            self.start_task(lambda log:export_copy(source,filename,self.transfer_result,"cal"),lambda r:self.status.setText(f"{label(source)} calibration ({Path(filename).suffix.upper()}) exported to {Path(filename).name} successfully"))
         else:
             import csv
             with open(filename,"w",newline="") as f:
@@ -1627,14 +1661,20 @@ class MainWindow(QMainWindow):
             self.status.setText("Exported "+filename)
     def export_genie(self,kind,*unused):
         source=self.library_file if kind=="nlb" else self.certificate_file
-        if not source or not self.summing_result:self.error("Open the source Genie file and calculate its nuclides first.");return
+        if not source or not self.summing_result:self.error("Open the source Genie/GammaVision file and calculate its nuclides first.");return
         default_dir=documents("Export");default_dir.mkdir(parents=True,exist_ok=True)
         stem=Path(source).stem
-        default_path=str(default_dir/(stem+"_corrected."+kind.upper()))
-        filename,_=QFileDialog.getSaveFileName(self,f"Export corrected Genie {kind.upper()}",default_path,f"Genie (*.{kind.upper()});;All files (*.*)")
+        is_gv=(kind=="nlb" and (Path(source).suffix.lower()==".lib" or os.environ.get("EFFSUITE_SOFTWARE","").strip().lower()=="gammavision"))
+        ext=".LIB" if is_gv else "."+kind.upper()
+        sw="GammaVision" if is_gv else "Genie 2000"
+        default_path=str(default_dir/(stem+"_corrected"+ext))
+        lib_filters=(f"GammaVision Library (*.LIB);;Genie 2000 (*.{kind.upper()});;All files (*.*)"
+                     if is_gv else
+                     (f"Genie 2000 Library (*.NLB);;GammaVision Library (*.LIB);;All files (*.*)" if kind=="nlb" else "Genie 2000 Certificate (*.CTF);;All files (*.*)"))
+        filename,_=QFileDialog.getSaveFileName(self,f"Export corrected {sw} {ext}",default_path,lib_filters)
         if filename:
-            from .genie import export_copy
-            self.start_task(lambda log:export_copy(source,filename,self.summing_result,kind),lambda r:self.status.setText(f"Genie {kind.upper()} exported to {Path(filename).name} successfully"))
+            from .software import export_copy,label
+            self.start_task(lambda log:export_copy(source,filename,self.summing_result,kind),lambda r:self.status.setText(f"{label(source)} {Path(filename).suffix.upper().lstrip('.')} exported to {Path(filename).name} successfully"))
     def open_results(self,*unused):
         from PySide6.QtGui import QDesktopServices
         from PySide6.QtCore import QUrl

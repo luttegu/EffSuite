@@ -1,7 +1,7 @@
 # Technical Summary of Enhancements, Fixes, and Architectural Changes in EffSuite
 
 **Compared to the Original EFFTRAN (v4.8 & v4.9), MEFFTRAN (v1.7 & v1.8), and WEFFTRAN Distributions, and Previous EffSuite Releases**  
-*Document Version: 1.1 — EffSuite v0.1.3 (November 2026)*  
+*Document Version: 1.2 — EffSuite v0.1.4 (November 2026)*  
 *Author: EffSuite Development Team (built by ChatGPT & Gemini under the supervision of G. Lutter)*  
 *Target Audience: Original Author, Maintainers, and Scientific Evaluators of EFFTRAN / MEFFTRAN / WEFFTRAN*  
 
@@ -11,7 +11,7 @@
 
 ## Executive Summary
 
-**EffSuite (v0.1.3)** is an open-source modernization and cross-platform reimplementation of the gamma-spectrometry efficiency transfer and true coincidence summing framework originally established by **EFFTRAN** (v4.9, cylindrical geometries), **MEFFTRAN** (v1.8, Marinelli beaker geometries), and **WEFFTRAN** (well-type detectors).
+**EffSuite (v0.1.4)** is an open-source modernization and cross-platform reimplementation of the gamma-spectrometry efficiency transfer and true coincidence summing framework originally established by **EFFTRAN** (v4.9, cylindrical geometries), **MEFFTRAN** (v1.8, Marinelli beaker geometries), and **WEFFTRAN** (well-type detectors).
 
 The objective of this work was **not** to alter the validated core physical models of the original Fortran engines, but rather to:
 1. Preserve 100% numerical agreement with validated EFFTRAN/MEFFTRAN reference cases while fixing upstream numerical bugs discovered in EFFTRAN 4.9 and MEFFTRAN 1.8.
@@ -275,15 +275,21 @@ During high-statistics Monte Carlo integration in MEFFTRAN and cylindrical EFFTR
 
 ---
 
+### 4.1 GammaVision (v0.1.4, untested)
+
+EFFTRAN/MEFFTRAN support GammaVision through `gv.f` (library `EFFTRAN.Lib`, report `gv.txt`) and the `EFFTRAN.EFT` efficiency file.
+EffSuite 0.1.4 re-implements both in `gammavision.py` (`.LIB` and `.EFT`), dispatched by `software.py`. Difference from `gv.f`: an ambiguous
+line match leaves the yield unchanged instead of taking the nearest line. **GammaVision support is untested.** It has been implemented as EFFTRAN is doing it, but I cannot test it because I do not have the software. Volunteers are welcome to test it and provide feedback.
+
 ## 5. User Interface & Visualization
 
 ### 5.1 Guided Wizard Workflow
 - Guided 5-step workflow matching routine laboratory procedures:
-  1. **Welcome**: Calculation mode selection (Complete Analysis, Transfer Only, Summing Only) and target file selection (Nuclide Library `.NLB` or Calibration Certificate `.CTF`).
+  1. **Welcome**: Calculation mode selection (Complete Analysis, Transfer Only, Summing Only) and target file selection (Nuclide Library `.NLB` / `.LIB` or Genie Calibration Certificate `.CTF`).
   2. **Detector**: Detector dimensions, dead layer, core hole, endcap, and crystal materials.
   3. **Source**: Standard geometry (water equivalent) vs. Sample geometry (actual container, matrix, density, filling height).
-  4. **Efficiency**: Reference calibration import (`.CAL`, `.txt`, `.csv`), transferred efficiency curve calculation, and logarithmic plot.
-  5. **Library / Certificate**: Nuclide selection, cascade correction factor computation, and export.
+  4. **Efficiency**: Reference calibration import (Genie `.CAL`, GammaVision `.EFT`, `.txt`, `.csv`), transferred efficiency curve calculation, and logarithmic plot.
+  5. **Library / Certificate**: Nuclide selection, cascade correction factor computation, and clearly labeled Genie 2000 / GammaVision export.
 
 ### 5.2 Interactive CAD-Style Live Geometry Preview (`geometry_view.py`)
 - Real-time CAD-quality cross-section rendering for cylindrical, Marinelli beaker, and well geometries.
@@ -346,7 +352,7 @@ effsuite material create --name Glucose_1346 --density 1.346 --formula C6H12O6=1
 
 ## 8. Summary Table of Differences
 
-| Feature / Component | Original EFFTRAN (4.8/4.9) / MEFFTRAN (1.7/1.8) / WEFFTRAN | EffSuite v0.1.3 Modernization |
+| Feature / Component | Original EFFTRAN (4.8/4.9) / MEFFTRAN (1.7/1.8) / WEFFTRAN | EffSuite v0.1.4 Modernization |
 | :--- | :--- | :--- |
 | **Runtime Environment** | 32-bit Microsoft Excel + VBA Macros | Cross-platform Python 3.10+ & compiled native engines |
 | **Supported Operating Systems** | Windows only (legacy 32-bit execution) | Windows 10/11 (64-bit), Linux (x86_64), macOS |
@@ -357,6 +363,7 @@ effsuite material create --name Glucose_1346 --density 1.346 --formula C6H12O6=1
 | **Radionuclide Decay Data** | Dispersed files; `PA-234` `41 43` typo in `kordaten.txt` | Unified 260+ radionuclide repository in `assets/common/` with `PA-234`, `NB-94`, and `W-187` included |
 | **Material Attenuation Tables** | Static pre-computed tables | Dynamic on-the-fly generation via integrated NIST XCOM |
 | **Genie 2000 Integration** | Overwrites input files in place | Non-destructive export with immediate CAM verification |
+| **GammaVision Integration** | `gv.f` (`EFFTRAN.Lib` in-place overwrite + `gv.txt`) & Excel macro `.EFT` | Pure-Python non-destructive `.LIB` & `.EFT` reader/writer with round-trip verification and `<name>_gv.txt` report (*untested — volunteers welcome*) |
 | **Geometry Visualization** | None or static bitmap sketches | Interactive real-time CAD cross-section with dimension & density quotes |
 | **Batch Capabilities** | Manual workbook repetition | High-throughput CLI (`effsuite batch`) with CSV matrices |
 | **Display Support** | Fixed low-res dialogs | Dynamic $1920 \times 1080$ layout with resizable `QSplitter` log |

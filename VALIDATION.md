@@ -1,4 +1,4 @@
-# Validation Evidence — EffSuite 0.1.3 (November 2026)
+# Validation Evidence — EffSuite 0.1.4 (November 2026)
 
 ## Executed Application Checks
 
@@ -84,6 +84,12 @@ Earlier parallel reference and geometry findings remain under `examples`:
 groups/33 continuation records, 2,000 interior ray checks and 4,000 independent
 geometry comparisons. Their historical scheduling/source results are not
 claims about every case under the current Windows build.
+
+## GammaVision (0.1.4)
+
+The GammaVision `.LIB` and `.EFT` backend was only checked against the sample `EFFTRAN.Lib` and `EFFTRAN.EFT`
+shipped with EFFTRAN 4.9 (read-back of 55 library lines, write/re-read round trips). It has **not** been validated
+against real GammaVision files or the GammaVision software.
 
 ## Pending release checks
 

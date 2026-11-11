@@ -20,8 +20,10 @@ class ClassicGuiTests(unittest.TestCase):
     def setUpClass(cls):cls.app=QApplication.instance() or QApplication([])
     def setUp(self):
         self.temporary=tempfile.TemporaryDirectory();self.root=Path(self.temporary.name)
+        self.disclaimer_patch=patch.object(MainWindow,"check_first_run_disclaimer",lambda window:None);self.disclaimer_patch.start()
         self.window=MainWindow();self.errors=[];self.window.error=lambda error:self.errors.append(str(error))
     def tearDown(self):
+        self.addCleanup(self.disclaimer_patch.stop)
         if self.window.thread is not None:
             self.window.cancel_event.set();deadline=time.monotonic()+15
             while self.window.thread is not None and time.monotonic()<deadline:QTest.qWait(10);time.sleep(.002)

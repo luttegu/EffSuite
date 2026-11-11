@@ -1,15 +1,16 @@
 # EffSuite — Gamma Spectrometry Efficiency Transfer & Summing Suite
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-0.1.3-yellow.svg" alt="Version 0.1.3" />
+  <img src="https://img.shields.io/badge/Version-0.1.4-yellow.svg" alt="Version 0.1.4" />
   <img src="https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue.svg" alt="Python Version" />
   <img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011%20(x64)-0078D6.svg" alt="Windows Platform" />
   <img src="https://img.shields.io/badge/Genie%202000-CAM%20%7C%20CAL%20%7C%20NLB%20%7C%20CTF-8A2BE2.svg" alt="Genie 2000 Integration" />
+  <img src="https://img.shields.io/badge/GammaVision-EFT%20%7C%20LIB%20(Untested)-008080.svg" alt="GammaVision Integration (Untested)" />
   <img src="https://img.shields.io/badge/Physics%20Engines-EFFTRAN%204.9%20%7C%20MEFFTRAN%201.8%20%7C%20WEFFTRAN-2ea44f.svg" alt="Physics Engines" />
   <img src="https://img.shields.io/badge/License-GPL--3.0%20%2F%20Vidmar%20Attribution-orange.svg" alt="License" />
 </p>
 
-*EffSuite (v0.1.3) built by ChatGPT & Gemini under the supervision of G. Lutter.*
+*EffSuite (v0.1.4) built by ChatGPT & Gemini under the supervision of G. Lutter.*
 
 ---
 
@@ -18,15 +19,20 @@
 > **Provided strictly on an AS-IS basis. G. Lutter accepts NO responsibility or liability under any circumstances for incorrect calculations, inaccurate analytical results, or damages resulting from software use. Users must independently verify all results.**
 
 > [!IMPORTANT]
-> ### 📌 File Format & Spectrometry System Compatibility
-> **EffSuite strictly supports Canberra / Mirion file formats exclusively.**
-> Supported formats include:
-> - **`.CAL`**: Canberra Genie 2000 Efficiency Calibration Files
-> - **`.NLB`**: Canberra Genie 2000 Nuclide Library Files (Binary)
-> - **`.CTF`**: Canberra Genie 2000 Certificate / Source Files
-> - **`.CNF`**: Canberra Genie 2000 CAM Spectral Files
+> ### 📌 File Format & Spectrometry System Compatibility (Genie 2000 & GammaVision)
+> EffSuite clearly distinguishes **Canberra / Mirion Genie 2000** files from **ORTEC GammaVision** files by extension and explicit software labels in the GUI, CLI, and exported reports:
+> - **Canberra / Mirion Genie 2000**:
+>   - **`.CAL`**: Efficiency Calibration Files (imported & exported as `*_sample.CAL` / `*_corrected.CAL`)
+>   - **`.NLB`**: Nuclide Library Files (binary, exported as `*_corrected.NLB`)
+>   - **`.CTF`**: Certificate / Source Files (exported as `*_corrected.CTF`)
+>   - **`.CNF`**: CAM Spectral Files
+> - **ORTEC GammaVision** *(implemented as in EFFTRAN/MEFFTRAN — **untested**, volunteers welcome)*:
+>   - **`.EFT`**: Efficiency Calibration Files (EFFTRAN 11-token & MEFFTRAN 5-token layouts; imported & exported as `*_sample.EFT` / `*_corrected.EFT`)
+>   - **`.LIB`**: Nuclide Library Files (128-byte direct-access binary records as in `gv.f`; exported as `*_corrected.LIB` alongside a `<name>_gv.txt` audit table)
 >
-> *Files from other gamma spectrometry manufacturers (such as ORTEC Maestro `.spc` / `.cal`, GammaVision, or InterWinner) are **NOT** supported.*
+> **Automatic & Manual Selection**: `.LIB` and `.EFT` automatically select the GammaVision backend; `.CAL`, `.NLB`, and `.CTF` select Genie 2000. You can also force the backend via the GUI **Software** selector, CLI `--software genie|gammavision`, or `EFFSUITE_SOFTWARE`.
+>
+> *Other vendor formats (such as ORTEC Maestro `.spc` / `.cal` or InterWinner) are **NOT** supported.*
 
 > [!CAUTION]
 > ### ⚠️ WEFFTRAN Qualification Notice (Untested / Experimental)
@@ -72,7 +78,10 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 1. **Native Fortran Physics Precision**: Executes verified Fortran numerical engines with updated double-precision numerical token sanitization and scientific format output.
 2. **Modern Desktop GUI (Qt6)**: Engineered with a dark GL-GUM Workbench theme, automatic 1080p/4K DPI scaling, live 2D CAD dimension schematics, interactive efficiency curves, and dedicated calculation activity logs.
 3. **High-Throughput Parallel Coincidence Summing**: Coincidence summing correction factors ($F_{corr}$) are computed in one go across all nuclides in the calibration or certificate library, leveraging multi-core parallelization (`workers = max(1, os.cpu_count() - 2)`).
-4. **Exclusively Canberra / Mirion Genie 2000 Integration**: Directly imports and updates `.CAL` efficiency calibrations, `.NLB` nuclide libraries, and `.CTF` certificate files. File selectors default directly to `C:\GENIE2K\CAMFILES`. *(Third-party vendor formats such as ORTEC are not supported).*
+4. **Canberra / Mirion Genie 2000 and ORTEC GammaVision Integration**: Directly imports and updates `.CAL` efficiency calibrations, `.NLB` nuclide libraries, and `.CTF` certificate files. File selectors default directly to `C:\GENIE2K\CAMFILES`. GammaVision `.LIB` libraries and `.EFT` efficiency files go through the pure-Python backend in `gammavision.py`.
+
+> [!IMPORTANT]
+> **GammaVision has been implemented as EFFTRAN is doing it, but I cannot test it because I do not have the software. Volunteers are welcome to test it and provide feedback.**
 5. **Integrated NIST XCOM Cross-Section Engine**: Built-in composition editor and automated NIST XCOM 3.1 calculation for photon attenuation cross-sections ($\mu/\rho$) across 60+ pre-configured gamma materials.
 6. **Headless Automation CLI**: Full command-line interface (`EffSuite_CLI.exe` or `python -m effsuite.app_cli`) enabling automated LIMS integration and batch recalculations.
 
@@ -115,8 +124,8 @@ The GUI follows the intuitive workflow of analytical gamma spectrometry:
 
 * **Detector Tab**: Configure crystal diameter, length, dead layers, core hole, endcap distance, and materials. Features a live 2D CAD schematic with real-time dimension callouts.
 * **Source Tab**: Define standard calibration source and unknown sample side by side (fill height, container wall/bottom, density, and matrix composition).
-* **Efficiency Tab**: Import experimental calibration points from Genie `.CAL` or CSV, compute transfer factors, and preview interactive log-log efficiency curves.
-* **Certificate / Library Tab**: Open `.NLB` or `.CTF` library files directly from `C:\GENIE2K\CAMFILES`, or input nuclides manually (e.g. `Co-60, Cs-134, Eu-152`). Calculates coincidence summing corrections in a single parallel pass.
+* **Efficiency Tab**: Import experimental calibration points from Genie 2000 `.CAL`, GammaVision `.EFT`, or CSV/text, compute transfer factors, preview interactive log-log efficiency curves, and export transferred `.CAL` (Genie 2000) or `.EFT` (GammaVision).
+* **Certificate / Library Tab**: Open Genie `.NLB` / `.CTF` files (from `C:\GENIE2K\CAMFILES`) or GammaVision `.LIB` libraries, or input nuclides manually (e.g. `Co-60, Cs-134, Eu-152`). Calculates coincidence summing corrections in a single parallel pass and exports clearly labeled Genie (`.NLB` / `.CTF`) or GammaVision (`.LIB` + `_gv.txt`) files.
 * **Material Tab**: Add or edit custom chemical formulas and densities. Calls the embedded NIST XCOM engine to generate photon cross-section attenuation files on the fly.
 * **Activity & Audit Log**: High-contrast console (`#38bdf8` cyan on dark background) reporting engine stages, ray-tracing counts, and convergence diagnostics in real time.
 
@@ -189,7 +198,8 @@ Detailed technical comparisons against the original codes are documented in [SCI
 | **Token Sanitization** | Failed on denormalized or empty tokens | Strict token sanitizer replacing noise $<10^{-15}$ with analytical floor |
 | **WEFFTRAN Spatial Patch** | Zero-volume integration defect on tall samples | Full spatial integration over cylinder and well volume, eliminating negative/near-singular factors |
 | **Ray-Tracing Boundary** | Critical ray boundary condition bugs in well cavity | Fixed Fortran boundary crossing in `path_fixed.f` |
-| **Genie 2000 Integration** | Manual text copy-paste | Automated CAM/CAL/NLB/CTF reading and safe writing with record verification |
+| **Genie 2000 Integration** | Manual text copy-paste / in-place COM overwrite | Non-destructive CAM `.CAL`/`.NLB`/`.CTF` reading and safe writing with round-trip verification |
+| **GammaVision Integration** | `gv.f` (`EFFTRAN.Lib` in-place overwrite + `gv.txt`) & Excel macro `.EFT` | Pure-Python non-destructive `.LIB` & `.EFT` reader/writer with round-trip verification and `<name>_gv.txt` report (*implemented as in EFFTRAN, untested — volunteers welcome*) |
 | **Materials Engine** | External Excel spreadsheet macros | Native Python parser + NIST XCOM 3.1 with automatic material library cache |
 
 ---
@@ -208,11 +218,13 @@ EffSuite/
 │   │   └── xcom/                   # NIST XCOM 3.1 photon attenuation engine
 │   ├── licensing/                  # Unrestricted community license verification
 │   ├── app_cli.py                  # Headless command-line interface
+│   ├── gammavision.py              # ORTEC GammaVision .LIB / .EFT pure-Python adapter
 │   ├── genie.py                    # Genie 2000 CAM/CAL/NLB/CTF engine adapter
 │   ├── geometry_view.py            # Matplotlib 2D CAD cross-section renderer
 │   ├── gui.py                      # Modern Qt6 desktop user interface
 │   ├── materials.py                # Material builder & XCOM wrapper
 │   ├── parallel_coincidence.py     # Multiprocessing coincidence summing engine
+│   ├── software.py                 # Genie 2000 / GammaVision backend dispatcher
 │   ├── spatial_summing.py          # Spatial cascade integration engine
 │   ├── suite.py                    # Shared calculation coordinator
 │   └── well_spatial.py             # WEFFTRAN 3D spatial integration

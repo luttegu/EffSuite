@@ -172,6 +172,22 @@ def render_report(result):
     esc=html.escape
     rows="".join("<tr>"+"".join(f"<td>{esc(str(row[k]))}</td>" for k in ["energy_keV","standard_efficiency","sample_efficiency","transfer_factor"])+"</tr>" for row in result["efficiency"])
     sums="".join("<tr>"+"".join(f"<td>{esc(str(row[k]))}</td>" for k in ["nuclide","energy_keV","activity_multiplier","status"])+"</tr>" for row in result["summing"])
+    exports_html=""
+    if result.get("genie_exports"):
+        exp_rows="".join(
+            f"<tr><td style='text-align:left'><b>{esc(str(info.get('software','Genie')))}</b></td>"
+            f"<td style='text-align:left'><code>{esc(str(info.get('file','')))}</code></td>"
+            f"<td><code>.{esc(str(info.get('format',k)).upper())}</code></td>"
+            f"<td>{esc(str(info.get('lines','')))}</td>"
+            f"<td>{'Yes' if info.get('roundtrip_verified') else 'No'}</td></tr>"
+            for k,info in result["genie_exports"].items() if isinstance(info,dict)
+        )
+        if exp_rows:
+            exports_html=(
+                "<h2>Exported Spectrometry Files (Genie 2000 / GammaVision)</h2>"
+                "<table><tr><th style='text-align:left'>Target Software</th><th style='text-align:left'>Exported File</th><th>Format</th><th>Lines / Points</th><th>Round-Trip Verified</th></tr>"
+                f"{exp_rows}</table>"
+            )
     graphic=""
     try:
         from matplotlib.figure import Figure
@@ -189,7 +205,7 @@ def render_report(result):
         axis.set_xlabel("Energy [keV]");axis.grid(True,which="both",alpha=.2)
         stream=io.StringIO();figure.savefig(stream,format="svg");text=stream.getvalue();graphic=text[text.index("<svg"):]
     except ImportError:pass
-    return f'''<!doctype html><html><meta charset="utf-8"><title>EffSuite result</title><style>body{{font:16px Georgia,serif;max-width:1100px;margin:40px auto;color:#182532}}table{{border-collapse:collapse;width:100%;margin:20px 0}}td,th{{border:1px solid #ccd3d9;padding:7px;text-align:right}}th{{background:#edf2f6}}.notice{{background:#e8f4fd;border-left:4px solid #2563eb;padding:14px}}svg{{max-width:100%;height:auto}}</style><h1>{esc(result['engine_name'])} — calculation result</h1><p class="notice">Beta build v{VERSION}. Experimental gamma spectrometry efficiency transfer and coincidence summing engine. Factors multiply activity; correction below one is permitted for summing-in.</p><p>Job: {esc(result['job_id'])}<br>Created: {esc(result['created'])}</p>{graphic}<h2>Efficiency transfer</h2><table><tr><th>E / keV</th><th>Standard efficiency</th><th>Sample efficiency</th><th>Transfer factor</th></tr>{rows}</table><h2>True coincidence summing</h2><table><tr><th>Nuclide</th><th>E / keV</th><th>Activity multiplier</th><th>Status</th></tr>{sums}</table><p>Original inputs, intermediate files and engine hashes are included with results.json. Legacy uncertainty percentages preserve the original transfer routine's assumptions; they are not a complete uncertainty budget.</p></html>'''
+    return f'''<!doctype html><html><meta charset="utf-8"><title>EffSuite result</title><style>body{{font:16px Georgia,serif;max-width:1100px;margin:40px auto;color:#182532}}table{{border-collapse:collapse;width:100%;margin:20px 0}}td,th{{border:1px solid #ccd3d9;padding:7px;text-align:right}}th{{background:#edf2f6}}.notice{{background:#e8f4fd;border-left:4px solid #2563eb;padding:14px}}svg{{max-width:100%;height:auto}}</style><h1>{esc(result['engine_name'])} — calculation result</h1><p class="notice">Beta build v{VERSION}. Experimental gamma spectrometry efficiency transfer and coincidence summing engine. Factors multiply activity; correction below one is permitted for summing-in.</p><p>Job: {esc(result['job_id'])}<br>Created: {esc(result['created'])}</p>{graphic}{exports_html}<h2>Efficiency transfer</h2><table><tr><th>E / keV</th><th>Standard efficiency</th><th>Sample efficiency</th><th>Transfer factor</th></tr>{rows}</table><h2>True coincidence summing</h2><table><tr><th>Nuclide</th><th>E / keV</th><th>Activity multiplier</th><th>Status</th></tr>{sums}</table><p>Original inputs, intermediate files and engine hashes are included with results.json. Legacy uncertainty percentages preserve the original transfer routine's assumptions; they are not a complete uncertainty budget.</p></html>'''
 
 
 def run_project(project,output:Path,*,cancel=None,progress=None):
@@ -268,7 +284,7 @@ def run_project(project,output:Path,*,cancel=None,progress=None):
                     for row in item["corrections"]:
                         raw_summing.append({"nuclide":item["nuclide"],"energy_keV":row["energy_kev"],
                             "activity_multiplier":row["factor"],"status":row["status"]})
-                if not report["convergence"]["passed"]:result["warnings"].append("Some well correction factors failed numerical refinement; do not export them to Genie")
+                if not report["convergence"]["passed"]:result["warnings"].append("Some well correction factors failed numerical refinement; do not export them to Genie or GammaVision")
                 if report.get("missing_nuclides"):result["warnings"].append("Decay data not available for: "+", ".join(report["missing_nuclides"])+". These nuclides remain uncorrected (* in table).")
             else:
                 binary=engine_folder(mode)/("coincidence.exe" if os.name=="nt" else "coincidence")
@@ -290,13 +306,13 @@ def run_project(project,output:Path,*,cancel=None,progress=None):
                 ctf = project["genie_exports"].get("ctf")
                 if nlb and Path(nlb).is_file():
                     try:
-                        from .genie import read_library
+                        from .software import read_library
                         lib_rows = [{"nuclide": str(r["nuclide"]), "energy_keV": float(r["energy"])} for r in read_library(nlb)]
                     except Exception:
                         pass
                 elif ctf and Path(ctf).is_file():
                     try:
-                        from .genie import read_certificate
+                        from .software import read_certificate
                         lib_rows = [{"nuclide": str(r["nuclide"]), "energy_keV": float(r["energy"])} for r in read_certificate(ctf)]
                     except Exception:
                         pass
@@ -339,15 +355,17 @@ def run_project(project,output:Path,*,cancel=None,progress=None):
                 result["all_reported_factors_valid"]=False
                 if diagnostic["transport"]["probability_saturation_count"]:result["warnings"].append("Local response required probability saturation; review the well-model assumptions before use")
         if project.get("genie_exports"):
-            from .genie import export_copy
+            from .software import detect, export_copy, label
             result["genie_exports"]={}
             for kind,source in project["genie_exports"].items():
-                if progress:progress("Genie: exporting and reopening "+kind.upper())
-                target=work/(Path(source).stem+"_corrected."+kind.upper())
+                ext={"cal":"EFT","nlb":"LIB"}.get(kind,kind.upper()) if detect(source)=="gammavision" else kind.upper()
+                if progress:progress(label(source)+": exporting and reopening "+ext)
+                target=work/(Path(source).stem+"_corrected."+ext)
                 try:
                     result["genie_exports"][kind]=export_copy(source,target,result,kind)
+                    result["genie_exports"][kind]["file"]=target.name
                 except Exception as exc:
-                    result["warnings"].append(f"Genie auto-export of {kind.upper()} skipped: {exc}")
+                    result["warnings"].append(f"{label(source)} auto-export of {ext} skipped: {exc}")
         _write_outputs(work,result)
         moved = False
         for attempt in range(5):

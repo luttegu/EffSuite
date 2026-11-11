@@ -255,8 +255,8 @@ def read_model(mode,kind,path):
 
 def calibration_rows(path):
     path=Path(path)
-    if path.suffix.lower()==".cal":
-        from .genie import read_cal
+    if path.suffix.lower() in {".cal",".eft"}:
+        from .software import read_cal
         return validate_calibration(read_cal(path))
     text=path.read_text(encoding="utf-8-sig")
     rows=[]

@@ -32,8 +32,8 @@ VERSION_FILES = {
     ],
     # 4. GitHub README badge & attribution
     ROOT / "README.md": [
-        (r'https://img\.shields\.io/badge/Version-[^-\s]+--[^-\s]+-yellow\.svg',
-         lambda v: f'https://img.shields.io/badge/Version-{v.replace("-", "--")}-yellow.svg'),
+        (r'https://img\.shields\.io/badge/Version-[^\s"]+-yellow\.svg" alt="Version [^"]+"',
+         lambda v: f'https://img.shields.io/badge/Version-{v.replace("-", "--")}-yellow.svg" alt="Version {v}"'),
         (r'\*EffSuite \(v[^\)]+\) built by', '*EffSuite (v{version}) built by'),
     ],
 }

@@ -9,16 +9,16 @@
 * Original EFFTRAN: `C:\PGM\EFFTRAN\EFFTRAN_4.8` (Version 4.8) & `C:\PGM\EFFTRAN\EFFTRAN_4.9` (Version 4.9, 2026)
 * Original MEFFTRAN: `C:\PGM\EFFTRAN\MEFFTRAN_1.7` (Version 1.7) & `C:\PGM\EFFTRAN\MEFFTRAN_1.8` (Version 1.8, 2026)
 * Original WEFFTRAN: `C:\PGM\EFFTRAN\WEFFTRAN` (Version 0.8 / 4.4.4, January 2018)
-* EffSuite: Version 0.1.3 (`C:\PGM\EffSuite`)
+* EffSuite: Version 0.1.4 (`C:\PGM\EffSuite`)
 
 ---
 
 ## Executive Summary
 
-A comprehensive file-by-file and line-by-line comparison was conducted across all Fortran mathematical source routines, decay data schemes, chemical composition definitions, mass attenuation tables, and workflow orchestration between the original distributions and **EffSuite v0.1.3**.
+A comprehensive file-by-file and line-by-line comparison was conducted across all Fortran mathematical source routines, decay data schemes, chemical composition definitions, mass attenuation tables, and workflow orchestration between the original distributions and **EffSuite v0.1.4**.
 
 The core findings are:
-1. **EFFTRAN 4.9 (Cylindrical) & MEFFTRAN 1.8 (Marinelli)**: EffSuite v0.1.3 integrates the new 8-line source model (`Source density [g/cm³]` on line 8) and `HeavyWater` reference material from `EFFTRAN 4.9` and `MEFFTRAN 1.8`, while **fixing two critical upstream bugs** in the new density-scaling routines (`do j=1,ne` instead of `do j=1,ns` in `mine.f` and `scatter.f`, and the `log(0.0)` singularity on `Point.txt` with `rho = 0.00`).
+1. **EFFTRAN 4.9 (Cylindrical) & MEFFTRAN 1.8 (Marinelli)**: EffSuite v0.1.4 integrates the new 8-line source model (`Source density [g/cm³]` on line 8) and `HeavyWater` reference material from `EFFTRAN 4.9` and `MEFFTRAN 1.8`, while **fixing two critical upstream bugs** in the new density-scaling routines (`do j=1,ne` instead of `do j=1,ns` in `mine.f` and `scatter.f`, and the `log(0.0)` singularity on `Point.txt` with `rho = 0.00`).
 2. **WEFFTRAN (Well-Type)**: Extended the 8th-line sample bulk density scaling (`rho / rho0`) to WEFFTRAN (`spatial_summing.py` and native `well` Fortran sources), in addition to the physical bug fixes in `total.f` and `peak.f` and the 3D spatial quadrature solver resolving the **tall-sample numerical singularity** and **high-efficiency positron ($^{22}\text{Na}$) cascade breakdown**.
 3. **Decay Data & Library Fixes**: Corrections were made to $^{234}\text{Pa}$ branch level indices (`41 43` $\rightarrow$ `41 15`), $^{22}\text{Na}$ feeding definitions, and addition of $^{94}\text{Nb}$ and $^{187}\text{W}$ to `kordaten.txt`.
 4. **Modernization & Automation**: Complete removal of dependencies on legacy 32-bit Excel / VBA macros, introduction of parallelized multi-core calculations, automated NIST XCOM execution, and headless CLI batch capabilities.
@@ -27,14 +27,14 @@ The core findings are:
 
 ## 1. Engine & Physics Differences: Fortran Source Code Audit
 
-### 1.1 EFFTRAN 4.9 vs. EffSuite v0.1.3 (`cylindrical`)
+### 1.1 EFFTRAN 4.9 vs. EffSuite v0.1.4 (`cylindrical`)
 Comparison between `C:\PGM\EFFTRAN\EFFTRAN_4.9\*.f` and `src\effsuite\assets\engines\cylindrical\source\*.f`:
 - Integrated the 8th-line sample density `rho` (`read(7,*,end=88,err=88) rho`) and nominal material density `rho0` (`from .\Composition\<smat>.txt`) in `mine.f`, `total.f`, `scatter.f`, and `eta.f`, plus in-memory `coin.txt` caching in `gv.f`.
 - **Fixed Upstream Bug #1 (`mine.f` line 108 & `scatter.f` line 67)**: Upstream `EFFTRAN 4.9` wrote `do j=1,ne` instead of `do j=1,ns` when adding `log(rho/rho0)` to `smu(j)` and `smuc(j)`. In `mine.f`, `ne` is uninitialized (`0`), so 0 rows were scaled; in `scatter.f`, `ne = 25` (from `total.txt`), so only the first 25 of ~82–104 XCOM points ($E \lesssim 30\text{ keV}$) were scaled while all higher energies remained unscaled at `rho0`. Fixed to `do j=1,ns` in EffSuite.
 - **Fixed Upstream Bug #2 (`Point.txt` `rho = 0.00` `log(0)` crash)**: Added `if (rho.le.0.) rho=rho0` so `Point.txt` (`vacuum`, `rho = 0.00`) does not evaluate `log(0.0) = -Infinity`.
 - **Preserved Full Precision & Numerical Floor**: Kept `format(3e15.5)` in `transfer.f` (instead of upstream's `f12.1` truncation) and preserved `max(0., (sig(j)-t(j)*t(j))/n)` and `1e-15` efficiency floors in `total.f` and `efficiency.f`.
 
-### 1.2 MEFFTRAN 1.8 vs. EffSuite v0.1.3 (`marinelli`)
+### 1.2 MEFFTRAN 1.8 vs. EffSuite v0.1.4 (`marinelli`)
 Comparison between `C:\PGM\EFFTRAN\MEFFTRAN_1.8\*.f` and `src\effsuite\assets\engines\marinelli\source\*.f`:
 - Integrated the 8th-line sample density `rho` and `rho0` scaling in `mine.f`, `total.f`, `scatter.f`, and `eta.f`.
 - **Fixed Upstream Bug #1 (`mine.f` line 101 & `scatter.f` line 70)**: Changed `do j=1,ne` to `do j=1,ns` so all `ns` XCOM energy rows are scaled by `log(rho/rho0)`.

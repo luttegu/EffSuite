@@ -1,7 +1,9 @@
-# EffSuite User Guide — v0.1.3
+# EffSuite User Guide — v0.1.4
 
-> **Important Compatibility Notice:**  
-> EffSuite **only supports Canberra / Mirion file formats** (`.CAL`, `.NLB`, `.CTF`, and `.CNF`). Other gamma spectrometry software formats (such as ORTEC Maestro, GammaVision, etc.) are **not supported**.
+> **Spectrometry Software Compatibility Notice (Genie 2000 & GammaVision):**  
+> EffSuite supports **Canberra / Mirion Genie 2000** formats (`.CAL`, `.NLB`, `.CTF`, and `.CNF`) as well as **ORTEC GammaVision** formats (`.EFT` efficiency calibration and `.LIB` nuclide library).  
+> **GammaVision Notice (Untested — Volunteers Welcome):** GammaVision support has been implemented exactly as EFFTRAN and MEFFTRAN do it, but I cannot test it because I do not have the software. Volunteers are welcome to test and provide feedback.  
+> Other spectrometry formats (such as ORTEC Maestro `.spc` / `.cal` or InterWinner) are **not supported**.
 
 > **WEFFTRAN Qualification Status Notice:**  
 > The WEFFTRAN (Well detector) engine has been patched for Fortran ray boundary handling and 3D spatial summing, but is **not yet fully tested or qualified in the laboratory**. Treat all well-type detector outputs as experimental and independently verify all values.
@@ -17,7 +19,7 @@ Use your original installation's data folder when comparing against its
 materials/decay dataset. Select it explicitly with the button above the tabs.
 The material lists update to that folder. The result records data hashes.
 
-In Efficiency, import the standard CAL or a two/three-column text/CSV file:
+In Efficiency, import the standard Genie `.CAL`, GammaVision `.EFT`, or a two/three-column text/CSV file:
 energy in keV, efficiency as a fraction, optional relative uncertainty in
 percent. For example, efficiency 0.05 means 5%; uncertainty 3 means 3% relative.
 The calibration must have 2–93 points with strictly increasing energies.
@@ -39,7 +41,7 @@ snapshot of the used model/material inputs and native intermediate files.
 
 Open Library, type the nuclides, and select **Calculate selected nuclides**.
 The standard calibration is not needed for this task. Alternatively open a
-Genie NLB or CTF and process its nuclides. Original parent/continuation decay
+Genie `.NLB` / `.CTF` or a GammaVision `.LIB` library and process its nuclides. Original parent/continuation decay
 records stay together. Workers run in separate processes and private folders.
 
 The correction table uses the original integer-keV bins. An asterisk means
@@ -99,6 +101,25 @@ An unrecognized line stops the export rather than assigning C=1.
 
 Real CAM operation, Windows packaging and your laboratory's physical cases
 remain release checks. This evaluation build does not authorize routine use.
+
+## GammaVision export (untested)
+
+> **GammaVision support is untested.** It has been implemented as EFFTRAN is doing it, but I cannot test it because I do not have the software. Volunteers are welcome to test it and provide feedback.
+
+EffSuite 0.1.4 handles ORTEC GammaVision files the way EFFTRAN and MEFFTRAN do, in pure Python (no vendor components, any OS):
+
+- **Library (`.LIB`)**: nuclide, energy and gamma yield are read; on export each yield is divided by the summing
+  factor C (lines with no match within 1 keV keep their yield). A `<name>_gv.txt` report (energy, old yield, new yield,
+  factor, applied flag) is written beside the output, like EFFTRAN `gv.txt`.
+- **Efficiency (`.EFT`)**: efficiency and uncertainty are read (EFFTRAN or MEFFTRAN layout). Export rewrites a template
+  `.EFT` with the same number of points, keeping the other columns and trailer lines.
+- **Selection**: automatic from the extension (`.LIB`, `.EFT` = GammaVision). Override with the GUI **Software** selector,
+  `--software genie|gammavision` in the CLI, or the `EFFSUITE_SOFTWARE` environment variable.
+- Certificates (`.CTF`) and `.CAL` files remain Genie-only. As for Genie, never reuse an existing output filename.
+
+```bat
+CLI.bat cylinder --detector d.txt --sample s.txt --standard st.txt --calibration ref.EFT --export-cal --library nuclides.LIB --software gammavision
+```
 
 ## Material creation
 

@@ -1,5 +1,16 @@
 # Release Notes
 
+## EffSuite 0.1.4 (November 2026)
+
+- **GammaVision support (implemented as in EFFTRAN/MEFFTRAN, untested)**: EffSuite now reads and writes ORTEC GammaVision files exactly the way EFFTRAN (`gv.f`, `EFFTRAN.EFT`) and MEFFTRAN (`MEFFTRAN.EFT`) do, in pure Python without requiring vendor COM components.
+  - **Nuclide library (`.LIB`)**: 128-byte direct-access binary records (`EFFTRAN.Lib` layout from `gv.f`) are read and written non-destructively; gamma yields are divided by the coincidence-summing factors $C$, round-trip verified by reopening, and accompanied by a `<name>_gv.txt` audit report matching EFFTRAN's `gv.txt`.
+  - **Efficiency (`.EFT`)**: Both EFFTRAN 11-token (`EFFTRAN.EFT`) and MEFFTRAN 5-token (`MEFFTRAN.EFT`) text layouts are read and exported non-destructively with round-trip verification, preserving source metadata and `FitType` trailer lines.
+  - **Unambiguous Genie 2000 vs. GammaVision Identification**: Every GUI dialog, button, status message, `results.json` export entry (`"software": "Genie"` or `"GammaVision"`), and `report.html` table explicitly states whether an exported file is for **Genie 2000** (`.CAL`, `.NLB`, `.CTF`) or **GammaVision** (`.EFT`, `.LIB`).
+  - **Selection**: Auto-detected from file extension (`.LIB` / `.EFT` = GammaVision; `.CAL` / `.NLB` / `.CTF` = Genie 2000), with manual override via `--software genie|gammavision`, the GUI **Software** selector, or `EFFSUITE_SOFTWARE`.
+  - **Scope**: Genie `.CAL`/`.NLB`/`.CTF` support is unchanged (`genie.py`). GammaVision support is in `gammavision.py`, dispatched by `software.py`. Certificates (`.CTF`) and `.CAL` binary files remain Genie-only.
+- **Bug fix (`--output-cal`, `--output-nlb`, `--output-ctf`)**: Fixed a result-key mismatch in `app_cli.py` where direct output flags and batch summary columns looked up `cal_output`/`nlb_output`/`ctf_output` instead of resolving the exported file from `genie_exports` in the published output directory.
+- **Call for testers**: GammaVision has been implemented as EFFTRAN is doing it, but I cannot test it because I do not have the software. **Volunteers are welcome to test it and provide feedback.**
+
 ## EffSuite 0.1.3 (November 2026)
 
 - **Integration of EFFTRAN 4.9 & MEFFTRAN 1.8 (with Upstream Bug Fixes)**:
