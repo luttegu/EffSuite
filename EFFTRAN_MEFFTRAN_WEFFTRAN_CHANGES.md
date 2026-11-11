@@ -95,7 +95,7 @@ During line-by-line audit of `EFFTRAN_4.9` and `MEFFTRAN_1.8`, three upstream de
   - The legacy subtraction calculation remains selectable as an explicit reference engine for historical reproduction.
 
 ### 1.2 Verification Against EFFTRAN v4.8 (Cylindrical Geometry)
-- **Validation Dataset**: Evaluated against real-world accredited laboratory data:
+- **Validation Dataset**: Evaluated against real-world reference laboratory data:
   - Detector: `DET002` (HPGe coaxial, 64 mm crystal diameter, 58.9 mm length, 10 mm endcap gap)
   - Calibration: `TF400_268_2025.CAL` (11 calibration lines from $46.54\text{ keV}$ to $1836.07\text{ keV}$)
   - Standard: Water matrix, 50.43 mm filling height

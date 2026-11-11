@@ -9,7 +9,7 @@ The tests include:
 - Actual bundled native cylinder (`EFFTRAN 4.9`), Marinelli (`MEFFTRAN 1.8`), and well (`WEFFTRAN`) preparation and calculations.
 - 8-line source model bulk density scaling (`rho / rho0`) verified across all three geometries (`Water` at `rho = 2.0 g/cm³` matches `HeavyWater` at `rho0 = 2.0 g/cm³` to 6 decimal places), point-source `vacuum` (`rho = 0.00`) positivity guard, and 7-line backward compatibility.
 - Real laboratory benchmark validations:
-  - `test_validation_case_207724.py`: Cylindrical EFFTRAN validation against accredited laboratory dataset.
+  - `test_validation_case_207724.py`: Cylindrical EFFTRAN validation against reference laboratory dataset.
   - `test_validation_det952_mar.py`: Marinelli MEFFTRAN validation against DET952 laboratory dataset.
   - `test_validation_det007_well.py`: Well WEFFTRAN validation against EGSnrc Monte Carlo benchmark (17 nuclides, 41 lines) and extended 12-field detector parameters (mantle/bottom dead layers, Cu holder Compton backscatter, sample offset).
 - CLI/shared-service equality for all three modes, serial/parallel bit-for-bit agreement (`--verify-serial`), identity transfer for each geometry, and positive small sum-peak factors.
