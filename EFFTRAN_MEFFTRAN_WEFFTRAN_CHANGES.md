@@ -210,7 +210,7 @@ During high-statistics Monte Carlo integration in MEFFTRAN and cylindrical EFFTR
 - **EffSuite Unification**:
   - Consolidated all 260+ radionuclide decay files (`*.txt`, containing transition levels, gamma energies, emission probabilities, and conversion coefficients) into a single, universal shared location:
     `src/effsuite/assets/common/Decay_Data/`
-  - All three engines (cylindrical, Marinelli, well) now query this single canonical source, guaranteeing identical nuclear decay data across all geometries.
+  - All three engines (cylindrical, Marinelli, well) now query this single canonical source, ensuring identical nuclear decay data across all geometries.
 
 ### 2.2 Shared Material & Composition Repositories
 - **Original Distribution**:
@@ -244,7 +244,7 @@ During high-statistics Monte Carlo integration in MEFFTRAN and cylindrical EFFTR
   - Structured, validated JSON project schema (`project.effsuite.json`) versioned and reproducible.
   - Formal error propagation with explicit diagnostic messages (`CoincidenceError`) rather than silent failure or zero factors.
 
-### 3.2 Process Isolation & Cryptographic Provenance
+### 3.2 Process Isolation & SHA-256 Checksums
 - **Sandbox Execution**:
   - Every calculation runs in an isolated, private temporary directory (`.effsuite-job-<uuid>`).
   - Input directories (detectors, standards, compositions) are mounted strictly read-only, preventing inadvertent modification of calibration templates or reference materials.

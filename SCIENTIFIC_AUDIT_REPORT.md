@@ -130,7 +130,7 @@ When a sample vial extends above the well or detector rim (e.g. 5 mL vial filled
 ### 2.2 EffSuite Spatial Quadrature Integration (`well_spatial.py` & `spatial_summing.py`)
 To solve this permanently while retaining rigorous physics, EffSuite implements a 3D source-guided spatial quadrature integration:
 $$C(E) = \frac{\int_V \rho(\vec{r}) \cdot N_{\text{direct}}(E, \vec{r}) \, d^3\vec{r}}{\int_V \rho(\vec{r}) \cdot N_{\text{coincident}}(E, \vec{r}) \, d^3\vec{r}}$$
-- **Non-negativity Guarantee**: Count rates at every volume element $\vec{r} = (r, \phi, z)$ are computed with strictly positive cascade recursion probabilities. The denominator cannot cancel or become negative.
+- **Strict Positivity Formulation**: Count rates at every volume element $\vec{r} = (r, \phi, z)$ are computed with strictly positive cascade recursion probabilities. The denominator cannot cancel or become negative.
 - **Physical Geometry**: The integration volume spans both regions:
   1. Internal region: Sample cylinder surrounded by the well cavity wall and bottom dead layers.
   2. External region: Sample cylinder protruding above the top detector plane into air.

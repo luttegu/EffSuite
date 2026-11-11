@@ -31,7 +31,7 @@
 > [!CAUTION]
 > ### ⚠️ WEFFTRAN Qualification Notice (Untested / Experimental)
 > **The WEFFTRAN module (Well-type HPGe detector geometry) is NOT fully laboratory tested or physically qualified yet.**
-> While the Fortran ray-tracing boundary bug and 3D spatial summing engine have been mathematically implemented, this geometry has not completed empirical laboratory validation against certified reference standards. Users must treat all WEFFTRAN calculation results as experimental and independently verify them before analytical use.
+> While the Fortran ray-tracing boundary bug and 3D spatial summing engine have been mathematically implemented, this geometry has not completed empirical laboratory validation against reference standards. Users must treat all WEFFTRAN calculation results as experimental and independently verify them before analytical use.
 
 ---
 
@@ -69,7 +69,7 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
 **EffSuite** unites EFFTRAN, MEFFTRAN, and WEFFTRAN under a single high-performance framework designed for high-resolution gamma-ray spectrometry (HPGe) laboratories:
 
-1. **Native Fortran Physics Precision**: Executes bitwise-audited Fortran numerical engines with updated double-precision numerical token sanitization and scientific format output.
+1. **Native Fortran Physics Precision**: Executes verified Fortran numerical engines with updated double-precision numerical token sanitization and scientific format output.
 2. **Modern Desktop GUI (Qt6)**: Engineered with a dark GL-GUM Workbench theme, automatic 1080p/4K DPI scaling, live 2D CAD dimension schematics, interactive efficiency curves, and dedicated calculation activity logs.
 3. **High-Throughput Parallel Coincidence Summing**: Coincidence summing correction factors ($F_{corr}$) are computed in one go across all nuclides in the calibration or certificate library, leveraging multi-core parallelization (`workers = max(1, os.cpu_count() - 2)`).
 4. **Exclusively Canberra / Mirion Genie 2000 Integration**: Directly imports and updates `.CAL` efficiency calibrations, `.NLB` nuclide libraries, and `.CTF` certificate files. File selectors default directly to `C:\GENIE2K\CAMFILES`. *(Third-party vendor formats such as ORTEC are not supported).*
@@ -124,7 +124,7 @@ The GUI follows the intuitive workflow of analytical gamma spectrometry:
 
 ## 💻 Command-Line Interface (CLI) & Automation
 
-EffSuite provides an enterprise-ready headless CLI (`EffSuite_CLI.exe` or `CLI.bat`) for batch automation and LIMS integration:
+EffSuite provides a headless CLI (`EffSuite_CLI.exe` or `CLI.bat`) for batch automation and scripting:
 
 ### 1. Re-running a Saved GUI Project
 ```cmd
