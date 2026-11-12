@@ -1,4 +1,4 @@
-# EffSuite User Guide — v0.1.4
+# EffSuite User Guide — v0.1.5
 
 > **Spectrometry Software Compatibility Notice (Genie 2000 & GammaVision):**  
 > EffSuite supports **Canberra / Mirion Genie 2000** formats (`.CAL`, `.NLB`, `.CTF`, and `.CNF`) as well as **ORTEC GammaVision** formats (`.EFT` efficiency calibration and `.LIB` nuclide library).  
@@ -106,7 +106,7 @@ remain release checks. This evaluation build does not authorize routine use.
 
 > **GammaVision support is untested.** It has been implemented as EFFTRAN is doing it, but I cannot test it because I do not have the software. Volunteers are welcome to test it and provide feedback.
 
-EffSuite 0.1.4 handles ORTEC GammaVision files the way EFFTRAN and MEFFTRAN do, in pure Python (no vendor components, any OS):
+EffSuite 0.1.5 handles ORTEC GammaVision files the way EFFTRAN and MEFFTRAN do, in pure Python (no vendor components, any OS):
 
 - **Library (`.LIB`)**: nuclide, energy and gamma yield are read; on export each yield is divided by the summing
   factor C (lines with no match within 1 keV keep their yield). A `<name>_gv.txt` report (energy, old yield, new yield,

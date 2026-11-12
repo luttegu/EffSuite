@@ -1,5 +1,13 @@
 # Release Notes
 
+## EffSuite 0.1.5 (November 2026)
+
+- **EFFTRAN 4.9 & MEFFTRAN 1.8 Full Alignment & Verification**:
+  - Re-audited and fully harmonized native engines with the updated official releases in `C:\PGM\EFFTRAN`.
+  - **Cylindrical Efficiency Transfer Uncertainty**: Incorporated EFFTRAN 4.9's 4th-column Monte Carlo statistical uncertainty from `total.txt` into the cylindrical efficiency transfer formula ($u = \sqrt{u_{ref}^2 + (100\,s_{std})^2 + (100\,s_{sample})^2}$), preserving full precision `format(3e15.5)`.
+  - **Decay Library & Scheme Alignment**: Retained upstream decay schemes in `kordaten.txt` (including $^{234}\text{Pa}$ with transition `41 43`) and verified inclusion of $^{94}\text{Nb}$ and $^{187}\text{W}$.
+  - Documentation and audit reports updated for public release.
+
 ## EffSuite 0.1.4 (November 2026)
 
 - **GammaVision support (implemented as in EFFTRAN/MEFFTRAN, untested)**: EffSuite now reads and writes ORTEC GammaVision files exactly the way EFFTRAN (`gv.f`, `EFFTRAN.EFT`) and MEFFTRAN (`MEFFTRAN.EFT`) do, in pure Python without requiring vendor COM components.

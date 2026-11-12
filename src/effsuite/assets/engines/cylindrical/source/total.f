@@ -469,10 +469,11 @@
       open(7,file='total.txt',status='unknown')
       do i=1,ne
         write(7,99) exp(e(i)),max(1.e-15,t(i)),
-     +              max(1.e-15,sqrt(max(0.,t2(i))))
+     +              max(1.e-15,sqrt(max(0.,t2(i)))),
+     +              max(1.e-15,s(i))
       enddo
       close(7)
-99    format(3e15.5)
+99    format(4e15.5)
 
       end
 

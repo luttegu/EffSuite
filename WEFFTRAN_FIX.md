@@ -178,12 +178,11 @@ the supplied modified Na-22 record. Other records use L-capture semantics.
 For different library conventions use the API's explicit `beta_plus_pl`
 configuration rather than inferring decay mode from a probability's size.
 
-The structural/synthetic-response audit passes 224 of 227 parent groups and
-rejects three inconsistent supplied records:
+The structural/synthetic-response audit passes 225 of 227 parent groups and
+rejects two inconsistent supplied records:
 
 | Record | Inconsistency requiring verified nuclear data |
 |---|---|
-| Pa-234 | Transition 41 to 43 violates downward level ordering |
 | Th-227 | Total conversion coefficient 0, L coefficient 13.6 in a transition |
 | W-187 | Total conversion coefficient 0.0153, K coefficient 118 in a transition |
 

@@ -1,7 +1,7 @@
 # EffSuite — Gamma Spectrometry Efficiency Transfer & Summing Suite
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-0.1.4-yellow.svg" alt="Version 0.1.4" />
+  <img src="https://img.shields.io/badge/Version-0.1.5-yellow.svg" alt="Version 0.1.5" />
   <img src="https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue.svg" alt="Python Version" />
   <img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011%20(x64)-0078D6.svg" alt="Windows Platform" />
   <img src="https://img.shields.io/badge/Genie%202000-CAM%20%7C%20CAL%20%7C%20NLB%20%7C%20CTF-8A2BE2.svg" alt="Genie 2000 Integration" />
@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/License-GPL--3.0%20%2F%20Vidmar%20Attribution-orange.svg" alt="License" />
 </p>
 
-*EffSuite (v0.1.4) built by ChatGPT & Gemini under the supervision of G. Lutter.*
+*EffSuite (v0.1.5) built by ChatGPT & Gemini under the supervision of G. Lutter.*
 
 ---
 
@@ -192,7 +192,7 @@ Detailed technical comparisons against the original codes are documented in [SCI
 ### Summary of Physics & Engineering Enhancements:
 | Feature | Original Implementation | EffSuite Modernization |
 | :--- | :--- | :--- |
-| **Sample Bulk Density (`rho`)** | Added in EFFTRAN 4.9 / MEFFTRAN 1.8 (with `do j=1,ne` loop bug in `mine.f`/`scatter.f` and `log(0)` crash on `Point.txt`) | Full 8-line source density scaling ($\rho / \rho_0$) across Cylindrical, Marinelli, and Well (`WEFFTRAN`) with fixed `do j=1,ns` loop bounds, `Point.txt` guard, and GUI auto-fill |
+| **Sample Bulk Density (`rho`)** | Added in EFFTRAN 4.9 / MEFFTRAN 1.8 (absent in WEFFTRAN) | Full 8-line source density scaling ($\rho / \rho_0$) across Cylindrical, Marinelli, and Well (`WEFFTRAN`) with validated loop bounds, `Point.txt` guard, and GUI auto-fill |
 | **Coincidence Summing** | Serial Fortran loop per nuclide | Parallelized Monte Carlo cascade recursion across all CPU cores in one pass |
 | **Numerical Format** | 3-decimal fixed format (`F8.3`) in coincidence dumps | Scientific format (`ES14.6`) to preserve small positive summing factors |
 | **Token Sanitization** | Failed on denormalized or empty tokens | Strict token sanitizer replacing noise $<10^{-15}$ with analytical floor |

@@ -1,4 +1,4 @@
-# EffSuite 0.1.4 Architecture & Implementation
+# EffSuite 0.1.5 Architecture & Implementation
 
 `app_cli.py` and `gui.py` call `suite.run_project` using the same versioned
 JSON project. `model_io.py` validates 8-field source models (with 7-line backward

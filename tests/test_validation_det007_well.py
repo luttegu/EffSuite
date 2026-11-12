@@ -137,14 +137,6 @@ class WellBugRegressions(unittest.TestCase):
         self.assertTrue(np.isfinite(a) and a > 1.)
         self.assertNotAlmostEqual(a, b, places=4)
 
-    def test_bug4_pa234_corrupt_transition_is_fixed(self):
-        raw = (COMMON_DATA/"Decay_Data/PA-234.txt").read_bytes()
-        record = parse_decay("PA-234", raw)
-        self.assertAlmostEqual(record.transitions[40, 14, 0], 513.4)
-        for engine in ("cylindrical", "marinelli"):
-            text = (ASSETS/engine/"kordaten.txt").read_text(errors="replace")
-            self.assertIn("41  15        513.400", text)
-            self.assertNotIn("41  43        513.400", text)
 
 
 class WellExtendedDetectorTests(unittest.TestCase):

@@ -1,7 +1,7 @@
 # Technical Summary of Enhancements, Fixes, and Architectural Changes in EffSuite
 
 **Compared to the Original EFFTRAN (v4.8 & v4.9), MEFFTRAN (v1.7 & v1.8), and WEFFTRAN Distributions, and Previous EffSuite Releases**  
-*Document Version: 1.2 — EffSuite v0.1.4 (November 2026)*  
+*Document Version: 1.3 — EffSuite v0.1.5 (November 2026)*  
 *Author: EffSuite Development Team (built by ChatGPT & Gemini under the supervision of G. Lutter)*  
 *Target Audience: Original Author, Maintainers, and Scientific Evaluators of EFFTRAN / MEFFTRAN / WEFFTRAN*  
 
@@ -11,7 +11,7 @@
 
 ## Executive Summary
 
-**EffSuite (v0.1.4)** is an open-source modernization and cross-platform reimplementation of the gamma-spectrometry efficiency transfer and true coincidence summing framework originally established by **EFFTRAN** (v4.9, cylindrical geometries), **MEFFTRAN** (v1.8, Marinelli beaker geometries), and **WEFFTRAN** (well-type detectors).
+**EffSuite (v0.1.5)** is an open-source modernization and cross-platform reimplementation of the gamma-spectrometry efficiency transfer and true coincidence summing framework originally established by **EFFTRAN** (v4.9, cylindrical geometries), **MEFFTRAN** (v1.8, Marinelli beaker geometries), and **WEFFTRAN** (well-type detectors).
 
 The objective of this work was **not** to alter the validated core physical models of the original Fortran engines, but rather to:
 1. Preserve 100% numerical agreement with validated EFFTRAN/MEFFTRAN reference cases while fixing upstream numerical bugs discovered in EFFTRAN 4.9 and MEFFTRAN 1.8.
@@ -36,15 +36,23 @@ The objective of this work was **not** to alter the validated core physical mode
 3. **In-Memory Caching of `coin.txt` in `EFFTRAN_4.9/gv.f`**:
    - Instead of reopening and scanning `coin.txt` from disk on every call to `coincidence(j)`, `gv.f` loads `coin.txt` once into `common /tabela/ start,stop,n(nn),p(nn)` and slices `start..stop` in memory.
 
-### 0.2 Upstream Bugs Found in `EFFTRAN 4.9` & `MEFFTRAN 1.8` and Fixed in `EffSuite v0.1.3`
+### 0.2 Defects Found in the First EFFTRAN 4.9 / MEFFTRAN 1.8 Sources, and Status in the Current Official Files
 
-During line-by-line audit of `EFFTRAN_4.9` and `MEFFTRAN_1.8`, three upstream defects were identified and corrected in `EffSuite v0.1.3`:
+EffSuite v0.1.3 audited the first EFFTRAN 4.9 and MEFFTRAN 1.8 sources and corrected three defects. The original author has since updated the official distributions; the current files were compared against EffSuite v0.1.5. Status per item:
 
-| # | Upstream Defect in `EFFTRAN 4.9` & `MEFFTRAN 1.8` | Physical / Numerical Impact | Fix Implemented in `EffSuite v0.1.3` |
+| # | Defect in the first `EFFTRAN 4.9` / `MEFFTRAN 1.8` sources | Status in the current official files | EffSuite v0.1.5 behaviour |
 | :-: | :--- | :--- | :--- |
-| **1** | **Wrong Loop Upper Bound (`do j=1,ne` instead of `do j=1,ns`) in `mine.f` and `scatter.f`**<br>• `mine.f` (line 108 in EFFTRAN 4.9; line 101 in MEFFTRAN 1.8)<br>• `scatter.f` (line 67 in EFFTRAN 4.9; line 70 in MEFFTRAN 1.8) | While `total.f` and `eta.f` loop `do j=1,ns` over all $ns \approx 80\text{–}105$ XCOM energy rows, `mine.f` and `scatter.f` loop `do j=1,ne`:<br>• In `mine.f`, `ne` is **uninitialized (`0`)**, so **0 rows** are scaled and `mine.exe` ignores `rho`.<br>• In `scatter.f`, `ne = 25` (from `total.txt`), so only the first 25 XCOM points ($E \lesssim 30\text{ keV}$) are scaled by $\rho / \rho_0$, while **all energies above $\sim 30\text{ keV}$ remain unscaled at $\rho_0$**! Consequently, `Water` at $\rho = 2.0$ disagrees with `HeavyWater` ($\rho_0 = 2.0$) in scattered/buildup and peak-to-total calculations. | Fixed loop bounds to `do j=1,ns` in both `mine.f` and `scatter.f` across `cylindrical`, `marinelli`, and `well` Fortran sources. With this fix, `Water` with $\rho = 2.0$ matches `HeavyWater` ($\rho_0 = 2.0$) to 100% precision across all engine stages. |
-| **2** | **`Point.txt` (`vacuum`, `rho = 0.00`) Triggers `log(0.0) = -Infinity` and `NaN`** | `Standard\Point.txt` specifies `vacuum` ($\rho_0 = 10^{-12}\text{ g/cm}^3$) on line 6 and `0.00` on line 8. Evaluating `log(rho/rho0)` computes `log(0.0) = -Infinity`, corrupting `smu(j)` and producing `NaN` (`-Inf - (-Inf)`) during spline interpolation in `inter`/`interpol`. | Added positivity guard `if (rho.le.0.) rho=rho0` in `mine.f`, `total.f`, `scatter.f`, and `eta.f` across all engines. |
-| **3** | **Loss of Gamma Energy Precision (`f12.1`) & Embedded `system('total.exe')` in `EFFTRAN_4.9/transfer.f`** | Upstream `EFFTRAN_4.9/transfer.f` changed output formatting from `format(3e15.5)` to `format(f12.1,e15.5,f12.1)` (truncating energies such as $46.539\text{ keV}$ to $46.5\text{ keV}$) and embedded `call system('total.exe')` inside `transfer.f`. | Retained EffSuite's stage-isolated `transfer.f` with full scientific precision `format(3e15.5)`. |
+| **1** | **Loop upper bound `do j=1,ne` instead of `do j=1,ns` in `mine.f` and `scatter.f`.** `ne` was `0` in `mine.f` (no row scaled, `rho` ignored) and `25` in `scatter.f` (only $E \lesssim 30\text{ keV}$ scaled by $\rho/\rho_0$). | **Corrected upstream** (`do j=1,ns`). | Same bound (`do j=1,ns`) in `mine.f` and `scatter.f` for `cylindrical`, `marinelli` and `well`. In `total.f`, EffSuite scales the `ne` interpolated energies (`do j=1,ne`), the array actually used there. `Water` at $\rho = 2.0$ matches `HeavyWater` ($\rho_0 = 2.0$). |
+| **2** | **`Point.txt` (`vacuum`, `rho = 0.00`) caused `log(0.0) = -Infinity` and `NaN`.** | **Guarded upstream** (non-positive `rho` and `rho0` are replaced by $10^{-12}$). | A non-positive or missing `rho` is replaced by the nominal `rho0` of the material (`if (rho.le.0.) rho=rho0`), and `rho0` is floored at $10^{-15}$. A 7-line source file (no 8th line) loads without error and behaves as `rho = rho0`. |
+| **3** | **Gamma energy precision and embedded `system('total.exe')` in `EFFTRAN_4.9/transfer.f`.** Upstream `transfer.f` writes `format(f12.1,e15.5,f12.1)` (e.g. $46.539\text{ keV}$ becomes $46.5\text{ keV}$) and itself launches `total.exe` for the standard and the sample. | Unchanged in the current EFFTRAN 4.9. (MEFFTRAN 1.8 `transfer.f` is the older stage-isolated version.) | EffSuite keeps a stage-isolated `transfer.f` (the Python layer runs `total` for the standard and the sample) with full-precision `format(3e15.5)`. |
+
+### 0.2a Uncertainty in the Efficiency Transfer (EFFTRAN 4.9)
+
+The current EFFTRAN 4.9 `total.f` writes a fourth column, the relative Monte Carlo uncertainty $s$ of the total efficiency (fraction), and `transfer.f` combines it with the reference uncertainty $u_{ref}$ (percent):
+
+$$u = \sqrt{u_{ref}^2 + (100\,s_{std})^2 + (100\,s_{sample})^2}$$
+
+EffSuite v0.1.5 adopts this for the cylindrical (EFFTRAN) geometry; the earlier fixed $0.5\%$ standard and $0.5\%$ sample terms are no longer used there. MEFFTRAN 1.8 has not changed upstream, so the Marinelli transfer, and the well transfer, keep the fixed $0.5\% + 0.5\%$ terms. None of these is a complete uncertainty budget.
 
 ### 0.3 Comparison of `EffSuite v0.1.3` vs. `EffSuite v0.1.2`
 
@@ -69,7 +77,7 @@ During line-by-line audit of `EFFTRAN_4.9` and `MEFFTRAN_1.8`, three upstream de
 7. **Preserved & Hardened EffSuite Scientific Fixes**:
    - Explicitly zeroed `s(3000)` and `s1(3000)` prior to nuclide loop label `123 continue` in `cylindrical` and `marinelli` `coincidence.f` to prevent uninitialized memory carry-over.
    - Kept Monte Carlo variance cancellation floor `max(0., (sig(j)-t(j)*t(j))/n)` and $10^{-15}$ efficiency positivity clamp in `total.f` and `efficiency.f`.
-   - Kept corrected `kordaten.txt` (9,870 lines, including the `PA-234` `41 15` level index fix and additional `NB-94` and `W-187` nuclides missing from upstream's 9,754-line file).
+   - Kept `kordaten.txt` (9,870 lines, including the additional `W-187` nuclide missing from upstream's file; `NB-94` is now included upstream).
 
 ---
 
@@ -108,7 +116,7 @@ During line-by-line audit of `EFFTRAN_4.9` and `MEFFTRAN_1.8`, three upstream de
 
 ---
 
-### 1.3 Second WEFFTRAN review: five bugs fixed and a new well-response model (DET007 Monte Carlo benchmark)
+### 1.3 Second WEFFTRAN review: four bugs fixed and a new well-response model (DET007 Monte Carlo benchmark)
 
 A well detector (DET007) was benchmarked against a GenTran/EGSnrc Monte Carlo report (17 nuclides, 41 gamma lines). Findings and fixes:
 
@@ -117,8 +125,7 @@ A well detector (DET007) was benchmarked against a GenTran/EGSnrc Monte Carlo re
 | 1 | Containers wider than the well were accepted; the original `total` stage then returned garbage (e.g. `-9.19e+15`) with exit code 0. Cylindrical/Marinelli models were also stored in the well model folders. | `validate_project` rejects container diameter > well diameter (sample and standard). Misplaced models moved to their own geometry folders. |
 | 2 | Sample build-up was applied as one uniform multiplier (`virtual * buildup/total`), giving local probabilities > 1 (e.g. 1.061 for a 24 mm vial) and blocking export. | Total efficiency is now a sum of mutually exclusive photon fates (uncollided, Rayleigh, Compton, absorbed) traced through sample, container, bore liner and top housing, so `0 <= peak <= total <= 1` by construction. |
 | 3 | The two 511 keV annihilation photons were treated as independent directions. | Exact antiparallel (180°) pair probabilities, evaluated from the same ray set (no extra tracing). Used for `NA-22` feeding and all `-0.5, 511 keV` transitions. |
-| 4 | `PA-234`: transition `41 43 513.400` points to a higher level (typo for `41 15`, 1537.2 − 1023.7 = 513.5 keV). | Corrected in `Decay_Data/PA-234.txt` and both `kordaten.txt` libraries. |
-| 5 | The minimum-energy threshold used the axial instead of the radial sample thickness and a coarse 26-point energy grid. | Well calculations evaluate XCOM cross sections directly at every gamma, X-ray and scattered energy; the legacy `mine`/`energy`/`total`/`buildup`/`ptt` stages are no longer needed for well summing. |
+| 4 | The minimum-energy threshold used the axial instead of the radial sample thickness and a coarse 26-point energy grid. | Well calculations evaluate XCOM cross sections directly at every gamma, X-ray and scattered energy; the legacy `mine`/`energy`/`total`/`buildup`/`ptt` stages are no longer needed for well summing. |
 
 New well physics (`spatial_summing.well_local_response`), with no fitted constants:
 * peak-to-total from the real hollow crystal (with its well) and local containment of the first-scattered photon at the actual interaction depth;
@@ -352,15 +359,15 @@ effsuite material create --name Glucose_1346 --density 1.346 --formula C6H12O6=1
 
 ## 8. Summary Table of Differences
 
-| Feature / Component | Original EFFTRAN (4.8/4.9) / MEFFTRAN (1.7/1.8) / WEFFTRAN | EffSuite v0.1.4 Modernization |
+| Feature / Component | Original EFFTRAN (4.8/4.9) / MEFFTRAN (1.7/1.8) / WEFFTRAN | EffSuite v0.1.5 Modernization |
 | :--- | :--- | :--- |
 | **Runtime Environment** | 32-bit Microsoft Excel + VBA Macros | Cross-platform Python 3.10+ & compiled native engines |
 | **Supported Operating Systems** | Windows only (legacy 32-bit execution) | Windows 10/11 (64-bit), Linux (x86_64), macOS |
 | **Execution Sandboxing** | Runs directly in current working directory | Isolated temporary job sandboxes (`results.json` + SHA-256) |
 | **Multi-Core Scheduling** | Single-threaded serial execution | 1–64 worker processes with atomic cascade grouping |
-| **Sample Bulk Density (`rho`)** | Added in EFFTRAN 4.9 / MEFFTRAN 1.8 (with `do j=1,ne` loop bug in `mine.f`/`scatter.f` and `log(0)` crash on `Point.txt`; absent in WEFFTRAN) | Full 8-line source density scaling ($\rho / \rho_0$) across Cylindrical, Marinelli, and Well (`WEFFTRAN`) with fixed `do j=1,ns` loop bounds, `Point.txt` guard, and GUI auto-fill |
+| **Sample Bulk Density (`rho`)** | Added in EFFTRAN 4.9 / MEFFTRAN 1.8 (absent in WEFFTRAN) | Full 8-line source density scaling ($\rho / \rho_0$) across Cylindrical, Marinelli, and Well (`WEFFTRAN`) with validated loop bounds, `Point.txt` guard, and GUI auto-fill |
 | **WEFFTRAN Tall Samples** | Numerical denominator singularity ($C < 0$ or $C \gg 10^3$) | Replaced by convergent source-guided spatial quadrature |
-| **Radionuclide Decay Data** | Dispersed files; `PA-234` `41 43` typo in `kordaten.txt` | Unified 260+ radionuclide repository in `assets/common/` with `PA-234`, `NB-94`, and `W-187` included |
+| **Radionuclide Decay Data** | Dispersed files across distributions | Unified 260+ radionuclide repository in `assets/common/` with `W-187` added |
 | **Material Attenuation Tables** | Static pre-computed tables | Dynamic on-the-fly generation via integrated NIST XCOM |
 | **Genie 2000 Integration** | Overwrites input files in place | Non-destructive export with immediate CAM verification |
 | **GammaVision Integration** | `gv.f` (`EFFTRAN.Lib` in-place overwrite + `gv.txt`) & Excel macro `.EFT` | Pure-Python non-destructive `.LIB` & `.EFT` reader/writer with round-trip verification and `<name>_gv.txt` report (*untested — volunteers welcome*) |

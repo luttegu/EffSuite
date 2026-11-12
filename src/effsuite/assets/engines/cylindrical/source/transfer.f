@@ -3,7 +3,12 @@
 
         implicit none
 
-        double precision e,eps,u,u1,u2,t1,t2
+        double precision e,eps,u,u1,u2,t1,t2,x
+
+C       Columns of standard-efficiency.txt / sample-efficiency.txt
+C       (total.exe): energy, total efficiency, second moment, relative
+C       Monte Carlo uncertainty (fraction). As in EFFTRAN 4.9 the latter
+C       enters the transfer uncertainty in percent.
 
         open(7,file='reference.txt',status='old')
         open(8,file='standard-efficiency.txt',status='old')
@@ -12,10 +17,10 @@
 
 1       continue
         read(7,*,end=2) e,eps,u
-        read(8,*) e,t1
-        u1=0.5
-        read(9,*) e,t2
-        u2=0.5
+        read(8,*) e,t1,x,u1
+        u1=100.d0*u1
+        read(9,*) e,t2,x,u2
+        u2=100.d0*u2
 	u=u*u+u1*u1+u2*u2
         u=sqrt(u)
         eps=eps*t2/t1

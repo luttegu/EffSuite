@@ -267,7 +267,7 @@ def run_project(project,output:Path,*,cancel=None,progress=None):
                     "sample_efficiency":new[1],"transfer_factor":new[1]/ref["efficiency"],
                     "sample_relative_uncertainty_percent_legacy":new[2]})
 
-            result["warnings"].append("Transfer uncertainties retain the original hard-coded 0.5% standard/sample contributions; no complete uncertainty budget is claimed")
+            result["warnings"].append("Cylindrical transfer uncertainties add the Monte Carlo statistical uncertainty of the standard and sample efficiencies (EFFTRAN 4.9); Marinelli and well transfers retain the original hard-coded 0.5% standard/sample contributions; no complete uncertainty budget is claimed" if mode=="cylindrical" else "Transfer uncertainties retain the original hard-coded 0.5% standard/sample contributions; no complete uncertainty budget is claimed")
         if project["task"] in {"summing","both"}:
             folder=work/"summing";_prepare_folder(mode,project,folder,"sample")
             if mode!="well":
