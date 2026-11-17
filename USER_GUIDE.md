@@ -1,4 +1,4 @@
-# EffSuite User Guide — v0.1.6
+# EffSuite User Guide — v0.2.0
 
 > **Spectrometry Software Compatibility Notice (Genie 2000 & GammaVision):**  
 > EffSuite supports **Canberra / Mirion Genie 2000** formats (`.CAL`, `.NLB`, `.CTF`, and `.CNF`) as well as **ORTEC GammaVision** formats (`.EFT` efficiency calibration and `.LIB` nuclide library).  

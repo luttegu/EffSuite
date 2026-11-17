@@ -9,17 +9,17 @@
 * Original EFFTRAN: `C:\PGM\EFFTRAN\EFFTRAN_4.8`, `EFFTRAN_4.9`, and `EFFTRAN_5.0` (November 2026 update)
 * Original MEFFTRAN: `C:\PGM\EFFTRAN\MEFFTRAN_1.7`, `MEFFTRAN_1.8`, and `MEFFTRAN_1.9` (November 2026 update)
 * Original WEFFTRAN: `C:\PGM\EFFTRAN\WEFFTRAN` (Version 0.8 / 4.4.4, January 2018)
-* EffSuite: Version 0.1.6 (`C:\PGM\EffSuite`)
+* EffSuite: Version 0.2.0 (`C:\PGM\EffSuite`)
 
 ---
 
 ## Executive Summary
 
-A comprehensive file-by-file and line-by-line comparison was conducted across all Fortran mathematical source routines, decay data schemes, chemical composition definitions, mass attenuation tables, and workflow orchestration between the original distributions and **EffSuite v0.1.6**.
+A comprehensive file-by-file and line-by-line comparison was conducted across all Fortran mathematical source routines, decay data schemes, chemical composition definitions, mass attenuation tables, and workflow orchestration between the original distributions and **EffSuite v0.2.0**.
 
 The core findings are:
 1. **EFFTRAN 5.0 (Cylindrical) & MEFFTRAN 1.9 (Marinelli)**:
-   - **Dynamic Monte Carlo Uncertainty Propagation**: Tim Vidmar introduced dynamic Monte Carlo relative uncertainty propagation in MEFFTRAN 1.9, outputting 4 columns in `total.txt` ($E, t, \sqrt{t_2}, s$) and combining reference and MC standard error terms in `transfer.f`. EffSuite v0.1.6 adopts this dynamic uncertainty calculation across both Cylindrical and Marinelli modes, achieving complete metrological parity.
+   - **Dynamic Monte Carlo Uncertainty Propagation**: Tim Vidmar introduced dynamic Monte Carlo relative uncertainty propagation in MEFFTRAN 1.9, outputting 4 columns in `total.txt` ($E, t, \sqrt{t_2}, s$) and combining reference and MC standard error terms in `transfer.f`. EffSuite v0.2.0 adopts this dynamic uncertainty calculation across both Cylindrical and Marinelli modes, achieving complete metrological parity.
    - **Orchestration Renaming**: Upstream renamed the batch runner to `summing.f` (`summing.exe`) and the coincidence calculation routine to `coin.f` (`coin.exe`). EffSuite isolates native engines at the process level and directly invokes `coincidence.exe` with multithreaded Python batching.
    - **Upstream Detector Format Inconsistency in MEFFTRAN 1.9**: Upstream `Efficiency Transfer.xlsm` writes a 19-line `detector.txt` (with Absorber fields). In MEFFTRAN 1.9, `ptt.f` and `eta.f` were updated to read 19 lines, but `mine.f` and `total.f` still read 16 lines, crashing upstream `mine.exe`. EffSuite cleanly protects against this by accepting either format.
 2. **WEFFTRAN (Well-Type)**: Extended the 8th-line sample bulk density scaling (`rho / rho0`) to WEFFTRAN (`spatial_summing.py` and native `well` Fortran sources), in addition to the physical bug fixes in `total.f` and `peak.f` and the 3D spatial quadrature solver resolving the **tall-sample numerical singularity** and **high-efficiency positron ($^{22}\text{Na}$) cascade breakdown**.

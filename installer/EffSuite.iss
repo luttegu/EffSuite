@@ -4,7 +4,7 @@
 ; =====================================================================
 
 #define MyAppName "EffSuite"
-#define MyAppVersion "0.1.5"
+#define MyAppVersion "0.2.0"
 #define MyAppPublisher "GL"
 #define MyAppURL "https://github.com/luttegu/EffSuite"
 #define MyAppExeName "EffSuite_GUI.exe"
@@ -48,7 +48,7 @@ OutputDir={#OutputPath}
 OutputBaseFilename=EffSuite_{#MyAppVersion}_Setup
 Compression=lzma2/ultra64
 SolidCompression=yes
-LZMANumBlockThreads=8
+LZMANumBlockThreads=12
 
 ; --- Modern UI Appearance ---
 SetupIconFile=..\src\effsuite\assets\icon.ico

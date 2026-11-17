@@ -1,4 +1,4 @@
-# Validation Evidence — EffSuite 0.1.6 (November 2026)
+# Validation Evidence — EffSuite 0.2.0 (November 2026)
 
 ## Executed Application Checks
 

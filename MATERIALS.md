@@ -1,4 +1,4 @@
-# Material composition — EffSuite v0.1.6
+# Material composition — EffSuite v0.2.0
 
 The original Material.xls takes up to ten chemical formulas, relative weights
 and a separately entered bulk density. Its Save action runs XCOM to create a
