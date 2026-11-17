@@ -135,7 +135,7 @@ EffSuite_CLI.exe doctor
 Returns exit code 0 and prints a machine-readable JSON object:
 ```json
 {
-  "version": "0.1.5",
+  "version": "0.1.6",
   "dependencies": {
     "numpy": true,
     "matplotlib": true,
@@ -169,7 +169,7 @@ Returns exit code 0 and prints a machine-readable JSON object:
 | `--output-nlb` | String (path) | Target file path for the summing-corrected nuclide library (Genie `.NLB` or GammaVision `.LIB`). |
 | `--output-ctf` | String (path) | Target file path for the summing-corrected Genie certificate (`.CTF`). |
 | `--sample-height` | Float (mm) | **Dynamic override**: Sample filling height in mm. |
-| `--sample-density`| Float (g/cm³) | **Dynamic override**: Sample bulk density (sets the 8th source parameter `rho`, scaling sample attenuation $\mu(E)$ by $\rho / \rho_0$ across EFFTRAN 4.9, MEFFTRAN 1.8, and WEFFTRAN without mutating global `Composition/*.txt` files). |
+| `--sample-density`| Float (g/cm³) | **Dynamic override**: Sample bulk density (sets the 8th source parameter `rho`, scaling sample attenuation $\mu(E)$ by $\rho / \rho_0$ across EFFTRAN 5.0, MEFFTRAN 1.9, and WEFFTRAN without mutating global `Composition/*.txt` files). |
 | `--sample-material`| String | **Dynamic override**: Matrix material name (must exist in `Data/Composition` or `assets/common/Composition`). |
 | `--sample-diameter`| Float (mm) | **Dynamic override**: Outer container diameter in mm. |
 | `--sample-gap` | Float (mm) | **Dynamic override**: Endcap/crystal-to-container face distance in mm. |

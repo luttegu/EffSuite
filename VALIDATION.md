@@ -1,12 +1,12 @@
-# Validation Evidence — EffSuite 0.1.5 (November 2026)
+# Validation Evidence — EffSuite 0.1.6 (November 2026)
 
 ## Executed Application Checks
 
-**All 14 test suites (150+ checks) passed** on Windows 11 x86-64 (CPython 3.12+, NumPy, Matplotlib, PySide6) via the parallel runner (`tools/run_tests.py` / `Run_Tests_Windows.bat`) and on Linux x86-64.
+**All 16 test suites (150+ checks) passed** on Windows 11 x86-64 (CPython 3.12+, NumPy, Matplotlib, PySide6) via the parallel runner (`tools/run_tests.py` / `Run_Tests_Windows.bat`) and on Linux x86-64.
 
 The tests include:
 
-- Actual bundled native cylinder (`EFFTRAN 4.9`), Marinelli (`MEFFTRAN 1.8`), and well (`WEFFTRAN`) preparation and calculations.
+- Actual bundled native cylinder (`EFFTRAN 5.0`), Marinelli (`MEFFTRAN 1.9`), and well (`WEFFTRAN`) preparation and calculations.
 - 8-line source model bulk density scaling (`rho / rho0`) verified across all three geometries (`Water` at `rho = 2.0 g/cm³` matches `HeavyWater` at `rho0 = 2.0 g/cm³` to 6 decimal places), point-source `vacuum` (`rho = 0.00`) positivity guard, and 7-line backward compatibility.
 - Real laboratory benchmark validations:
   - `test_validation_case_207724.py`: Cylindrical EFFTRAN validation against reference laboratory dataset.
