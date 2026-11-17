@@ -1,4 +1,4 @@
-# EffSuite User Guide — v0.1.5
+# EffSuite User Guide — v0.1.6
 
 > **Spectrometry Software Compatibility Notice (Genie 2000 & GammaVision):**  
 > EffSuite supports **Canberra / Mirion Genie 2000** formats (`.CAL`, `.NLB`, `.CTF`, and `.CNF`) as well as **ORTEC GammaVision** formats (`.EFT` efficiency calibration and `.LIB` nuclide library).  
@@ -10,8 +10,8 @@
 
 ## Reproduce an original EFFTRAN / MEFFTRAN / WEFFTRAN case
 
-Choose the matching application at the top (`EFFTRAN` 4.9, `MEFFTRAN` 1.8, or `WEFFTRAN`). In Detector, load the original
-detector text file. In Source, load the original Standard and Sample text
+Choose the matching application at the top (`EFFTRAN` 5.0, `MEFFTRAN` 1.9, or `WEFFTRAN`). In Detector, load the original
+detector text file (both 16-line and 19-line detector models are supported seamlessly). In Source, load the original Standard and Sample text
 files (7-line legacy models and 8-line models with explicit `Source density [g/cm³]` are both supported; when you change `Source material` in the GUI, `Source density [g/cm³]` automatically fills with the nominal density from `Composition/<material>.txt` and can be freely adjusted). Do not infer dimensions from the model name. Original cylinder,
 Marinelli and well formats differ and are checked separately.
 

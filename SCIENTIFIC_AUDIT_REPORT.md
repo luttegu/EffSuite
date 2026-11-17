@@ -2,26 +2,29 @@
 
 **To:** Scientific Author & Maintainer of EFFTRAN, MEFFTRAN, and WEFFTRAN (Dr. Tim Vidmar)  
 **From:** EffSuite Engineering & Validation Team (built by ChatGPT & Gemini under the supervision of G. Lutter)  
-**Date:** November 10, 2026  
+**Date:** November 17, 2026  
 **Disclaimer:** Provided strictly on an AS-IS basis. G. Lutter accepts NO responsibility or liability under any circumstances for incorrect calculations, inaccurate analytical results, or damages resulting from software use. Users must independently verify all results.  
 **Subject:** Precise Technical Audit of Physics Changes, Bug Fixes, Code Adjustments, and Architectural Modernization  
 **Analyzed Reference Distributions:**
-* Original EFFTRAN: `C:\PGM\EFFTRAN\EFFTRAN_4.8` (Version 4.8) & `C:\PGM\EFFTRAN\EFFTRAN_4.9` (Version 4.9, 2026)
-* Original MEFFTRAN: `C:\PGM\EFFTRAN\MEFFTRAN_1.7` (Version 1.7) & `C:\PGM\EFFTRAN\MEFFTRAN_1.8` (Version 1.8, 2026)
+* Original EFFTRAN: `C:\PGM\EFFTRAN\EFFTRAN_4.8`, `EFFTRAN_4.9`, and `EFFTRAN_5.0` (November 2026 update)
+* Original MEFFTRAN: `C:\PGM\EFFTRAN\MEFFTRAN_1.7`, `MEFFTRAN_1.8`, and `MEFFTRAN_1.9` (November 2026 update)
 * Original WEFFTRAN: `C:\PGM\EFFTRAN\WEFFTRAN` (Version 0.8 / 4.4.4, January 2018)
-* EffSuite: Version 0.1.5 (`C:\PGM\EffSuite`)
+* EffSuite: Version 0.1.6 (`C:\PGM\EffSuite`)
 
 ---
 
 ## Executive Summary
 
-A comprehensive file-by-file and line-by-line comparison was conducted across all Fortran mathematical source routines, decay data schemes, chemical composition definitions, mass attenuation tables, and workflow orchestration between the original distributions and **EffSuite v0.1.5**.
+A comprehensive file-by-file and line-by-line comparison was conducted across all Fortran mathematical source routines, decay data schemes, chemical composition definitions, mass attenuation tables, and workflow orchestration between the original distributions and **EffSuite v0.1.6**.
 
 The core findings are:
-1. **EFFTRAN 4.9 (Cylindrical) & MEFFTRAN 1.8 (Marinelli)**: EffSuite v0.1.5 integrates the 8-line source model (`Source density [g/cm³]` on line 8) and `HeavyWater` reference material from `EFFTRAN 4.9` and `MEFFTRAN 1.8`. In the latest upstream release, the author updated the density-scaling loop bounds to `ns` and added non-positive density guards. EffSuite preserves full scientific precision (`3e15.5`) in `transfer.f`, includes the relative Monte Carlo uncertainty of the standard and sample in cylindrical transfer factors (as in EFFTRAN 4.9), and maintains numerical floors (`max(0., ...)` variance floor and $10^{-15}$ efficiency floor).
+1. **EFFTRAN 5.0 (Cylindrical) & MEFFTRAN 1.9 (Marinelli)**:
+   - **Dynamic Monte Carlo Uncertainty Propagation**: Tim Vidmar introduced dynamic Monte Carlo relative uncertainty propagation in MEFFTRAN 1.9, outputting 4 columns in `total.txt` ($E, t, \sqrt{t_2}, s$) and combining reference and MC standard error terms in `transfer.f`. EffSuite v0.1.6 adopts this dynamic uncertainty calculation across both Cylindrical and Marinelli modes, achieving complete metrological parity.
+   - **Orchestration Renaming**: Upstream renamed the batch runner to `summing.f` (`summing.exe`) and the coincidence calculation routine to `coin.f` (`coin.exe`). EffSuite isolates native engines at the process level and directly invokes `coincidence.exe` with multithreaded Python batching.
+   - **Upstream Detector Format Inconsistency in MEFFTRAN 1.9**: Upstream `Efficiency Transfer.xlsm` writes a 19-line `detector.txt` (with Absorber fields). In MEFFTRAN 1.9, `ptt.f` and `eta.f` were updated to read 19 lines, but `mine.f` and `total.f` still read 16 lines, crashing upstream `mine.exe`. EffSuite cleanly protects against this by accepting either format.
 2. **WEFFTRAN (Well-Type)**: Extended the 8th-line sample bulk density scaling (`rho / rho0`) to WEFFTRAN (`spatial_summing.py` and native `well` Fortran sources), in addition to the physical bug fixes in `total.f` and `peak.f` and the 3D spatial quadrature solver resolving the **tall-sample numerical singularity** and **high-efficiency positron ($^{22}\text{Na}$) cascade breakdown**.
-3. **Decay Data & Library Fixes**: Corrections were made to $^{22}\text{Na}$ feeding definitions, and $^{187}\text{W}$ was added to `kordaten.txt` ($^{94}\text{Nb}$ is now included in the upstream file).
-4. **Modernization & Automation**: Complete removal of dependencies on legacy 32-bit Excel / VBA macros, introduction of parallelized multi-core calculations, automated NIST XCOM execution, and headless CLI batch capabilities.
+3. **Decay Data & Library Fixes**: Upstream EFFTRAN 5.0 and MEFFTRAN 1.9 integrated $^{94}\text{Nb}$. EffSuite additionally includes $^{187}\text{W}$ in `kordaten.txt` (9,870 lines), and bundles `heavy.txt` alongside `HeavyWater.txt` for exact upstream MEFFTRAN 1.9 interoperability.
+4. **Compiler Modernization & Stack Memory Safety**: All 34 native binaries were recompiled using modern GCC 15.2.0 (w64devkit), resolving the Windows NT `WinError 623` DLL relocation error. Engine builds are compiled with `-finit-local-zero` and `-fno-strict-aliasing` to guarantee determinism in legacy Fortran 77 routines.
 
 ---
 

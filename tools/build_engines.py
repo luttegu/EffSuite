@@ -18,7 +18,7 @@ def build(compiler, target, extra=()):
     manifest = {"compiler": compiler, "target": target, "flags": list(extra), "programs": []}
     version = subprocess.run([compiler, "--version"], capture_output=True, text=True, check=True)
     manifest["compiler_version"] = version.stdout
-    flags = ["-O2", "-std=legacy", "-fno-fast-math", "-ffp-contract=off", "-fno-use-linker-plugin"]
+    flags = ["-O2", "-std=legacy", "-fno-fast-math", "-ffp-contract=off", "-fno-use-linker-plugin", "-finit-local-zero", "-fno-strict-aliasing"]
     probe = subprocess.run([compiler, "-fallow-argument-mismatch", "-E", "-"], input="", text=True, capture_output=True)
     if probe.returncode == 0 or "unrecognized command line option" not in probe.stderr:
         flags.append("-fallow-argument-mismatch")

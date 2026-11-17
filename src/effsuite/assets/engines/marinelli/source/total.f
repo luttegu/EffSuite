@@ -51,8 +51,8 @@
       double precision rho,rho0
 
       double precision u1(100),u2(100)
-      double precision t(100),sig(100),t2(100)
-      double precision rat,ratmax,unc
+      double precision t(100),sig(100),s(100),t2(100)
+      double precision smax,unc
 
       double precision pi,u
       double precision sbul,dbul,dbul1
@@ -484,17 +484,22 @@
 
 333   continue
 
-      ratmax=0.
+      smax=0.d0
 
       do j=1,ne
-        u=u1(j)
+        u=u1(j)+u2(j)
+        u=u/2.d0
         t(j)=(n-1)*t(j)+u
         t(j)=t(j)/n
         sig(j)=(n-1)*sig(j)+u*u
         sig(j)=sig(j)/n
-        rat=0.
-        if (t(j).gt.0.) rat=sqrt(max(0.d0,(sig(j)-t(j)*t(j))/n))/t(j)
-        if (rat.gt.ratmax) ratmax=rat
+        s(j)=sig(j)-t(j)*t(j)
+        s(j)=abs(s(j))
+        s(j)=sqrt(s(j)/n)
+        if (t(j).gt.0.d0) then
+          s(j)=s(j)/t(j)
+          if (s(j).gt.smax) smax=s(j)
+        endif
       enddo
       
       do i=1,ne
@@ -503,15 +508,16 @@
         t2(i)=t2(i)/n
       enddo
       
-      if (ratmax.gt.unc.or.n.lt.10000) goto 100
+      if (smax.gt.unc.or.n.lt.10000) goto 100
 
       open(7,file='total.txt',status='unknown')
       do i=1,ne
         write(7,99) exp(e(i)),max(1.d-15,t(i)),
-     +              max(1.d-15,sqrt(max(0.d0,t2(i))))
+     +              max(1.d-15,sqrt(max(0.d0,t2(i)))),
+     +              max(1.d-15,s(i))
       enddo
       close(7)
-99    format(3e15.5)
+99    format(4e15.5)
 
       end
 

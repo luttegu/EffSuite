@@ -1,7 +1,7 @@
 # Technical Summary of Enhancements, Fixes, and Architectural Changes in EffSuite
 
-**Compared to the Original EFFTRAN (v4.8 & v4.9), MEFFTRAN (v1.7 & v1.8), and WEFFTRAN Distributions, and Previous EffSuite Releases**  
-*Document Version: 1.3 — EffSuite v0.1.5 (November 2026)*  
+**Compared to the Original EFFTRAN (v4.8, v4.9 & v5.0), MEFFTRAN (v1.7, v1.8 & v1.9), and WEFFTRAN Distributions, and Previous EffSuite Releases**  
+*Document Version: 1.4 — EffSuite v0.1.6 (November 2026)*  
 *Author: EffSuite Development Team (built by ChatGPT & Gemini under the supervision of G. Lutter)*  
 *Target Audience: Original Author, Maintainers, and Scientific Evaluators of EFFTRAN / MEFFTRAN / WEFFTRAN*  
 
@@ -11,15 +11,17 @@
 
 ## Executive Summary
 
-**EffSuite (v0.1.5)** is an open-source modernization and cross-platform reimplementation of the gamma-spectrometry efficiency transfer and true coincidence summing framework originally established by **EFFTRAN** (v4.9, cylindrical geometries), **MEFFTRAN** (v1.8, Marinelli beaker geometries), and **WEFFTRAN** (well-type detectors).
+**EffSuite (v0.1.6)** is an open-source modernization and cross-platform reimplementation of the gamma-spectrometry efficiency transfer and true coincidence summing framework originally established by **EFFTRAN** (v5.0, cylindrical geometries), **MEFFTRAN** (v1.9, Marinelli beaker geometries), and **WEFFTRAN** (well-type detectors).
 
 The objective of this work was **not** to alter the validated core physical models of the original Fortran engines, but rather to:
-1. Preserve 100% numerical agreement with validated EFFTRAN/MEFFTRAN reference cases while fixing upstream numerical bugs discovered in EFFTRAN 4.9 and MEFFTRAN 1.8.
-2. Integrate the new 8th-line explicit **Source Bulk Density (`rho` [g/cm³])** model format introduced in EFFTRAN 4.9 and MEFFTRAN 1.8, and extend it uniformly to WEFFTRAN (`well`), the desktop GUI, and the headless CLI with full backward compatibility for 7-line models.
-3. Resolve the known numerical singularity/instability in legacy WEFFTRAN for tall sample geometries extending above the detector crystal.
-4. Eliminate dependencies on legacy 32-bit Microsoft Excel, VBA macros, and Windows-only 16/32-bit execution boundaries.
-5. Provide a cross-platform (Windows, Linux, macOS) architecture with parallel multi-core calculation, headless CLI batch capabilities, interactive CAD-style cross-section visualization, and automated Genie 2000 CAM file processing.
-6. Unify redundant data assets (attenuation tables, compositions, and 260+ radionuclide decay schemes) into a clean, shared hierarchy with automated NIST XCOM cross-section generation.
+1. Preserve 100% numerical agreement with validated EFFTRAN/MEFFTRAN reference cases while fixing upstream numerical bugs and defects in EFFTRAN 5.0 and MEFFTRAN 1.9.
+2. Full parity across Cylindrical and Marinelli geometries for dynamic Monte Carlo relative uncertainty propagation in efficiency transfer ($u = \sqrt{u_{\text{ref}}^2 + (100\,s_{\text{std}})^2 + (100\,s_{\text{sample}})^2}$), unified across EFFTRAN 5.0 and MEFFTRAN 1.9.
+3. Integrate the explicit **Source Bulk Density (`rho` [g/cm³])** model format across all three geometries with robust fallback to reference material nominal density `rho0` when `rho <= 0` or omitted.
+4. Resolve the fatal upstream format mismatch in MEFFTRAN 1.9 (`detector.txt` 19-line macro vs 16-line engine reading) by supporting both format specifications transparently in the model layer.
+5. Resolve the known numerical singularity/instability in legacy WEFFTRAN for tall sample geometries extending above the detector crystal.
+6. Eliminate dependencies on legacy 32-bit Microsoft Excel, VBA macros, and Windows-only 16/32-bit execution boundaries.
+7. Provide a cross-platform (Windows, Linux, macOS) architecture with parallel multi-core calculation, headless CLI batch capabilities, interactive CAD-style cross-section visualization, and automated Genie 2000 CAM file processing.
+8. Unify redundant data assets (attenuation tables, compositions, and 260+ radionuclide decay schemes) into a clean, shared hierarchy with automated NIST XCOM cross-section generation.
 
 ---
 
@@ -46,13 +48,13 @@ EffSuite v0.1.3 audited the first EFFTRAN 4.9 and MEFFTRAN 1.8 sources and corre
 | **2** | **`Point.txt` (`vacuum`, `rho = 0.00`) caused `log(0.0) = -Infinity` and `NaN`.** | **Guarded upstream** (non-positive `rho` and `rho0` are replaced by $10^{-12}$). | A non-positive or missing `rho` is replaced by the nominal `rho0` of the material (`if (rho.le.0.) rho=rho0`), and `rho0` is floored at $10^{-15}$. A 7-line source file (no 8th line) loads without error and behaves as `rho = rho0`. |
 | **3** | **Gamma energy precision and embedded `system('total.exe')` in `EFFTRAN_4.9/transfer.f`.** Upstream `transfer.f` writes `format(f12.1,e15.5,f12.1)` (e.g. $46.539\text{ keV}$ becomes $46.5\text{ keV}$) and itself launches `total.exe` for the standard and the sample. | Unchanged in the current EFFTRAN 4.9. (MEFFTRAN 1.8 `transfer.f` is the older stage-isolated version.) | EffSuite keeps a stage-isolated `transfer.f` (the Python layer runs `total` for the standard and the sample) with full-precision `format(3e15.5)`. |
 
-### 0.2a Uncertainty in the Efficiency Transfer (EFFTRAN 4.9)
+### 0.2a Uncertainty in Efficiency Transfer (EFFTRAN 4.9/5.0 & MEFFTRAN 1.9)
 
-The current EFFTRAN 4.9 `total.f` writes a fourth column, the relative Monte Carlo uncertainty $s$ of the total efficiency (fraction), and `transfer.f` combines it with the reference uncertainty $u_{ref}$ (percent):
+In EFFTRAN 4.9/5.0 and MEFFTRAN 1.9, `total.f` writes a fourth column: the relative Monte Carlo statistical uncertainty $s$ of the total efficiency (fraction). In `transfer.f`, this Monte Carlo uncertainty is dynamically propagated into the transfer factor uncertainty along with the reference calibration uncertainty $u_{\text{ref}}$ (percent):
 
-$$u = \sqrt{u_{ref}^2 + (100\,s_{std})^2 + (100\,s_{sample})^2}$$
+$$u = \sqrt{u_{\text{ref}}^2 + (100\,s_{\text{std}})^2 + (100\,s_{\text{sample}})^2}$$
 
-EffSuite v0.1.5 adopts this for the cylindrical (EFFTRAN) geometry; the earlier fixed $0.5\%$ standard and $0.5\%$ sample terms are no longer used there. MEFFTRAN 1.8 has not changed upstream, so the Marinelli transfer, and the well transfer, keep the fixed $0.5\% + 0.5\%$ terms. None of these is a complete uncertainty budget.
+EffSuite v0.1.6 applies this dynamic uncertainty propagation across **both Cylindrical (EFFTRAN 5.0) and Marinelli (MEFFTRAN 1.9)** geometries. The fixed $0.5\%$ placeholder terms are retained solely for the Well geometry (WEFFTRAN 4.4.4). None of these is claimed as a complete uncertainty budget (which must also encompass detector dimensions, positioning tolerances, and nuclear decay data uncertainties).
 
 ### 0.3 Comparison of `EffSuite v0.1.3` vs. `EffSuite v0.1.2`
 
@@ -78,6 +80,47 @@ EffSuite v0.1.5 adopts this for the cylindrical (EFFTRAN) geometry; the earlier 
    - Explicitly zeroed `s(3000)` and `s1(3000)` prior to nuclide loop label `123 continue` in `cylindrical` and `marinelli` `coincidence.f` to prevent uninitialized memory carry-over.
    - Kept Monte Carlo variance cancellation floor `max(0., (sig(j)-t(j)*t(j))/n)` and $10^{-15}$ efficiency positivity clamp in `total.f` and `efficiency.f`.
    - Kept `kordaten.txt` (9,870 lines, including the additional `W-187` nuclide missing from upstream's file; `NB-94` is now included upstream).
+
+### 0.4 Audit and Integration of Upstream EFFTRAN 5.0 & MEFFTRAN 1.9 (2026 Update)
+
+In November 2026, Tim Vidmar released updated distributions for **EFFTRAN 5.0** and **MEFFTRAN 1.9** (`C:\PGM\EFFTRAN`). A deep, line-by-line comparative audit against EffSuite was performed, resulting in the following findings and implementation updates:
+
+1. **Renaming of Coincidence Summing Executables Upstream**:
+   - In earlier versions, `coin.f` was a shell batch runner executing `mine.exe`, `energy.exe`, ..., `coincidence.exe`, and `coincidence.f` was the coincidence summing calculation routine.
+   - In EFFTRAN 5.0 and MEFFTRAN 1.9, the batch runner was renamed to `summing.f` (producing `summing.exe`), and the calculation routine was renamed to `coin.f` (producing `coin.exe`).
+   - Upstream `gv.f` (GammaVision macro interface) was updated to invoke `summing.exe`.
+   - *EffSuite Architecture*: EffSuite's Python orchestration pipeline (`suite.py`, `parallel_coincidence.py`) directly runs `coincidence.exe` in isolated thread worker sandboxes. It does not invoke Windows shell scripts or batch wrappers, completely eliminating file-locking and race conditions.
+
+2. **Marinelli Dynamic Uncertainty Parity (MEFFTRAN 1.9)**:
+   - In MEFFTRAN 1.8, `transfer.f` used hardcoded placeholder uncertainties (`u1 = 0.5%`, `u2 = 0.5%`).
+   - In MEFFTRAN 1.9, Tim Vidmar implemented dynamic Monte Carlo uncertainty propagation: `total.f` computes relative MC standard error $s(j)$ and outputs a 4th column in `total.txt`, which `transfer.f` reads.
+   - EffSuite v0.1.6 adopts this dynamic Monte Carlo uncertainty propagation for Marinelli (`total.f` and `transfer.f`), while retaining double-precision floating-point arithmetic and stage isolation.
+
+3. **Critical Upstream Format Defect Discovered in MEFFTRAN 1.9 (`detector.txt`)**:
+   - The upstream author modified the `Detector` sheet in `Efficiency Transfer.xlsm` to add Absorber diameter (100 mm), thickness (0 mm), and material (copper), writing a **19-line** `detector.txt` (matching Cylindrical).
+   - In MEFFTRAN 1.9, `ptt.f` and `eta.f` were updated to read 19 lines.
+   - **However**, upstream `mine.f` and `total.f`, as well as the bundled models in `MEFFTRAN_1.9/Detector/` (`High-energy.txt`, `Low-energy.txt`), were **not updated**; they still read **16 lines**.
+   - Consequently, running the raw upstream `mine.exe` against the shipped 19-line `detector.txt` causes `mine.exe` to parse line 13 (`100.00`) as the detector material name `dmat`, crashing with:
+     ```
+     At line 212 of file mine.f (unit = 7)
+     Fortran runtime error: Cannot open file '.\Composition\100.00.txt': No such file or directory
+     ```
+   - Conversely, running upstream `ptt.exe` on a 16-line detector model crashes with an unexpected End of File error.
+   - *EffSuite Safeguard*: EffSuite's `model_io.py` and `suite.py` insulate against this upstream defect by decoupling the internal geometry models. EffSuite formats exactly the line count required by each geometry's engine while permitting users to load either 16-line or 19-line detector models interchangeably (`test_detector_geometry_cross_compatibility_efftran_and_mefftran`).
+
+4. **Numerical Clamps and Loop Index Corrections**:
+   - Upstream added positivity guards (`1.E-12`) in `efficiency.f` and `total.f`. EffSuite retains its stricter non-zero floor `max(1.e-15, ...)`.
+   - In upstream EFFTRAN 5.0 `total.f`, line 152 uses `do j=1,ns` to scale `mus(j)` by `rho/rho0`. However, `mus` is dimensioned for the `ne` reference energy points (e.g. 15), while `ns` is the number of rows in the material attenuation table (e.g. 40). EffSuite correctly loops over `do j=1,ne`.
+   - Upstream `mine.f` and `scatter.f` clamp `rho <= 0` to `1.E-12` (treating a 7-line file missing density as a vacuum). EffSuite safely falls back to nominal material density: `if (rho.le.0.) rho=rho0`.
+
+5. **Decay Schemes (`kordaten.txt`) and Material Interoperability**:
+   - Upstream EFFTRAN 5.0 and MEFFTRAN 1.9 integrated $^{94}\text{Nb}$ in its alphabetical sequence (9,763 lines).
+   - Upstream is still missing $^{187}\text{W}$. EffSuite preserves its comprehensive 9,870-line decay library including both $^{94}\text{Nb}$ and $^{187}\text{W}$.
+   - Upstream MEFFTRAN 1.9 added `heavy.txt` ($\text{H}_2\text{O}$ with $\rho_0 = 2.0\text{ g/cm}^3$). EffSuite now bundles `heavy.txt` alongside `HeavyWater.txt` in `Composition` and `Material` to provide full interoperability with user files created in MEFFTRAN 1.9.
+
+6. **Compiler Toolchain Modernization and Stack Safety**:
+   - Recompiled all 34 native binaries using modern W64devkit GCC 15.2.0, permanently resolving the Windows NT memory relocation crash (`WinError 623` DLL relocation error) observed with obsolete MinGW-w64 GCC 7.3.0 builds.
+   - Hardened `tools/build_engines.py` with `-finit-local-zero` and `-fno-strict-aliasing` compiler flags to ensure determinism and eliminate uninitialized stack memory artifacts in legacy F77 routines.
 
 ---
 

@@ -1,5 +1,15 @@
 # Release Notes
 
+## EffSuite 0.1.6 (November 2026)
+
+- **EFFTRAN 5.0 & MEFFTRAN 1.9 Alignment & Verification**:
+  - Fully audited all source routines, data libraries, and Excel macros against Tim Vidmar's updated upstream distributions (`C:\PGM\EFFTRAN\EFFTRAN_5.0` and `MEFFTRAN_1.9`).
+  - **Marinelli Dynamic Uncertainty Propagation**: Adopted MEFFTRAN 1.9's dynamic Monte Carlo relative uncertainty calculation in Marinelli `total.f` (4-column output) and `transfer.f` ($u = \sqrt{u_{\text{ref}}^2 + (100\,s_{\text{std}})^2 + (100\,s_{\text{sample}})^2}$), achieving full metrological parity with Cylindrical transfer uncertainty while preserving double precision and stage isolation.
+  - **Toolchain Modernization & GCC 15.2.0**: Rebuilt all 34 native binaries using modern GCC 15.2.0 (`w64devkit`), eliminating the Windows NT memory relocation error (`WinError 623` DLL relocation error) from obsolete MinGW-w64 GCC 7.3.0 builds. Hardened build flags with `-finit-local-zero` and `-fno-strict-aliasing` for determinism and stack safety in legacy Fortran 77 routines.
+  - **Resolution of Upstream MEFFTRAN 1.9 Detector Model Mismatch**: Identified and shielded against the upstream format discrepancy in MEFFTRAN 1.9 (where the Excel macro writes 19-line detector models, updated in `ptt.f`/`eta.f`, but `mine.f`/`total.f` still read 16 lines). EffSuite transparently supports both 16-line and 19-line detector models.
+  - **Material Library**: Added `heavy.txt` ($\text{H}_2\text{O}$, $\rho_0 = 2.0\text{ g/cm}^3$) to `Composition/` and `Material/` to provide 100% interoperability with MEFFTRAN 1.9 project files.
+  - **Comprehensive Verification**: All 141 automated tests across 16 test suites (cylindrical, marinelli, and well) pass with 100% precision.
+
 ## EffSuite 0.1.5 (November 2026)
 
 - **EFFTRAN 4.9 & MEFFTRAN 1.8 Full Alignment & Verification**:
