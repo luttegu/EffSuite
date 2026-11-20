@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "geometry": "well",
-  "task": "summing",
+  "task": "both",
   "detector": [
     72.0,
     69.0,

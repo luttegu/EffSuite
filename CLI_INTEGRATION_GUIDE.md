@@ -135,7 +135,7 @@ EffSuite_CLI.exe doctor
 Returns exit code 0 and prints a machine-readable JSON object:
 ```json
 {
-  "version": "0.2.0",
+  "version": "0.3.0",
   "dependencies": {
     "numpy": true,
     "matplotlib": true,

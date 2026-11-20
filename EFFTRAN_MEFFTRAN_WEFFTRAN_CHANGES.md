@@ -1,7 +1,7 @@
 # Technical Summary of Enhancements, Fixes, and Architectural Changes in EffSuite
 
 **Compared to the Original EFFTRAN (v4.8, v4.9 & v5.0), MEFFTRAN (v1.7, v1.8 & v1.9), and WEFFTRAN Distributions, and Previous EffSuite Releases**  
-*Document Version: 1.5 — EffSuite v0.2.0 (November 2026)*  
+*Document Version: 1.6 — EffSuite v0.3.0 (November 2026)*  
 *Author: EffSuite Development Team (built by ChatGPT & Gemini under the supervision of G. Lutter)*  
 *Target Audience: Original Author, Maintainers, and Scientific Evaluators of EFFTRAN / MEFFTRAN / WEFFTRAN*  
 
@@ -11,7 +11,7 @@
 
 ## Executive Summary
 
-**EffSuite (v0.2.0)** is an open-source modernization and cross-platform reimplementation of the gamma-spectrometry efficiency transfer and true coincidence summing framework originally established by **EFFTRAN** (v5.0, cylindrical geometries), **MEFFTRAN** (v1.9, Marinelli beaker geometries), and **WEFFTRAN** (well-type detectors).
+**EffSuite (v0.3.0)** is an open-source modernization and cross-platform reimplementation of the gamma-spectrometry efficiency transfer and true coincidence summing framework originally established by **EFFTRAN** (v5.0, cylindrical geometries), **MEFFTRAN** (v1.9, Marinelli beaker geometries), and **WEFFTRAN** (well-type detectors).
 
 The objective of this work was **not** to alter the validated core physical models of the original Fortran engines, but rather to:
 1. Preserve 100% numerical agreement with validated EFFTRAN/MEFFTRAN reference cases while fixing upstream numerical bugs and defects in EFFTRAN 5.0 and MEFFTRAN 1.9.
@@ -54,7 +54,7 @@ In EFFTRAN 4.9/5.0 and MEFFTRAN 1.9, `total.f` writes a fourth column: the relat
 
 $$u = \sqrt{u_{\text{ref}}^2 + (100\,s_{\text{std}})^2 + (100\,s_{\text{sample}})^2}$$
 
-EffSuite v0.2.0 applies this dynamic uncertainty propagation across **both Cylindrical (EFFTRAN 5.0) and Marinelli (MEFFTRAN 1.9)** geometries. The fixed $0.5\%$ placeholder terms are retained solely for the Well geometry (WEFFTRAN 4.4.4). None of these is claimed as a complete uncertainty budget (which must also encompass detector dimensions, positioning tolerances, and nuclear decay data uncertainties).
+EffSuite (since v0.2.0) applies this dynamic uncertainty propagation across **both Cylindrical (EFFTRAN 5.0) and Marinelli (MEFFTRAN 1.9)** geometries. The fixed $0.5\%$ placeholder terms are retained solely for the Well geometry (WEFFTRAN 4.4.4). None of these is claimed as a complete uncertainty budget (which must also encompass detector dimensions, positioning tolerances, and nuclear decay data uncertainties).
 
 ### 0.3 Comparison of `EffSuite v0.1.3` vs. `EffSuite v0.1.2`
 
@@ -63,7 +63,7 @@ EffSuite v0.2.0 applies this dynamic uncertainty propagation across **both Cylin
    - Full backward compatibility: existing 7-line `.txt` files and 7-element `.effsuite.json` project files automatically populate `Source density` from the nominal density in `Composition/<material>.txt`.
    - Updated all 39 bundled `.txt` models in `Sample/` and `Standard/` and all example `.effsuite.json` projects to 8 fields, and added `HeavyWater.txt` to `assets/common/Composition/` and `assets/common/Material/`.
 2. **Extension of 8th-Line Density Scaling to WEFFTRAN (`spatial_summing.py` & `well/source/*.f`)**:
-   - Updated `_xcom_table`, `material_mu`, and `well_local_response` in `src/effsuite/spatial_summing.py` so WEFFTRAN's 3D ray-traced response and coincidence summing engine scales sample mass attenuation by $\rho / \rho_0$ using `source[7]`, matching the native `well` Fortran routines (`mine.f`, `total.f`, `scatter.f`).
+   - Updated `_xcom_table` and `well_local_response` in `src/effsuite/spatial_summing.py` so WEFFTRAN's 3D ray-traced response and coincidence summing engine scales sample mass attenuation by $\rho / \rho_0$ using `source[7]`, matching the native `well` Fortran routines (`mine.f`, `total.f`, `scatter.f`).
 3. **Desktop GUI (`gui.py`) & CAD View (`geometry_view.py`)**:
    - Added `Source density [g/cm³]` spinbox directly below `Source material` in the `Source` tab (for both Standard and Sample columns across Cylindrical, Marinelli, and Well modes).
    - Selecting a different `Source material` in the GUI dropdown automatically populates `Source density [g/cm³]` with the material's nominal density from `Composition/<material>.txt`, while preserving custom densities when loading saved source files or projects.
@@ -75,6 +75,7 @@ EffSuite v0.2.0 applies this dynamic uncertainty propagation across **both Cylin
    - Standardized WEFFTRAN (`well`) bundled models to generic names (`Detector/well.txt`, `Sample/Sample.txt`, `Standard/Standard.txt`) using generic `Plastic_vial` container material.
 6. **Multithreaded WEFFTRAN 3D Spatial Ray-Tracing & Parallel Test Runner**:
    - Multithreaded spatial quadrature ray-tracing (`spatial_summing.py`) and nuclide cascade evaluation (`well_spatial.py`), reducing 3D well calculation times by ~3x while preserving exact serial equivalence (`--verify-serial`).
+   - v0.3.0: the ray tracing moved to the compiled `raytrace` Fortran program (results agree with the Python version to ~1e-14), processed in direction blocks (peak memory below 1 GB), with separate direction and point convergence checks; the DET007 complete analysis went from 108 s to 12.5 s. The EFFTRAN and MEFFTRAN Fortran sources are unchanged.
    - Added `tools/run_tests.py` (invoked by `Run_Tests_Windows.bat`) to execute all 14 test suites concurrently across CPU cores.
 7. **Preserved & Hardened EffSuite Scientific Fixes**:
    - Explicitly zeroed `s(3000)` and `s1(3000)` prior to nuclide loop label `123 continue` in `cylindrical` and `marinelli` `coincidence.f` to prevent uninitialized memory carry-over.
@@ -94,7 +95,7 @@ In November 2026, Tim Vidmar released updated distributions for **EFFTRAN 5.0** 
 2. **Marinelli Dynamic Uncertainty Parity (MEFFTRAN 1.9)**:
    - In MEFFTRAN 1.8, `transfer.f` used hardcoded placeholder uncertainties (`u1 = 0.5%`, `u2 = 0.5%`).
    - In MEFFTRAN 1.9, Tim Vidmar implemented dynamic Monte Carlo uncertainty propagation: `total.f` computes relative MC standard error $s(j)$ and outputs a 4th column in `total.txt`, which `transfer.f` reads.
-   - EffSuite v0.2.0 adopts this dynamic Monte Carlo uncertainty propagation for Marinelli (`total.f` and `transfer.f`), while retaining double-precision floating-point arithmetic and stage isolation.
+   - EffSuite (since v0.2.0) adopts this dynamic Monte Carlo uncertainty propagation for Marinelli (`total.f` and `transfer.f`), while retaining double-precision floating-point arithmetic and stage isolation.
 
 3. **Critical Upstream Format Defect Discovered in MEFFTRAN 1.9 (`detector.txt`)**:
    - The upstream author modified the `Detector` sheet in `Efficiency Transfer.xlsm` to add Absorber diameter (100 mm), thickness (0 mm), and material (copper), writing a **19-line** `detector.txt` (matching Cylindrical).

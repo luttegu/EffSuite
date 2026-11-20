@@ -11,7 +11,7 @@ import unittest
 from effsuite.materials import (TEMPLATE,validate_composition,load_composition,composition_bytes,
  generate_attenuation,attenuation_rows,create_material,save_definition)
 from effsuite.parallel_coincidence import CoincidenceError,CalculationCancelled
-from effsuite.model_io import ASSETS, COMMON_DATA
+from effsuite.model_io import ASSETS, COMMON_DATA, default_material_density
 from effsuite.app_cli import example_path
 from effsuite.suite import run_project
 
@@ -21,6 +21,9 @@ class MaterialTests(unittest.TestCase):
         self.temp=tempfile.TemporaryDirectory();self.root=Path(self.temp.name)
         self.water={'name':'Test_water','density_g_cm3':1.,'components':[{'formula':'H2O','weight':1.}]}
     def tearDown(self):self.temp.cleanup()
+    def test_unknown_material_is_reported_not_given_density_one(self):
+        self.assertAlmostEqual(default_material_density('water'),1.0,places=2)
+        with self.assertRaisesRegex(CoincidenceError,'not found'):default_material_density('no_such_material_xyz')
     def test_invalid_compositions_fail_before_xcom(self):
         cases=[[],dict(self.water,components=[None]),dict(self.water,density_g_cm3=0),dict(self.water,name='../bad'),dict(self.water,name='CON'),dict(self.water,components=[{'formula':'Ca(OH)2','weight':1}]),dict(self.water,components=[{'formula':'Xx2','weight':1}]),dict(self.water,components=[{'formula':'H0','weight':1}]),dict(self.water,components=[{'formula':'H2O','weight':0}]),dict(self.water,components=[{'formula':'H2O','weight':-1}])]
         for d in cases:

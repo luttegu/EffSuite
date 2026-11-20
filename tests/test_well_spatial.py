@@ -47,3 +47,26 @@ class SpatialExportTests(unittest.TestCase):
         self.report["nuclides"][0]["corrections"][0]["energy_kev"] = 1022
         with self.assertRaisesRegex(CoincidenceError,"1022"):
             legacy_text(self.report)
+
+
+@unittest.skipIf(legacy_text is None, "optional spatial NumPy dependency is not installed")
+class FailingNuclideTests(unittest.TestCase):
+    """One nuclide with unusable decay data must not stop the others."""
+    def test_bad_nuclide_is_reported_and_the_others_are_calculated(self):
+        from unittest.mock import patch
+        from effsuite import well_spatial
+
+        def fake_counts(records, local, resolving_time):
+            if records == "bad":
+                raise CoincidenceError("TH-227: negative transition/feeding probability; incompatible decay data")
+            return {"corrections": [{"energy_kev": 100, "factor": 1.1}]}
+
+        groups = (("CO-60", "good"), ("TH-227", "bad"), ("CS-134", "good"))
+        with patch.object(well_spatial, "integrated_counts", side_effect=fake_counts):
+            for workers in (1, 3):
+                with self.subTest(workers=workers):
+                    failed = {}
+                    results = well_spatial._split_failures(
+                        well_spatial.calculate_groups(groups, None, 1e-6, workers), failed)
+                    self.assertEqual([name for name, _ in results], ["CO-60", "CS-134"])
+                    self.assertIn("negative transition", failed["TH-227"])

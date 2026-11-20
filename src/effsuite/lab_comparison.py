@@ -26,6 +26,7 @@ KINDS = {"legacy_program", "measurement", "independent_simulation", "demonstrati
 
 
 def number(value, name, *, nonnegative=False):
+    """The value as a finite float (and >= 0 if asked), or a ValueError naming the field."""
     if isinstance(value, bool):
         raise ValueError(f"{name}: booleans are not numeric")
     try:
@@ -38,7 +39,13 @@ def number(value, name, *, nonnegative=False):
 
 
 def load_rows(path: Path) -> dict:
+    """Read a reference or candidate CSV (template columns, see FIELDS).
+
+    Returns {(case_id, quantity, nuclide, line_id): row}. Every row must point to
+    an evidence file whose SHA-256 matches, so changed evidence is detected.
+    """
     result = {}
+    evidence_hashes = {}   # evidence file -> its SHA-256 (None when missing)
     with path.open(newline="", encoding="utf-8-sig") as source:
         reader = csv.DictReader(source)
         if tuple(reader.fieldnames or ()) != FIELDS:
@@ -62,7 +69,10 @@ def load_rows(path: Path) -> dict:
                 raise ValueError("Full-energy efficiency is an absolute probability between zero and one")
             row["u_standard"] = number(row["u_standard"], "u_standard", nonnegative=True) if row["u_standard"] else None
             evidence = (path.parent/row["source_file"]).resolve()
-            if not evidence.is_file() or sha256(evidence.read_bytes()).hexdigest() != row["source_sha256"]:
+            # Many rows usually point to the same evidence file: hash it only once.
+            if evidence not in evidence_hashes:
+                evidence_hashes[evidence] = sha256(evidence.read_bytes()).hexdigest() if evidence.is_file() else None
+            if evidence_hashes[evidence] != row["source_sha256"]:
                 raise ValueError(f"{path.name}:{line_number}: source evidence is missing or has changed")
             key = row["case_id"], row["quantity"], row["nuclide"], row["line_id"]
             if key in result:
@@ -74,6 +84,9 @@ def load_rows(path: Path) -> dict:
 
 
 def validate_plan(plan: dict) -> dict:
+    """Check the criteria (plan) JSON; return {(geometry, quantity): tolerances}."""
+    if not isinstance(plan, dict):
+        raise ValueError("The criteria file must contain a JSON object { ... }")
     if plan.get("schema_version") != 1 or plan.get("reference_kind") not in KINDS:
         raise ValueError("Unsupported plan schema or reference_kind")
     if type(plan.get("criteria_approved")) is not bool:
@@ -84,15 +97,19 @@ def validate_plan(plan: dict) -> dict:
                                          for name in ("approved_by", "approved_date", "approval_record")):
         raise ValueError("Approved criteria need approver, date and an approval-record identifier")
     programs = plan.get("programs", {})
+    if not isinstance(programs, dict):
+        raise ValueError('"programs" must be an object with "reference" and "candidate"')
     for role in ("reference", "candidate"):
         entry = programs.get(role, {})
-        if any(not isinstance(entry.get(name), str) or not entry[name].strip() for name in ("name", "version", "build_id")):
+        if not isinstance(entry, dict) or any(not isinstance(entry.get(name), str) or not entry[name].strip() for name in ("name", "version", "build_id")):
             raise ValueError(f"Record the {role} program name, version and build_id")
     rows = plan.get("criteria")
     if not isinstance(rows, list) or not rows:
         raise ValueError("At least one laboratory-defined comparison criterion is required")
     result = {}
     for entry in rows:
+        if not isinstance(entry, dict):
+            raise ValueError("Each criterion must be an object { ... }")
         key = entry.get("geometry"), entry.get("quantity")
         if key[0] not in GEOMETRIES or key[1] not in CONVENTIONS or key in result:
             raise ValueError("Invalid or duplicate geometry/quantity criterion")
@@ -105,6 +122,8 @@ def validate_plan(plan: dict) -> dict:
 
 def compare_files(reference: Path, candidate: Path, plan_file: Path,
                   covariance_file: Path | None = None) -> dict:
+    """Compare candidate values with reference values, line by line, using the plan's
+    predeclared tolerances (and, optionally, standardized differences)."""
     plan_raw = plan_file.read_bytes()
     plan = json.loads(plan_raw)
     criteria = validate_plan(plan)

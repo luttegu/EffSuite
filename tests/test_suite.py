@@ -162,3 +162,20 @@ class SuiteTests(unittest.TestCase):
         vals_json = validate_model("marinelli", "sample", [100.0, 80.0, 90.0, 2.0, 2.0, "HeavyWater", "plexiglass"])
         self.assertEqual(len(vals_json), 8)
         self.assertAlmostEqual(vals_json[7], 2.0, places=4)
+
+
+class ReportWithoutSvgBackendTests(unittest.TestCase):
+    """The installed build once lacked matplotlib's SVG writer: the report must
+    then be written without its chart, never lose the whole result."""
+    def test_missing_svg_backend_only_drops_the_chart(self):
+        from unittest.mock import patch
+        from effsuite.suite import render_report
+        result = {"engine_name": "EFFTRAN", "job_id": "x", "created": "now",
+                  "efficiency": [{"energy_keV": 100., "standard_efficiency": .1, "sample_efficiency": .09,
+                                  "transfer_factor": .9}], "summing": []}
+        # The same error as in the installed build, raised where it happened (savefig).
+        error = ModuleNotFoundError("No module named 'matplotlib.backends.backend_svg'")
+        with patch("effsuite.suite._draw_report_chart", side_effect=error):
+            report = render_report(result)
+        self.assertIn("Efficiency transfer", report)
+        self.assertNotIn("<svg", report)

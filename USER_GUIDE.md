@@ -1,4 +1,4 @@
-# EffSuite User Guide — v0.2.0
+# EffSuite User Guide — v0.3.0
 
 > **Spectrometry Software Compatibility Notice (Genie 2000 & GammaVision):**  
 > EffSuite supports **Canberra / Mirion Genie 2000** formats (`.CAL`, `.NLB`, `.CTF`, and `.CNF`) as well as **ORTEC GammaVision** formats (`.EFT` efficiency calibration and `.LIB` nuclide library).  
@@ -47,17 +47,28 @@ records stay together. Workers run in separate processes and private folders.
 The correction table uses the original integer-keV bins. An asterisk means
 not computed, missing, invalid or blocked by a numerical check; hover over it
 for the reason. Do not interpret a positive factor alone as physical validation.
-Genie matching requires the same nuclide and a unique line within 1 keV;
-missing/ambiguous/invalid matches block export.
+Library lines are matched to calculated factors by nuclide (in standard spelling:
+"Co60" = "CO-60") and energy (within 1 keV). A line without a usable factor is
+exported with its original abundance or rate and marked with an asterisk; an
+ambiguous match (two different factors equally close) blocks the export.
 
 WEFFTRAN calculates local coincident counts throughout the sample, including
 material above the crystal. It then forms a ratio of integrated counts and
-checks quadrature refinement. Probability saturation and failed refinement
-block Genie export. Unsupported annihilation pair sum-in channels are blocked.
+checks the numerical convergence twice: once with twice as many directions and
+once with twice as many sample points; both must change the factors by less
+than 1 %. Probability saturation and failed convergence block Genie export.
+Unsupported annihilation pair sum-in channels are blocked.
+
+The ray tracing runs in the compiled `raytrace` program (about 5 times faster
+than the Python version, same results to about 1e-14). If a nuclide's decay data
+cannot be used (for example inconsistent conversion coefficients), that nuclide
+is reported as not corrected in the log and its library lines are exported
+unchanged; all other nuclides are calculated normally.
 
 ## Files and recovery
 
-The default user folder is `Documents\EffSuite`:
+The user folder is `C:\GENIE2K\EffSuite` (or `Documents\EffSuite` when that
+location cannot be written; the `EFFSUITE_ROOT` environment variable overrides both):
 
 | Folder | Contents |
 |---|---|
@@ -83,8 +94,12 @@ The legacy uncertainty column preserves the original transfer assumptions.
 CAL import/export and NLB/CTF processing need Windows with registered Genie CAM
 components. The adapter attempts the installed 32-bit and 64-bit COM hosts.
 It resolves numeric CAM identifiers from the registered vendor type library.
-The source file is read/copied; export writes a separate destination and checks
-it by reopening. Never select an existing filename for Genie output.
+The source file is never modified: the export writes a private copy, saves it,
+reopens it and checks every value before publishing it under a new name (one
+PowerShell start per export). Existing files are never overwritten.
+
+In the GUI, the calculation itself exports the corrected files into its result
+folder; the **Export** buttons then copy that verified file to the place you choose.
 
 A CAL export requires a vendor CAL template with the same point count as the
 transferred calibration. A CAL imported as the reference supplies that template.
@@ -95,9 +110,12 @@ CLI.bat cylinder --detector my_detector.txt --sample my_sample.txt --standard my
 ```
 
 Use `--library original.NLB` or `--certificate original.CTF` to calculate its
-nuclides and export a corrected copy into the new result directory. Each
-abundance/rate is divided by C; the displayed correction multiplies activity.
-An unrecognized line stops the export rather than assigning C=1.
+nuclides and export a corrected copy into the new result directory (both can be
+given together). Each abundance/rate is divided by C; the displayed correction
+multiplies activity. A line without a usable factor keeps its original value;
+an ambiguous factor or a failed well model stops the export. `--output-cal`,
+`--output-nlb` and `--output-ctf` copy the verified file to a new path, and
+report an error when that file could not be produced.
 
 Real CAM operation, Windows packaging and your laboratory's physical cases
 remain release checks. This evaluation build does not authorize routine use.
@@ -106,7 +124,7 @@ remain release checks. This evaluation build does not authorize routine use.
 
 > **GammaVision support is untested.** It has been implemented as EFFTRAN is doing it, but I cannot test it because I do not have the software. Volunteers are welcome to test it and provide feedback.
 
-EffSuite 0.1.5 handles ORTEC GammaVision files the way EFFTRAN and MEFFTRAN do, in pure Python (no vendor components, any OS):
+EffSuite handles ORTEC GammaVision files the way EFFTRAN and MEFFTRAN do, in pure Python (no vendor components, any OS):
 
 - **Library (`.LIB`)**: nuclide, energy and gamma yield are read; on export each yield is divided by the summing
   factor C (lines with no match within 1 keV keep their yield). A `<name>_gv.txt` report (energy, old yield, new yield,

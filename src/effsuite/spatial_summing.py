@@ -26,8 +26,13 @@ from pathlib import Path
 import numpy as np
 from numpy.polynomial.legendre import leggauss
 
-from .model_io import COMMON_DATA
-from .parallel_coincidence import CoincidenceError, CalculationCancelled
+import sys
+import tempfile
+import threading
+import time
+
+from .model_io import ASSETS, COMMON_DATA
+from .parallel_coincidence import CoincidenceError, CalculationCancelled, StopSignal, run_supervised, stderr_tail
 
 
 @dataclass(frozen=True)
@@ -41,6 +46,7 @@ class Decay:
 
 
 def parse_decay(name: str, raw: bytes, *, beta_plus_in_pl=False) -> Decay:
+    """Read one decay data file (Decay_Data/<nuclide>.txt): X-ray data, levels and transitions."""
     try:
         lines = [line.split() for line in raw.decode("ascii").splitlines() if line.strip()]
         numeric = [[float(v.replace("D", "E").replace("d", "e")) for v in line] for line in lines]
@@ -82,6 +88,7 @@ def parse_decay(name: str, raw: bytes, *, beta_plus_in_pl=False) -> Decay:
 
 
 def required_energies(records: tuple[Decay, ...]) -> np.ndarray:
+    """All energies (keV) needed by these decay records: gamma lines, K and L X-rays, and 511 keV."""
     values = {511.}
     for record in records:
         values.update(float(e) for e in record.transitions[:, :, 0].flat if e > 0)
@@ -109,59 +116,14 @@ def log_interpolate(x, y, query):
     return np.exp(ly[indices] + (ly[indices+1]-ly[indices]) / width * (np.log(query)-lx[indices]))
 
 
-def material_mu(installation: Path, name: str, energy: np.ndarray, density_override: float | None = None) -> np.ndarray:
-    comp_path = installation / "Composition" / (name+".txt")
-    if not comp_path.is_file():
-        comp_path = COMMON_DATA / "Composition" / (name+".txt")
-    density = float(comp_path.read_text().split()[0])
-    if density_override is not None and math.isfinite(float(density_override)) and float(density_override) > 0:
-        density = float(density_override)
-    rows = []
-    mat_path = installation / "Material" / (name+".txt")
-    if not mat_path.is_file():
-        mat_path = COMMON_DATA / "Material" / (name+".txt")
-    for line in mat_path.read_text(encoding="cp1252").splitlines():
-        try:
-            values = [float(token) for token in line[7:].split()]
-        except ValueError:
-            continue
-        if len(values) == 8:
-            # XCOM total without coherent scattering, density in g/cm3,
-            # conversion from inverse cm to inverse mm: same as total.f.
-            rows.append((values[0]*1000., max(values[7]*density, 1e-15)/10.))
-    if density <= 0 or len(rows) < 2 or not math.isfinite(density):
-        raise CoincidenceError(f"Invalid material table: {name}")
-    table = np.asarray(rows)
-    if np.any(np.diff(table[:, 0]) < 0):
-        raise CoincidenceError(f"Unsorted material table: {name}")
-    return log_interpolate(table[:, 0], table[:, 1], energy)
-
-
 def ray_lengths(radius: float, bottom: float, top: float,
                 r: float, z: float, directions: np.ndarray) -> np.ndarray:
-    """Forward-ray intersection with a finite cylinder, including external origins."""
-    ux, uy, uz = directions.T
-    transverse = ux*ux + uy*uy
-    radial_lo = np.full(len(uz), -np.inf)
-    radial_hi = np.full(len(uz), np.inf)
-    if r > radius:
-        radial_hi[transverse == 0] = -np.inf
-    mask = transverse > 0
-    b = 2*r*ux[mask]
-    c = r*r-radius*radius
-    discriminant = b*b-4*transverse[mask]*c
-    roots = np.sqrt(np.maximum(discriminant, 0.))
-    radial_lo[mask] = (-b-roots)/(2*transverse[mask])
-    radial_hi[mask] = (-b+roots)/(2*transverse[mask])
-    radial_hi[np.flatnonzero(mask)[discriminant <= 0]] = -np.inf
-    axial_lo = np.full(len(uz), -np.inf)
-    axial_hi = np.full(len(uz), np.inf)
-    if not bottom <= z <= top:
-        axial_hi[uz == 0] = -np.inf
-    mask = uz != 0
-    first, second = (bottom-z)/uz[mask], (top-z)/uz[mask]
-    axial_lo[mask], axial_hi[mask] = np.minimum(first, second), np.maximum(first, second)
-    return np.maximum(0., np.minimum(radial_hi, axial_hi)-np.maximum(0., np.maximum(radial_lo, axial_lo)))
+    """Length of each forward ray inside a finite cylinder (0 when it misses).
+
+    The ray starts at (r, 0, z); the point may also be outside the cylinder.
+    """
+    t_in, t_out = _ray_interval(radius, bottom, top, r, z, directions)
+    return t_out - t_in
 
 
 @dataclass(frozen=True)
@@ -171,8 +133,16 @@ class Quadrature:
     polar: int = 32
     azimuth: int = 64
 
-    def refined(self):
-        return Quadrature(self.radial*2, self.axial*2, self.polar*2, self.azimuth*2)
+    # The convergence check refines the two dimensions SEPARATELY: refining
+    # both at once costs about 16x the normal pass; two separate checks cost
+    # about 8x in total and still test each dimension with the same x2 step.
+    def refined_directions(self):
+        """Same sample points, twice as many directions in each angle."""
+        return Quadrature(self.radial, self.axial, self.polar*2, self.azimuth*2)
+
+    def refined_points(self):
+        """Twice as many sample points in each direction, same directions."""
+        return Quadrature(self.radial*2, self.axial*2, self.polar, self.azimuth)
 
 
 @dataclass(frozen=True)
@@ -218,6 +188,11 @@ def _xcom_table(installation: Path, name: str, density_override: float | None = 
 
 
 def _xcom(table, energy):
+    """Coefficients of an XCOM table at the given energies (log-log interpolation).
+
+    Returns 6 arrays: Rayleigh, Compton, photoelectric, pair production,
+    total with coherent scattering, total without coherent scattering.
+    """
     q = np.maximum(np.asarray(energy, dtype=float), 1.)
     return tuple(log_interpolate(table[:, 0], table[:, col], q) for col in range(1, 7))
 
@@ -260,6 +235,7 @@ def _mean_compton_energy(energy):
 
 
 def _mean_compton_cosine(energy):
+    """Mean cosine of the Compton scattering angle at each energy (Klein-Nishina)."""
     g = np.maximum(np.asarray(energy, dtype=float)/511., 1e-4)[:, None]
     ct, wt = leggauss(16)
     p = 1/(1+g*(1-ct[None, :]))
@@ -268,6 +244,7 @@ def _mean_compton_cosine(energy):
 
 
 def _crystal_zz_aa(installation: Path, prepared: Path, name: str):
+    """Effective atomic number and mass of the crystal material (for peak-to-total)."""
     for folder in (prepared, installation, COMMON_DATA.parent/"engines"/"well"):
         path = folder/"zzaa.txt"
         if path.is_file():
@@ -289,8 +266,10 @@ def _crystal_model(dr, dl, dd, well_d, well_h, table, zz, aa,
                    mantle_dead=None, bottom_dead=None):
     """Hollow-crystal peak-to-total (solid cylinder replaced by the real crystal with
     its well) and the local containment of first-scattered photons."""
-    if mantle_dead is None: mantle_dead = dd
-    if bottom_dead is None: bottom_dead = dd
+    if mantle_dead is None:
+        mantle_dead = dd
+    if bottom_dead is None:
+        bottom_dead = dd
     key = (dr, dl, dd, well_d, well_h, zz, aa, mantle_dead, bottom_dead, sha256(table.tobytes()).hexdigest())
     if key in _CRYSTAL_CACHE:
         return _CRYSTAL_CACHE[key]
@@ -310,7 +289,8 @@ def _crystal_model(dr, dl, dd, well_d, well_h, table, zz, aa,
         return np.maximum(0., ray_lengths(r_act_out, z_act_bottom, dl, r0, z0, dirs) -
                           ray_lengths(r_hole, z_hole, dl+10., r0, z0, dirs))
 
-    qr, wr = leggauss(6); qz, wz = leggauss(8)
+    qr, wr = leggauss(6)
+    qz, wz = leggauss(8)
     eta_mean, volume = np.zeros(len(egrid)), 0.
     for uz_, wz_ in zip((qz+1)/2, wz/2):
         z0 = z_act_bottom + uz_*(dl - z_act_bottom)
@@ -337,15 +317,18 @@ def _crystal_model(dr, dl, dd, well_d, well_h, table, zz, aa,
     act_vol = max(1e-6, r_act_out**2*(dl-z_act_bottom) - r_hole**2*(dl-z_hole))
     dv = act_vol / (r_out**2*dl)
     re_, alpha, na = 2.817e-13, 7.297e-3, 6.022e23
-    xz = zz*alpha; w = xz*xz
+    xz = zz*alpha
+    w = xz*xz
     fz = w*(1/(1+w)+.20206-.0369*w+.0083*w**2-.002*w**3)
     density = table[0, 7]
     rad_len = 10./(4*zz*(zz+1)*density*dv*na/aa*re_**2*alpha*(math.log(183.*zz**(-1/3))-fz))
     kev = np.arange(1, 3001, dtype=float)
     gmc, gmf, gmp = _xcom(table, kev)[1:4]
     gm = gmf+gmc+gmp
-    t = np.ones(3001); t[1:] = np.clip(log_interpolate(egrid, eta_mean, kev), 0., 1.)
-    u = np.ones(3001); wcomp = np.ones(3001)
+    t = np.ones(3001)
+    t[1:] = np.clip(log_interpolate(egrid, eta_mean, kev), 0., 1.)
+    u = np.ones(3001)
+    wcomp = np.ones(3001)
     for i in range(11, 3001):
         g = i/511.
         j = np.arange(int(i/(2*g+1)+.5), i)
@@ -384,6 +367,29 @@ def well_local_response(installation: Path, detector, source, energies, order=Qu
       first-scattered photon at the actual interaction depth;
     * exact antiparallel 511 keV pair probabilities (back-to-back annihilation photons).
     """
+    # Glossary of the short names used below (lengths in mm, coefficients in 1/mm):
+    #   Geometry (z = 0 at the bottom of the crystal, r = distance from the axis)
+    #     dr, dl          crystal diameter and length
+    #     dd              well absorber (dead layer) thickness
+    #     well_d, well_h  well diameter and depth
+    #     sr, height, base, wall, offset   sample: container diameter, filling height,
+    #                     bottom and wall thickness, distance above the well bottom
+    #     r_hole, z_hole  radius and bottom of the well including its absorber
+    #     r_act_out, z_act_bottom   limits of the active (sensitive) germanium
+    #   Materials: ge = crystal, al = well absorber, sm = sample matrix,
+    #     bm = container ("bottle"), hl = holder. "_t" = full XCOM table.
+    #     ge, al, sm, bm = coefficients at each gamma energy; ge1, al1, ... = the same at
+    #     the mean energy after one Compton scattering (e1). Rows of these arrays:
+    #     [0] Rayleigh, [1] Compton, [2] photoelectric, [3] pair production,
+    #     [4] total with coherent scattering, [5] total without it.
+    #   mu_ge, mu_ge1     total attenuation of germanium (row 5)
+    #   gm_ge             germanium interactions that deposit energy (Compton + photo + pair)
+    #   kn                mean cosine of Compton scattering (forward-scattering weight)
+    #   wcomp             probability that a Compton-scattered photon stays in the crystal
+    #   eta_*             local peak-to-total containment of the scattered photon
+    #   piso_e, piso_e1   detection probability of photons scattered inside the cavity
+    #   tau*, fs          optical thickness (attenuation x path) and the mean fraction of
+    #                     the path travelled before the first interaction
     dr, dl, dd, well_d, well_h = [float(v) for v in detector[:5]]
     sr, height, base, wall, offset = [float(v) for v in source[:5]]
     dmat = str(detector[5]).strip()
@@ -411,12 +417,14 @@ def well_local_response(installation: Path, detector, source, energies, order=Qu
     bottom = dl-well_h+total_offset+base
     top = bottom+height
     boundaries = sorted({bottom, top} | ({dl} if bottom < dl < top else set()))
-    qr, wr = leggauss(order.radial); qz, wz = leggauss(order.axial)
+    qr, wr = leggauss(order.radial)
+    qz, wz = leggauss(order.axial)
     points, weights = [], []
     for lower, upper in zip(boundaries[:-1], boundaries[1:]):
         for u_, ru in zip((qr+1)/2, wr/2):
             for zz_, zw in zip((qz+1)*(upper-lower)/2+lower, wz*(upper-lower)/(2*height)):
-                points.append((radius*np.sqrt(u_), zz_)); weights.append(ru*zw)
+                points.append((radius*np.sqrt(u_), zz_))
+                weights.append(ru*zw)
     points, weights = np.asarray(points), np.asarray(weights)
 
     def directions(polar, azimuth):
@@ -487,7 +495,8 @@ def well_local_response(installation: Path, detector, source, energies, order=Qu
             follow = p0[:, :, 0]/np.maximum(1-srl[:, :, 0], 1e-6)
         else:
             hi = int(np.searchsorted(scat_grid[:ie+1], nxt[ie], side="right"))
-            lo = max(0, min(hi-1, ie-1)); hi = min(lo+1, ie)
+            lo = max(0, min(hi-1, ie-1))
+            hi = min(lo+1, ie)
             if hi == lo:
                 follow = piso[:, :, lo]
             else:
@@ -539,11 +548,16 @@ def well_local_response(installation: Path, detector, source, energies, order=Qu
     i511 = int(np.argmin(np.abs(energies-511.)))
     has511 = abs(energies[i511]-511.) < 1e-6
 
-    def _eval_point(index_rz):
-        index, (r, z) = index_rz
-        if cancel is not None and cancel.is_set():
-            raise CalculationCancelled("Calculation cancelled")
-        crystal, entry, bore, sa, co, up0, up1, dead_ge, holder = trace(float(r), float(z), dirs)
+    # Directions are processed in blocks: every direction is independent, and
+    # handling all of them at once (8192 x 302 values per array, ~40 arrays)
+    # needed about 750 MB per thread. Blocks of 1024 need about 8 times less,
+    # so many threads can run without exhausting the computer's memory.
+    DIRECTION_BLOCK = 1024
+
+    def _eval_block(r, z, d):
+        """Peak and total detection probabilities for the directions ``d``
+        from the point (r, z). Returns (peak, total, largest raw total)."""
+        crystal, entry, bore, sa, co, up0, up1, dead_ge, holder = trace(r, z, d)
         hit = crystal > 1e-9
         tau_i = sa[:, None]*sm[5]+co[:, None]*bm[5]+bore[:, None]*al[5]
         p_dir = -np.expm1(-crystal[:, None]*mu_ge[None, :])
@@ -553,8 +567,8 @@ def well_local_response(installation: Path, detector, source, energies, order=Qu
                          1/mu_ge[None, :]-crystal[:, None]/np.expm1(np.minimum(x, 50.))))
         remain = np.maximum(0., crystal[:, None]-depth)
         t_mid = entry[:, None]+depth
-        z_int = np.clip(z+dirs[:, 2:3]*t_mid, z_act_bottom, dl)
-        r_int = np.hypot(r+dirs[:, 0:1]*t_mid, dirs[:, 1:2]*t_mid)
+        z_int = np.clip(z+d[:, 2:3]*t_mid, z_act_bottom, dl)
+        r_int = np.hypot(r+d[:, 0:1]*t_mid, d[:, 1:2]*t_mid)
         r_in = np.where(z_int >= z_hole, r_hole, 0.)
         frac = (r_int-r_in)/np.maximum(r_act_out-r_in, 1.)
         eta_iso = interp(eta_grid1, frac, z_int, model["r_fracs"], model["z_nodes"])
@@ -572,8 +586,8 @@ def well_local_response(installation: Path, detector, source, energies, order=Qu
                       np.where(tau < 1e-3, .5, 1/np.maximum(tau, 1e-15)-1/np.expm1(np.minimum(tau, 50.))))
         span = np.maximum(0., up1-up0)[:, None]
         t_sc = up0[:, None]+span*fs
-        z_sc = z+dirs[:, 2:3]*t_sc
-        r_sc = np.hypot(r+dirs[:, 0:1]*t_sc, dirs[:, 1:2]*t_sc)
+        z_sc = z+d[:, 2:3]*t_sc
+        r_sc = np.hypot(r+d[:, 0:1]*t_sc, d[:, 1:2]*t_sc)
         det_rayl = .65*p_dir*np.exp(-(1-fs)*tau_i)+.35*interp(piso_e, r_sc, z_sc, r_cav, z_cav)
         rest = (1-fs)*(sa[:, None]*sm1[5]+co[:, None]*bm1[5]+bore[:, None]*al1[5])
         det_comp = (kn[None, :]**2*(-np.expm1(-crystal[:, None]*mu_ge1[None, :]))*np.exp(-rest) +
@@ -588,13 +602,29 @@ def well_local_response(installation: Path, detector, source, energies, order=Qu
 
         pt_raw_max = float(tot.max())
         tot = np.clip(np.maximum(tot, pk), 0., 1.)
-        pk_row, tot_row = np.sum(pk*dw[:, None], axis=0), np.sum(tot*dw[:, None], axis=0)
+        return pk, tot, pt_raw_max
+
+    def _eval_point(index_rz):
+        index, (r, z) = index_rz
+        if cancel is not None and cancel.is_set():
+            raise CalculationCancelled("Calculation cancelled")
+        pk_row, tot_row = np.zeros(len(energies)), np.zeros(len(energies))
+        pt_raw_max = 0.
+        t_p, p_p = np.empty(len(dirs)), np.empty(len(dirs))   # 511-keV column, all directions
+        for start in range(0, len(dirs), DIRECTION_BLOCK):
+            block = slice(start, start+DIRECTION_BLOCK)
+            pk, tot, block_max = _eval_block(float(r), float(z), dirs[block])
+            # Sum over directions, weighted by each direction's solid-angle weight.
+            pk_row += np.sum(pk*dw[block, None], axis=0)
+            tot_row += np.sum(tot*dw[block, None], axis=0)
+            pt_raw_max = max(pt_raw_max, block_max)
+            if has511:
+                t_p[block], p_p[block] = tot[:, i511], pk[:, i511]
         pm, ps = 0.0, 0.0
         if has511:
             # Gauss-Legendre polar nodes are symmetric and the azimuth count is even, so the
             # antiparallel direction of ray (i, j) is (P-1-i, j+A/2): no extra ray tracing.
             P, A = order.polar, order.azimuth
-            t_p, p_p = tot[:, i511], pk[:, i511]
             t_o = np.roll(t_p.reshape(P, A)[::-1, :], A//2, axis=1).ravel()
             p_o = np.roll(p_p.reshape(P, A)[::-1, :], A//2, axis=1).ravel()
             pm = float(np.sum(dw*(1-t_p)*(1-t_o)))
@@ -604,7 +634,27 @@ def well_local_response(installation: Path, detector, source, energies, order=Qu
     auto_threads = max(1, min(16, (os.cpu_count() or 4)))
     num_threads = min(workers or auto_threads, len(points))
     raw_max = 0.
-    if num_threads <= 1:
+    program = _raytrace_program()
+    if program is not None:
+        # Fast path: the compiled raytrace program does the loop above (see raytrace.f90).
+        # Every input is written in the exact order the program reads it.
+        per_energy = [sm[0], sm[1], sm[4], sm[5], bm[0], bm[1], bm[4], bm[5], al[0], al[1], al[4], al[5],
+                      sm1[5], bm1[5], al1[5], mu_ge, mu_ge1, kn, wcomp, eta_mean1, ge[1], ge[2], pair_term, gm_ge,
+                      hl[1] if hl is not None else np.zeros(len(energies)),
+                      p_ge_absorb[0] if p_ge_absorb is not None else np.zeros(len(energies))]
+        sizes = [len(points), len(dirs), len(energies), order.polar, order.azimuth,
+                 len(model["r_fracs"]), len(model["z_nodes"]), len(r_cav), len(z_cav),
+                 int(has511), i511 + 1, int(p_ge_absorb is not None), len(per_energy)]
+        scalars = [dl, r_act_out, z_act_bottom, r_hole, z_hole, well_d, well_h, dr, flange,
+                   radius, bottom, top, sr, base, holder_thickness]
+        arrays = [points, dirs, dw, np.asarray(per_energy), model["r_fracs"], model["z_nodes"], eta_grid1,
+                  r_cav, z_cav, piso_e, piso_e1]
+        payload = (np.asarray([RAYTRACE_FORMAT] + sizes, dtype="<i4").tobytes()
+                   + np.asarray(scalars, dtype="<f8").tobytes()
+                   + b"".join(np.ascontiguousarray(a, dtype="<f8").tobytes() for a in arrays))
+        peak, total, pair_miss, pair_single, raw_max = _run_raytrace(program, payload, len(points), len(energies),
+                                                                     num_threads, cancel)
+    elif num_threads <= 1:
         for item in enumerate(points):
             idx, pk_row, tot_row, pm, ps, pt_raw_max = _eval_point(item)
             peak[idx], total[idx] = pk_row, tot_row
@@ -627,6 +677,64 @@ def well_local_response(installation: Path, detector, source, energies, order=Qu
                              pair_miss if has511 else None, pair_single if has511 else None)
 
 
+RAYTRACE_FORMAT = 1   # input file version; must match FORMAT_VERSION in raytrace.f90
+
+
+def _raytrace_program() -> Path | None:
+    """The compiled raytrace program for this computer, or None to use Python.
+
+    Setting the environment variable EFFSUITE_PYTHON_RAYTRACE=1 forces the
+    Python code (used to compare both versions).
+    """
+    if os.environ.get("EFFSUITE_PYTHON_RAYTRACE") == "1":
+        return None
+    target = "windows" if os.name == "nt" else "macos" if sys.platform == "darwin" else "linux"
+    program = ASSETS / "well" / "bin" / target / ("raytrace.exe" if os.name == "nt" else "raytrace")
+    return program if program.is_file() else None
+
+
+def _run_raytrace(program: Path, payload: bytes, n_points: int, n_energies: int, processes: int, cancel):
+    """Run the raytrace program on all sample points, split over ``processes`` copies.
+
+    Returns (peak, total, pair_miss, pair_single, largest raw total), like the
+    Python loop of well_local_response.
+    """
+    stop = StopSignal(cancel)
+    processes = max(1, min(processes, n_points))
+    # Contiguous ranges of points, as equal as possible: [(first index, count), ...]
+    sizes = [n_points // processes + (1 if i < n_points % processes else 0) for i in range(processes)]
+    starts = [sum(sizes[:i]) for i in range(processes)]
+    values_per_point = 2 * n_energies + 3
+    with tempfile.TemporaryDirectory(prefix="effsuite-raytrace-", ignore_cleanup_errors=True) as temporary:
+        root = Path(temporary)
+        (root / "input.bin").write_bytes(payload)
+
+        def run_share(index):
+            work = root / f"share{index}"
+            work.mkdir()
+            command = (str(program), str(root / "input.bin"), str(work / "output.bin"),
+                       str(starts[index] + 1), str(sizes[index]))
+            returncode = run_supervised(command, work, stop, time.monotonic() + 6 * 3600,
+                                        "Ray tracing exceeded 6 hours", "Cannot start the raytrace program")
+            if returncode:
+                raise CoincidenceError(f"raytrace failed (exit {returncode}): {stderr_tail(work)}")
+            result = np.fromfile(work / "output.bin", dtype="<f8")
+            if result.size != sizes[index] * values_per_point:
+                raise CoincidenceError("raytrace produced an incomplete result")
+            return result.reshape(sizes[index], values_per_point)
+
+        with ThreadPoolExecutor(max_workers=processes, thread_name_prefix="raytrace") as pool:
+            futures = [pool.submit(run_share, i) for i in range(processes)]
+            try:
+                shares = [future.result() for future in futures]
+            except BaseException:
+                stop.worker_failed.set()   # stop the other copies
+                raise
+    rows = np.concatenate(shares)
+    peak, total = rows[:, :n_energies], rows[:, n_energies:2 * n_energies]
+    return peak, total, rows[:, -3].copy(), rows[:, -2].copy(), max(0., float(rows[:, -1].max()))
+
+
 def well_peak_efficiencies(installation: Path, detector, source, energies, order=Quadrature(),
                            cancel=None, zz_aa=(32., 72.63), workers: int = 0) -> np.ndarray:
     """Volume-averaged full-energy-peak efficiency of a well sample (up to a common scale)."""
@@ -637,6 +745,7 @@ def well_peak_efficiencies(installation: Path, detector, source, energies, order
 
 def prepare_local(installation: Path, prepared: Path, energies: np.ndarray,
                   order: Quadrature = Quadrature(), cancel=None, workers: int = 0) -> LocalEfficiencies:
+    """Local efficiencies of every sample point, read from a prepared working folder."""
     if any(type(value) is not int or value < 2 or (name == "azimuth" and value % 2)
            for name, value in vars(order).items()):
         raise CoincidenceError("Quadrature orders must be integers of at least two (azimuth even)")
@@ -763,6 +872,7 @@ def point_counts(record: Decay, local: LocalEfficiencies, resolving_time: float)
 
 def integrated_counts(records: tuple[Decay, ...], local: LocalEfficiencies,
                        resolving_time: float) -> dict:
+    """Summing correction factors of one parent nuclide, integrated over the sample points."""
     if not np.isfinite(local.weights).all() or np.any(local.weights <= 0) or not np.isclose(local.weights.sum(), 1.):
         raise CoincidenceError("Spatial quadrature weights must be positive and sum to one")
     if not (np.isfinite(local.peak).all() and np.isfinite(local.total).all() and

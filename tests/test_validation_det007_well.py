@@ -102,6 +102,27 @@ class WellBugRegressions(unittest.TestCase):
                 if kind != "detector":
                     self.assertLessEqual(values[0], 25.5, path.name)
 
+    def test_fortran_raytrace_matches_python(self):
+        """The compiled raytrace program must give the Python results to rounding level,
+        with and without a mount cup (holder), including the 511-keV pair values."""
+        from unittest.mock import patch
+        from effsuite.spatial_summing import _raytrace_program
+        if _raytrace_program() is None:
+            self.skipTest("raytrace program not built for this platform")
+        energies = np.asarray([30.4, 81., 100., 356., 511., 1173.2, 1274.5])
+        with_holder = [72.0, 69.0, 0.7, 25.5, 43.0, "Ge", "aluminium", 1.9, 1.5, 2.45, 0.0, "copper"]
+        for detector in (DET007, with_holder):
+            with self.subTest(holder=len(detector) > 7), tempfile.TemporaryDirectory() as folder:
+                folder = Path(folder)
+                (folder/"detector.txt").write_text("\n".join(map(str, detector))+"\n")
+                (folder/"source.txt").write_text("\n".join(map(str, SAMPLE))+"\n")
+                fortran = prepare_local(COMMON_DATA, folder, energies, Quadrature(3, 4, 8, 16))
+                with patch.dict("os.environ", {"EFFSUITE_PYTHON_RAYTRACE": "1"}):
+                    python = prepare_local(COMMON_DATA, folder, energies, Quadrature(3, 4, 8, 16))
+                for name in ("peak", "total", "pair_miss", "pair_single_peak"):
+                    np.testing.assert_allclose(getattr(fortran, name), getattr(python, name), rtol=1e-12, atol=0, err_msg=name)
+                self.assertEqual(fortran.metadata["probability_saturation_count"], python.metadata["probability_saturation_count"])
+
     def local(self, source, order=Quadrature(3, 4, 8, 16)):
         self.tmp = tempfile.TemporaryDirectory(); self.addCleanup(self.tmp.cleanup)
         folder = Path(self.tmp.name)
@@ -179,6 +200,20 @@ holder_material = copper
             self.assertEqual(d[9], 2.45)
             self.assertEqual(d[10], 1.0)
             self.assertEqual(d[11], "copper")
+
+    def test_missing_optional_key_does_not_shift_the_next_fields(self):
+        # Only the bottom dead layer and holder material are given: each must
+        # land in its own slot, the others keep their defaults.
+        with tempfile.TemporaryDirectory() as td:
+            path = Path(td) / "det.txt"
+            path.write_text("72.00\n69.00\n0.70\n25.50\n43.00\nGe\naluminium\n"
+                            "bottom_dead_layer = 1.50\nholder_material = lead\n")
+            d = read_model("well", "detector", path)
+            self.assertEqual(d[7], 0.7)        # mantle dead layer: default = absorber thickness
+            self.assertEqual(d[8], 1.5)        # bottom dead layer
+            self.assertEqual(d[9], 0.0)        # holder thickness: default
+            self.assertEqual(d[10], 0.0)       # sample offset: default
+            self.assertEqual(d[11], "lead")    # holder material
 
     def test_mantle_dead_layer_too_thick_rejected(self):
         with self.assertRaisesRegex(CoincidenceError, "Mantle dead layer"):

@@ -1,8 +1,27 @@
-# Validation Evidence — EffSuite 0.2.0 (November 2026)
+# Validation Evidence — EffSuite 0.3.0 (November 2026)
+
+## Changes verified in v0.3.0
+
+- **Compiled well ray tracing (`raytrace`)**: compared with the Python
+  implementation on the DET007 detector and sample (initial and refined
+  quadratures, with and without mount cup): peak and total efficiencies agree to
+  7e-14 relative, 511-keV pair probabilities to 1.1e-14, identical saturation
+  check. DET007 complete analysis: summing factors (277 lines) agree to 1.8e-15,
+  transferred efficiencies (41 lines) to 1.3e-15. A permanent test
+  (`test_fortran_raytrace_matches_python`) requires agreement to 1e-12.
+- **Separate convergence checks**: on DET007, factors differ by at most 0.037 %
+  (mean 0.007 %) from the v0.2.0 combined refinement; agreement with the Monte
+  Carlo reference is unchanged (mean deviation 10.37 %).
+- **Readability rewrite**: each rewritten module was compared with the previous
+  version (identical results for the three bundled examples, the bundled models,
+  material creation and real Genie/GammaVision files); purely mechanical
+  reformatting was verified by an identical program structure (AST).
+- Real Genie 2000 CAM round trips (`.NLB`, `.CTF`, `.CAL`) executed on Windows 11
+  with the installed CamDatasource component.
 
 ## Executed Application Checks
 
-**All 16 test suites (150+ checks) passed** on Windows 11 x86-64 (CPython 3.12+, NumPy, Matplotlib, PySide6) via the parallel runner (`tools/run_tests.py` / `Run_Tests_Windows.bat`) and on Linux x86-64.
+**All 15 test suites passed** (v0.3.0; 16 in v0.2.0) on Windows 11 x86-64 (CPython 3.12+, NumPy, Matplotlib, PySide6) via the parallel runner (`tools/run_tests.py` / `Run_Tests_Windows.bat`) and on Linux x86-64.
 
 The tests include:
 

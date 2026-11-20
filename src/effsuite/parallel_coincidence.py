@@ -29,13 +29,33 @@ class CalculationCancelled(CoincidenceError):
     pass
 
 
+class StopSignal:
+    """Tells running workers to stop. Workers only call ``is_set()``.
+
+    Workers stop when the caller cancels (``cancel``) OR when another worker
+    has failed (``worker_failed``). We never set the caller's own cancel
+    event: a failed worker must not look like a user "Cancel" to the caller.
+    """
+    def __init__(self, cancel: threading.Event | None):
+        """Remember the caller's cancel event; start with no worker failure."""
+        self.cancel = cancel
+        self.worker_failed = threading.Event()
+
+    def is_set(self) -> bool:
+        """True when the workers must stop."""
+        return self.worker_failed.is_set() or (self.cancel is not None and self.cancel.is_set())
+
+
 def _number(token: bytes) -> float:
+    """Read a Fortran number ("1.5D+02" is accepted); NaN and infinity are refused."""
     try:
         value = float(token.replace(b"D", b"E").replace(b"d", b"e"))
     except ValueError as exc:
         raise CoincidenceError(f"Invalid numeric token: {token!r}") from exc
     if not math.isfinite(value):
-        return 1e-15
+        # A NaN or infinite value means the engine output is broken. Stop here
+        # rather than let it reach a corrected library file.
+        raise CoincidenceError(f"Non-finite number (NaN or infinity): {token!r}")
     return value
 
 
@@ -121,6 +141,7 @@ def split_library(raw: bytes) -> tuple[NuclideGroup, ...]:
 
 
 def _curve(raw: bytes, name: str) -> tuple[float, ...]:
+    """Read an efficiency or build-up curve: rows of energy and two positive values."""
     energies = []
     for line_number, line in enumerate(raw.splitlines(), 1):
         if not line.strip():
@@ -147,11 +168,13 @@ class SharedInputs:
 
     @classmethod
     def from_directory(cls, directory: Path) -> "SharedInputs":
+        """Read efficiency.txt, buildup.txt and kordaten.txt from a prepared folder."""
         return cls((directory / "efficiency.txt").read_bytes(),
                    (directory / "buildup.txt").read_bytes(),
                    (directory / "kordaten.txt").read_bytes())
 
     def validate(self) -> None:
+        """The efficiency and build-up curves must use the same energies."""
         if _curve(self.efficiency, "efficiency.txt") != _curve(self.buildup, "buildup.txt"):
             raise CoincidenceError("Efficiency and buildup energy grids must match")
 
@@ -174,6 +197,7 @@ def _partition(groups: tuple[NuclideGroup, ...], workers: int) -> list[tuple[Nuc
 
 
 def _terminate(process: subprocess.Popen) -> None:
+    """Stop a process (politely first, then by force after 1 second)."""
     if process.poll() is None:
         process.terminate()
         try:
@@ -183,41 +207,66 @@ def _terminate(process: subprocess.Popen) -> None:
             process.wait()
 
 
+def run_supervised(command, work: Path, stop, deadline: float, timeout_message: str,
+                   start_message: str = "Cannot start") -> int:
+    """Run one native program in the folder ``work`` and return its exit code.
+
+    Its output goes to work/stdout.log and work/stderr.log. While it runs we
+    check, every 0.05 s, whether the user cancelled (``stop``) or the time
+    limit (``deadline``, a time.monotonic() value) has passed. In every case
+    the process is stopped before this function returns.
+    """
+    if stop.is_set():
+        raise CalculationCancelled("Calculation cancelled")
+    with (work / "stdout.log").open("wb") as stdout, (work / "stderr.log").open("wb") as stderr:
+        flags = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000) if os.name == "nt" else 0
+        try:
+            process = subprocess.Popen(command, cwd=work, stdin=subprocess.DEVNULL,
+                                       stdout=stdout, stderr=stderr, shell=False, creationflags=flags)
+        except OSError as exc:
+            raise CoincidenceError(f"{start_message}: {exc}") from exc
+        try:
+            while process.poll() is None:
+                if stop.is_set():
+                    raise CalculationCancelled("Calculation cancelled")
+                if time.monotonic() > deadline:
+                    raise CoincidenceError(timeout_message)
+                try:
+                    process.wait(timeout=.05)
+                except subprocess.TimeoutExpired:
+                    pass
+        finally:
+            _terminate(process)
+    return process.returncode
+
+
+def stderr_tail(work: Path) -> str:
+    """The first 4000 characters the program wrote to stderr (for error messages)."""
+    return (work / "stderr.log").read_bytes()[:4000].decode("utf-8", errors="replace")
+
+
 def _run_shard(command: tuple[str, ...], inputs: SharedInputs,
                groups: tuple[NuclideGroup, ...], stop: threading.Event,
                timeout_seconds: float) -> tuple[dict[str, bytes], float]:
+    """Run the coincidence program for a group of nuclides in its own temporary folder."""
     if stop.is_set():
         raise CalculationCancelled("Calculation cancelled")
     started = time.monotonic()
-    with TemporaryDirectory(prefix="effsuite-cascade-") as directory:
+    # After a cancel or timeout, Windows may keep stderr.log locked for a moment
+    # by a process that is still stopping. Ignoring that cleanup error makes sure
+    # the user sees the real reason (cancelled / timed out), not a PermissionError.
+    with TemporaryDirectory(prefix="effsuite-cascade-", ignore_cleanup_errors=True) as directory:
         work = Path(directory)
         (work / "efficiency.txt").write_bytes(inputs.efficiency)
         (work / "buildup.txt").write_bytes(inputs.buildup)
         (work / "kordaten.txt").write_bytes(b"".join(group.raw for group in groups))
-        with (work / "stdout.log").open("wb") as stdout, (work / "stderr.log").open("wb") as stderr:
-            try:
-                flags = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000) if os.name == "nt" else 0
-                process = subprocess.Popen(command, cwd=work, stdin=subprocess.DEVNULL,
-                                           stdout=stdout, stderr=stderr, shell=False, creationflags=flags)
-            except OSError as exc:
-                raise CoincidenceError(f"Cannot start coincidence executable: {exc}") from exc
-            try:
-                while process.poll() is None:
-                    if stop.is_set():
-                        raise CalculationCancelled("Calculation cancelled")
-                    if time.monotonic() - started > timeout_seconds:
-                        raise CoincidenceError(f"Coincidence worker exceeded {timeout_seconds:g} seconds")
-                    try:
-                        process.wait(timeout=.05)
-                    except subprocess.TimeoutExpired:
-                        pass
-            finally:
-                _terminate(process)
+        returncode = run_supervised(command, work, stop, started + timeout_seconds,
+                                    f"Coincidence worker exceeded {timeout_seconds:g} seconds",
+                                    "Cannot start coincidence executable")
         if stop.is_set():
             raise CalculationCancelled("Calculation cancelled")
-        if process.returncode:
-            diagnostic = (work / "stderr.log").read_bytes()[:4000].decode("utf-8", errors="replace")
-            raise CoincidenceError(f"Coincidence worker exit {process.returncode}: {diagnostic}")
+        if returncode:
+            raise CoincidenceError(f"Coincidence worker exit {returncode}: {stderr_tail(work)}")
         output = work / "coin.txt"
         if not output.is_file():
             raise CoincidenceError("Coincidence worker did not produce coin.txt")
@@ -246,7 +295,8 @@ def calculate_parallel(inputs: SharedInputs, command: tuple[str, ...], *, worker
                        verify_serial: bool = False) -> ParallelResult:
     """Called from CLI or a GUI supervisor thread; no widgets are accessed here.
 
-    `workers=0` selects at most four native workers. `workers=1` is the serial
+    `workers=0` selects "number of CPUs minus 2" native workers (at least one,
+    never more than the number of nuclides). `workers=1` is the serial
     path, executing all selected groups in one native process.
     """
     if not command or not Path(command[0]).is_absolute():
@@ -270,7 +320,7 @@ def calculate_parallel(inputs: SharedInputs, command: tuple[str, ...], *, worker
     auto_workers = max(1, (os.cpu_count() or 4) - 2)
     count = min(workers or auto_workers, len(groups))
     shards = _partition(groups, count)
-    stop = cancel if cancel is not None else threading.Event()
+    stop = StopSignal(cancel)
     if stop.is_set():
         raise CalculationCancelled("Calculation cancelled")
     hashes = {}
@@ -298,7 +348,7 @@ def calculate_parallel(inputs: SharedInputs, command: tuple[str, ...], *, worker
                     if progress is not None:
                         progress(completed, len(groups), group.name)
         except BaseException:
-            stop.set()
+            stop.worker_failed.set()   # stop the other workers
             for future in futures:
                 future.cancel()
             raise
@@ -306,7 +356,9 @@ def calculate_parallel(inputs: SharedInputs, command: tuple[str, ...], *, worker
     elapsed = time.monotonic() - started
     verification = {"requested": verify_serial, "passed": None}
     if verify_serial:
-        reference_rows, reference_time = _run_shard(command, inputs, groups, stop, timeout_seconds)
+        # The reference runs ALL nuclides in one process, so it may take as long
+        # as all the parallel workers together: allow that much time.
+        reference_rows, reference_time = _run_shard(command, inputs, groups, stop, timeout_seconds * len(shards))
         reference = b"".join(reference_rows[group.name] for group in groups)
         verification.update({"passed": reference == raw,
                              "reference_sha256": sha256(reference).hexdigest(),
@@ -341,25 +393,26 @@ def _publish_new(path: Path, raw: bytes) -> None:
             target.write(raw)
             target.flush()
             os.fsync(target.fileno())
+        # Both calls below fail with FileExistsError if "path" already exists,
+        # in one atomic step: a file created at the same moment is never lost.
         if os.name == "nt":
-            if path.exists():
-                raise FileExistsError(f"Target file already exists: {path}")
-            os.replace(temporary, path)
+            os.rename(temporary, path)   # on Windows, rename never overwrites
             temporary = None
         else:
-            os.link(temporary, path)
+            os.link(temporary, path)     # on Linux/macOS, link never overwrites
     finally:
         if temporary is not None:
             temporary.unlink(missing_ok=True)
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Command-line entry point of the parallel coincidence runner."""
     import sys
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--engine", required=True, type=Path, help="Path to coincidence.exe or native equivalent")
     parser.add_argument("--inputs", required=True, type=Path, help="Directory with prepared curve and library files")
     parser.add_argument("--output", required=True, type=Path, help="New coin.txt result path")
-    parser.add_argument("--workers", type=int, default=0, help="0: auto, at most four; 1: serial")
+    parser.add_argument("--workers", type=int, default=0, help="0: auto (number of CPUs minus 2); 1: serial")
     parser.add_argument("--nuclide", action="append", help="Parent nuclide; repeat to select several")
     parser.add_argument("--timeout", type=float, default=300, help="Timeout per native worker")
     parser.add_argument("--verify-serial", action="store_true", help="Require byte-identical complete serial output")

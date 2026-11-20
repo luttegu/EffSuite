@@ -12,6 +12,10 @@ from .parallel_coincidence import CoincidenceError
 
 
 def spectrum(raw: bytes, filename: str) -> dict[int, float]:
+    """Read a WEFFTRAN spectrum file: one "energy value" pair per line.
+
+    Energies are integer keV bins from 1 to 3000. Returns {energy: value}.
+    """
     values: dict[int, float] = {}
     for number, line in enumerate(raw.splitlines(), 1):
         fields = line.split()
@@ -56,20 +60,22 @@ def audit_corrections(emissions: bytes, peak: bytes, emissions2: bytes,
     """
     if not math.isfinite(minimum_ratio) or not 0 <= minimum_ratio <= 1:
         raise CoincidenceError("minimum_ratio must be between zero and one")
-    x = spectrum(emissions, "emissions.txt")
-    p = spectrum(peak, "peak.txt")
-    x2 = spectrum(emissions2, "emissions2.txt")
-    c = spectrum(correct, "correct.txt")
-    expected = set(range(1, 3001))
-    if set(x) != expected or set(p) != expected or set(x2) != expected:
+    # The legacy correction is  emissions / (peak - emissions2 + emissions).
+    direct = spectrum(emissions, "emissions.txt")
+    peaks = spectrum(peak, "peak.txt")
+    second_moment = spectrum(emissions2, "emissions2.txt")
+    legacy = spectrum(correct, "correct.txt")
+    all_bins = set(range(1, 3001))
+    if set(direct) != all_bins or set(peaks) != all_bins or set(second_moment) != all_bins:
         raise CoincidenceError("Intermediate spectra must contain all 3000 energy bins")
     results = []
-    for energy in sorted((set(c) | {e for e in x if x[e] > 0}) - {1}):
-        numerator, peaked, second = x[energy], p[energy], x2[energy]
+    # Every energy with a legacy factor or a direct peak (bin 1 is not a real line).
+    for energy in sorted((set(legacy) | {e for e in direct if direct[e] > 0}) - {1}):
+        numerator, peaked, second = direct[energy], peaks[energy], second_moment[energy]
         denominator = peaked - second + numerator
         scale = abs(peaked) + abs(second) + abs(numerator)
         ratio = abs(denominator) / scale if scale else 0.
-        factor = c.get(energy)
+        factor = legacy.get(energy)
         if numerator <= 0:
             status = "no_direct_peak"
         elif min(peaked, second) < 0 or denominator <= 0 or (factor is not None and factor <= 0):

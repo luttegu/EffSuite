@@ -1,5 +1,35 @@
 # Release Notes
 
+## EffSuite 0.3.0 (November 2026)
+
+The EFFTRAN and MEFFTRAN Fortran engines are unchanged. Cylindrical and Marinelli results are identical to 0.2.0.
+
+- **WEFFTRAN (well detectors) is about 9 times faster and uses 14 times less memory**:
+  - **Compiled ray tracing**: the inner ray-tracing loop of the spatial well model now runs in a new Fortran program, `raytrace` (`assets/engines/well/source/raytrace.f90`, built with `tools/build_raytrace.py`). It reproduces the Python formulas operation by operation: factors agree with the Python version to about 1e-14. The Python code remains as an automatic fallback when the program is not built for the platform (set `EFFSUITE_PYTHON_RAYTRACE=1` to force it).
+  - **Lighter convergence check**: the numerical refinement now refines the directions and the sample points in two separate checks, both of which must pass, instead of refining both at once. Factors change by at most 0.04 % (DET007 validation case), far inside the 1 % convergence tolerance.
+  - **Memory**: directions are processed in blocks. Peak memory fell from about 12 GB to under 1 GB, which removes out-of-memory failures on laboratory PCs.
+  - DET007 complete analysis: 108 s → 12.5 s.
+- **WEFFTRAN: one nuclide with unusable decay data no longer stops the whole calculation**. For example, `TH-227.txt` has transitions whose K + L conversion coefficients exceed the total coefficient; Th-227 is now reported as not corrected (its library lines are exported unchanged, with a warning) and every other nuclide is calculated. Before, no nuclide got a result.
+- **Genie 2000 export is about 4 times faster**: an export now starts PowerShell once instead of three times (write, save, reopen and check in one session; the read-back check is kept). Files already read are not read again. In the GUI, the "Export" buttons copy the file that the calculation already exported and verified.
+- **Corrected files are never silently left uncorrected**:
+  - A well model that failed its convergence checks, or an ambiguous factor, now blocks the export (before, the file was written uncorrected and marked "verified").
+  - Library nuclide names are compared in standard spelling ("Co60" = "CO-60").
+  - CLI: with both `--library` and `--certificate`, every certificate line is corrected.
+  - NaN or infinite engine values are an error (they were silently replaced by 1e-15).
+- **Other corrections**:
+  - GUI: opening a new library clears the previous summing result; switching between cylindrical/Marinelli and well no longer copies detector values into the wrong fields; loading an example keeps the data folder; the export dialogs offer only the file's real format; the laboratory's own materials appear at start-up.
+  - Well detector files with `key = value` lines: optional fields no longer shift into the wrong slot.
+  - A mistyped material name gives an error instead of a density of 1.0.
+  - Cancel or a time limit gives a clean "Calculation cancelled" / "exceeded" message (a `PermissionError` appeared before on Windows).
+  - XCOM tables are saved in the laboratory data folder, never in the program folder; XCOM runs once per material and session, and Cancel works during it.
+  - Creating a material reports a failed write instead of claiming success.
+  - CLI: `--output-*` never overwrites a file and reports an output that could not be produced; one failing batch job no longer stops the batch; a mistyped file name gives "File not found"; interactive mode returns a real exit code.
+  - GammaVision `.EFT` exports keep the template's Windows line endings; the `_gv.txt` report is always rewritten.
+- **Built-in well example**: now a complete analysis (efficiency transfer + summing), like the cylindrical and Marinelli examples.
+- **GUI responsiveness**: typing in the forms is about 30 times faster (redrawing waits until typing pauses).
+- **Removed duplicate or unused files**: the alias materials `Afs`, `Apple_ashed` and `Ashed rain filter` (identical to `Ashed air filter`, `Ashed apple` and `Rain_filter_ashed`), the unusable attenuation tables `test`, `ultima_gold` and `Rainfilterashed`, and leftovers of a test material (`cellulose_0229`). Projects using a removed alias stop with a clear "Material not found" message; choose the equivalent name. The original WEFFTRAN sources `peak_org.f` and `total_org.f` moved to `native/wefftran_original/` (no longer installed).
+- **Code readability**: every module was rewritten or reformatted for readability (one statement per line, descriptive names, docstrings and comments), with old-versus-new result comparisons for every module.
+
 ## EffSuite 0.2.0 (November 2026)
 
 - **EFFTRAN 5.0 & MEFFTRAN 1.9 Alignment & Physics Harmonization**:

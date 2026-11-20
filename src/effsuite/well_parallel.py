@@ -14,7 +14,6 @@ import math
 import os
 from pathlib import Path
 import re
-import subprocess
 import sys
 from tempfile import TemporaryDirectory
 import threading
@@ -22,8 +21,8 @@ import time
 from typing import Callable
 
 from .correction_diagnostics import audit_corrections
-from .parallel_coincidence import (CalculationCancelled, CoincidenceError,
-                                  _curve, _publish_new, _terminate, split_library)
+from .parallel_coincidence import (CalculationCancelled, CoincidenceError, StopSignal,
+                                  _curve, _publish_new, run_supervised, split_library, stderr_tail)
 
 STAGES = ("initialize", "emissions", "emissions2", "peak", "correct")
 OUTPUTS = ("correct.txt", "emissions.txt", "emissions2.txt", "peak.txt")
@@ -41,6 +40,7 @@ class WellInputs:
     @classmethod
     def from_directories(cls, prepared: Path, decay: Path,
                          nuclides: tuple[str, ...]) -> "WellInputs":
+        """Read the curves, parameters and decay data from the given folders."""
         groups = []
         for name in nuclides:
             if not NAME.fullmatch(name):
@@ -55,6 +55,7 @@ class WellInputs:
                    (prepared / "param.txt").read_bytes(), tuple(groups))
 
     def validate(self) -> None:
+        """Check the inputs: same energies in both curves, a valid resolving time, unique nuclides."""
         if _curve(self.efficiency, "efficiency.txt") != _curve(self.buildup, "buildup.txt"):
             raise CoincidenceError("Efficiency and buildup energy grids must match")
         try:
@@ -84,6 +85,7 @@ class WellResult:
 
 
 def engine_commands(directory: Path) -> dict[str, tuple[str, ...]]:
+    """The five WEFFTRAN stage programs (initialize ... correct) in ``directory``."""
     suffix = ".exe" if os.name == "nt" else ""
     return {stage: (str((directory / (stage + suffix)).resolve()),) for stage in STAGES}
 
@@ -91,35 +93,23 @@ def engine_commands(directory: Path) -> dict[str, tuple[str, ...]]:
 def _run_nuclide(name: str, records: tuple[bytes, ...], inputs: WellInputs,
                  commands: dict[str, tuple[str, ...]], stop: threading.Event,
                  timeout_seconds: float) -> tuple[tuple[tuple[str, bytes], ...], float]:
+    """Run the WEFFTRAN stages for one nuclide in its own temporary folder."""
     started = time.monotonic()
-    with TemporaryDirectory(prefix="effsuite-well-") as temporary:
+    # After a cancel or timeout, Windows may keep stderr.log locked for a moment
+    # by a process that is still stopping. Ignoring that cleanup error makes sure
+    # the user sees the real reason (cancelled / timed out), not a PermissionError.
+    with TemporaryDirectory(prefix="effsuite-well-", ignore_cleanup_errors=True) as temporary:
         work = Path(temporary)
         for filename, raw in (("efficiency.txt", inputs.efficiency),
                               ("buildup.txt", inputs.buildup), ("param.txt", inputs.param)):
             (work / filename).write_bytes(raw)
 
         def run(stage: str) -> None:
-            if stop.is_set():
-                raise CalculationCancelled("Calculation cancelled")
-            with (work / "stdout.log").open("wb") as stdout, (work / "stderr.log").open("wb") as stderr:
-                flags = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000) if os.name == "nt" else 0
-                process = subprocess.Popen(commands[stage], cwd=work, stdin=subprocess.DEVNULL,
-                                           stdout=stdout, stderr=stderr, shell=False, creationflags=flags)
-                try:
-                    while process.poll() is None:
-                        if stop.is_set():
-                            raise CalculationCancelled("Calculation cancelled")
-                        if time.monotonic() - started > timeout_seconds:
-                            raise CoincidenceError(f"{name}: nuclide exceeded {timeout_seconds:g} seconds")
-                        try:
-                            process.wait(timeout=.02)
-                        except subprocess.TimeoutExpired:
-                            pass
-                finally:
-                    _terminate(process)
-            if process.returncode:
-                diagnostic = (work / "stderr.log").read_bytes()[:4000].decode("utf-8", errors="replace")
-                raise CoincidenceError(f"{name}/{stage}: exit {process.returncode}: {diagnostic}")
+            """Run one WEFFTRAN stage program for this nuclide."""
+            returncode = run_supervised(commands[stage], work, stop, started + timeout_seconds,
+                                        f"{name}: nuclide exceeded {timeout_seconds:g} seconds")
+            if returncode:
+                raise CoincidenceError(f"{name}/{stage}: exit {returncode}: {stderr_tail(work)}")
 
         run("initialize")
         # A parent and its b record accumulate into the same three spectra.
@@ -142,6 +132,7 @@ def calculate_well_parallel(inputs: WellInputs, commands: dict[str, tuple[str, .
                             minimum_ratio: float = 1e-3, verify_serial: bool = False,
                             cancel: threading.Event | None = None,
                             progress: Callable[[int, int, str], None] | None = None) -> WellResult:
+    """Run several nuclides in parallel through the original WEFFTRAN stages."""
     inputs.validate()
     if type(workers) is not int or workers < 0:
         raise CoincidenceError("workers must be a nonnegative integer")
@@ -156,7 +147,7 @@ def calculate_well_parallel(inputs: WellInputs, commands: dict[str, tuple[str, .
             raise CoincidenceError("Each stage must use an existing absolute executable path")
     # Snapshot command sequences to avoid caller mutations during execution.
     commands = {name: tuple(command) for name, command in commands.items()}
-    stop = cancel if cancel is not None else threading.Event()
+    stop = StopSignal(cancel)
     if stop.is_set():
         raise CalculationCancelled("Calculation cancelled")
     auto_workers = max(1, (os.cpu_count() or 4) - 2)
@@ -174,7 +165,7 @@ def calculate_well_parallel(inputs: WellInputs, commands: dict[str, tuple[str, .
                 if progress:
                     progress(len(outputs), len(inputs.groups), name)
         except BaseException:
-            stop.set()
+            stop.worker_failed.set()   # stop the other nuclides
             for future in futures:
                 future.cancel()
             raise
@@ -218,6 +209,7 @@ def calculate_well_parallel(inputs: WellInputs, commands: dict[str, tuple[str, .
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Command-line entry point of the parallel WEFFTRAN runner."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--engine-dir", type=Path, required=True)
     parser.add_argument("--inputs", type=Path, required=True)

@@ -1,0 +1,30 @@
+{
+  "program": "raytrace",
+  "compiler": "C:/GENIE2K/EFFTRAN2026/w64devkit/bin/gfortran.exe",
+  "compiler_version": "GNU Fortran (GCC) 15.2.0",
+  "target": "windows",
+  "flags": [
+    "-O2",
+    "-fno-fast-math",
+    "-ffp-contract=off",
+    "-fno-strict-aliasing",
+    "-std=f2018",
+    "-static"
+  ],
+  "source_sha256": "c43be97b2aacc3d5288f3cc8226ea54425b60ca6680384e8101944271ca0fc6d",
+  "binary_sha256": "0f6ac7268d902ad8d3f821a6800a80ce6666e25cb6ba3f81281e63b4360af06d",
+  "command": [
+    "C:/GENIE2K/EFFTRAN2026/w64devkit/bin/gfortran.exe",
+    "-O2",
+    "-fno-fast-math",
+    "-ffp-contract=off",
+    "-fno-strict-aliasing",
+    "-std=f2018",
+    "-static",
+    "-J",
+    "C:\\PGM\\EffSuite\\src\\effsuite\\assets\\engines\\well\\bin\\windows\\raytrace_build",
+    "-o",
+    "C:\\PGM\\EffSuite\\src\\effsuite\\assets\\engines\\well\\bin\\windows\\raytrace.exe",
+    "C:\\PGM\\EffSuite\\src\\effsuite\\assets\\engines\\well\\source\\raytrace.f90"
+  ]
+}

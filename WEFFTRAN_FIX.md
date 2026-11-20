@@ -11,6 +11,20 @@ with automatic native response preparation. A simple current command is:
 CLI.bat well --detector DET07 --sample Plastic_vial_5mL --nuclides Co60 Cs134 Eu152
 ```
 
+## Changes in v0.3.0
+
+- The ray tracing runs in the compiled `raytrace` program (Fortran, double
+  precision, no fast-math). Its local peak and total efficiencies agree with the
+  Python implementation to about 1e-14; DET007 summing factors to 1.8e-15.
+- The convergence check refines the directions and the sample points in two
+  separate checks (both must pass), instead of refining all four orders at once.
+  On the DET007 case the reported factors differ by at most 0.037 % from the
+  previous combined refinement.
+- A nuclide whose decay data cannot be used is reported in `failed_nuclides`
+  and listed as missing; the other nuclides are calculated.
+- DET007 complete analysis: 108 s and 12 GB peak memory in v0.2.0, 12.5 s and
+  0.9 GB in v0.3.0.
+
 The lower-level v0.2 commands below remain available for detailed diagnostics.
 The original workbook itself is not modified. The full independent scientific
 engine rewrite and laboratory qualification remain incomplete.
@@ -95,10 +109,11 @@ invoke a particular interpreter explicitly.
 
 ## Convergence and export
 
-Default execution compares two quadratures, doubling the radial, axial,
-polar and azimuthal orders. The initial orders are 4/8/32/64 and the returned
-refined orders are 8/16/64/128. The axial integration splits at the crystal
-rim. Every reported factor must meet the numerical refinement criterion.
+Default execution compares the initial quadrature (radial/axial/polar/azimuthal
+orders 4/8/32/64) with two refined ones: twice the directions (4/8/64/128, whose
+factors are returned) and twice the sample points (8/16/32/64). Both changes must
+meet the criterion for every reported factor. The axial integration splits at
+the crystal rim. (Until v0.2.0 a single 8/16/64/128 refinement was used.)
 
 The default `--rtol 0.01` is a numerical test, **not a 1% uncertainty claim**.
 Use `--radial`, `--axial`, `--polar` and `--azimuth` to start more finely.

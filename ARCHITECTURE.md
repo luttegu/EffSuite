@@ -1,4 +1,4 @@
-# EffSuite 0.2.0 Architecture & Implementation
+# EffSuite 0.3.0 Architecture & Implementation
 
 `app_cli.py` and `gui.py` call `suite.run_project` using the same versioned
 JSON project. `model_io.py` validates 8-field source models (with 7-line backward
@@ -10,12 +10,18 @@ JSON/CSV/HTML output in a new directory.
 
 Cylinder and Marinelli summing use `parallel_coincidence.py`; parent/continuation
 records run together in isolated subprocess directories. Well summing uses
-`well_spatial.py` and `spatial_summing.py`, with multithreaded 3D spatial-angular
-ray-tracing across quadrature points and thread-pooled nuclide cascade evaluation.
+`well_spatial.py` and `spatial_summing.py`. The 3D spatial-angular ray tracing runs
+in the compiled `raytrace` program (`assets/engines/well/source/raytrace.f90`,
+built by `tools/build_raytrace.py`): Python prepares all inputs in one binary file
+and several copies of the program each compute a share of the sample points. The
+Python loop remains as a fallback when the program is not built for the platform.
+Nuclide cascades are then evaluated per sample point; a nuclide with unusable decay
+data is reported and skipped without stopping the others.
 `software.py` selects the vendor backend per file (`.LIB`/`.EFT` = GammaVision, otherwise Genie;
 override with `--software` or `EFFSUITE_SOFTWARE`).
 `genie.py` calls the installed vendor CAM components through the bundled PowerShell
-bridge and verifies exported copies by reopening them.
+bridge (one PowerShell start per read or export; rows already read are kept in memory)
+and verifies exported copies by reopening them in the same session.
 `gammavision.py` reads and writes ORTEC GammaVision `.LIB` libraries and `.EFT` efficiency files in pure Python
 (layout taken from EFFTRAN `gv.f` and `EFFTRAN.EFT`), also verifying exported copies by reopening them.
 

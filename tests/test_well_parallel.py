@@ -31,8 +31,9 @@ elif stage == 'correct':
         pathlib.Path(filename).write_text(''.join(f'{i} {value if i==100 else 0}\\n' for i in range(1,3001)))
     pathlib.Path('correct.txt').write_text('100 2.0\\n')
 if settings.get('trace'):
-    with open(settings['trace'], 'a') as out:
-        out.write(json.dumps({'cwd': str(pathlib.Path.cwd()), 'stage': stage, 'pid': os.getpid()})+'\\n')
+    # One file per process: processes writing to one shared file at once could mix their lines.
+    event_file = pathlib.Path(settings['trace']) / f'{os.getpid()}-{time.time_ns()}.json'
+    event_file.write_text(json.dumps({'cwd': str(pathlib.Path.cwd()), 'stage': stage, 'pid': os.getpid()}))
 '''
 
 
@@ -61,10 +62,11 @@ class WellParallelTests(unittest.TestCase):
                          [.2, .4])
 
     def test_all_stages_for_a_parent_share_one_private_directory(self):
-        trace = self.root / "trace.jsonl"
+        trace = self.root / "trace"
+        trace.mkdir()
         self.settings.write_text(json.dumps({"trace": str(trace)}))
         calculate_well_parallel(self.inputs, self.commands, workers=2)
-        rows = [json.loads(line) for line in trace.read_text().splitlines() if line.strip()]
+        rows = [json.loads(path.read_text()) for path in sorted(trace.iterdir())]
         self.assertEqual(len({row["cwd"] for row in rows}), 2)
         self.assertEqual(sorted(sum(row["stage"] == "peak" for row in rows if row["cwd"] == directory)
                                 for directory in {row["cwd"] for row in rows}), [1, 2])

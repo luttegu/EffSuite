@@ -2,12 +2,11 @@
 from __future__ import annotations
 
 import argparse
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import ExitStack
 from hashlib import sha256
 import json
 import math
-import multiprocessing
 import os
 from pathlib import Path
 import shutil
@@ -22,32 +21,24 @@ from .spatial_summing import (Quadrature, integrated_counts, parse_decay,
                               prepare_local, required_energies)
 from .well_parallel import NAME
 
-_WORKER_LOCAL = None
-_WORKER_TIME = None
 
+def module_sha256(filename: str) -> str:
+    """SHA-256 identifying the code of one EffSuite module, e.g. "spatial_summing.py".
 
-def _safe_py_sha256(filename: str) -> str:
+    Normally this is the hash of the .py file. In the installed program the
+    .py files are packed inside the executable, so we hash the module's
+    compiled code instead (still different for every code change).
+    """
     path = Path(__file__).parent / filename
-    try:
-        if path.is_file():
-            return sha256(path.read_bytes()).hexdigest()
-        pyc = path.with_suffix(".pyc")
-        if pyc.is_file():
-            return sha256(pyc.read_bytes()).hexdigest()
-    except Exception:
-        pass
-    return sha256(filename.encode()).hexdigest()
-
-
-def _initialize_spatial_worker(local, resolving_time):
-    global _WORKER_LOCAL, _WORKER_TIME
-    for array in (local.energies, local.weights, local.peak, local.total, local.points):
-        array.flags.writeable = False
-    _WORKER_LOCAL, _WORKER_TIME = local, resolving_time
-
-
-def _calculate_spatial_group(records):
-    return integrated_counts(records, _WORKER_LOCAL, _WORKER_TIME)
+    if path.is_file():
+        return sha256(path.read_bytes()).hexdigest()
+    import importlib.util
+    import marshal
+    spec = importlib.util.find_spec(f"{__package__}.{Path(filename).stem}")
+    code = spec.loader.get_code(spec.name) if spec and spec.loader else None
+    if code is None:
+        raise CoincidenceError(f"Cannot identify the code of {filename}")
+    return sha256(marshal.dumps(code)).hexdigest()
 
 
 def prepare_well_case(installation: Path, engine_dir: Path, detector: Path,
@@ -84,18 +75,21 @@ def prepare_well_case(installation: Path, engine_dir: Path, detector: Path,
 
 
 def load_groups(installation, names, beta_plus_pl=("NA-22",)):
+    """Decay records of each requested parent nuclide (with its "b" branch file, if any)."""
     decay_dir = (
         installation/"Decay_Data"
         if installation and (installation/"Decay_Data").is_dir()
         else (COMMON_DATA/"Decay_Data" if (COMMON_DATA/"Decay_Data").is_dir() else ASSETS/"well/Decay_Data")
     )
-    groups = []; missing = []
+    groups = []
+    missing = []
     for name in names:
         if not NAME.fullmatch(name):
             raise CoincidenceError(f"Invalid parent nuclide: {name}")
         parent_path = decay_dir/(name+".txt")
         if not parent_path.is_file():
-            missing.append(name); continue
+            missing.append(name)
+            continue
         records = []
         for label in (name, name+"b"):
             path = decay_dir/(label+".txt")
@@ -107,23 +101,49 @@ def load_groups(installation, names, beta_plus_pl=("NA-22",)):
     return tuple(groups), missing
 
 
-def calculate_groups(groups, local, resolving_time, workers, verify_serial=False, cancel=None):
+def _nuclide_counts(records, local, resolving_time):
+    """Counts of one parent nuclide, or {"error": reason} if it cannot be calculated.
+
+    One nuclide with unusable decay data (for example inconsistent conversion
+    coefficients) must not stop the calculation of all the other nuclides.
+    """
     from .parallel_coincidence import CalculationCancelled
-    if cancel is not None and cancel.is_set():raise CalculationCancelled("Calculation cancelled")
+    try:
+        return integrated_counts(records, local, resolving_time)
+    except CalculationCancelled:
+        raise
+    except CoincidenceError as exc:
+        return {"error": str(exc)}
+
+
+def _split_failures(results, failed):
+    """Move nuclides that returned {"error": ...} from ``results`` into ``failed``."""
+    for name, item in results:
+        if "error" in item:
+            failed.setdefault(name, item["error"])
+    return tuple((name, item) for name, item in results if name not in failed)
+
+
+def calculate_groups(groups, local, resolving_time, workers, verify_serial=False, cancel=None):
+    """Counts of every nuclide, in parallel threads when workers > 1 (optionally checked against a serial run)."""
+    from .parallel_coincidence import CalculationCancelled
+    if cancel is not None and cancel.is_set():
+        raise CalculationCancelled("Calculation cancelled")
     if workers <= 1:
-        results = {name: integrated_counts(records, local, resolving_time) for name, records in groups}
+        results = {name: _nuclide_counts(records, local, resolving_time) for name, records in groups}
     else:
         with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="well-nuclide") as pool:
-            futures = {pool.submit(integrated_counts, records, local, resolving_time): name
+            futures = {pool.submit(_nuclide_counts, records, local, resolving_time): name
                        for name, records in groups}
             results = {}
             for future in as_completed(futures):
                 if cancel is not None and cancel.is_set():
-                    for pending in futures:pending.cancel()
+                    for pending in futures:
+                        pending.cancel()
                     raise CalculationCancelled("Calculation cancelled")
                 results[futures[future]] = future.result()
     if verify_serial and workers > 1:
-        reference = calculate_groups(groups, local, resolving_time, 1,cancel=cancel)
+        reference = calculate_groups(groups, local, resolving_time, 1, cancel=cancel)
         if reference != tuple((name, results[name]) for name, _ in groups):
             raise CoincidenceError("Spatial serial and parallel results differ")
     return tuple((name, results[name]) for name, _ in groups)
@@ -133,6 +153,7 @@ def calculate_spatial(installation: Path, prepared: Path, names: tuple[str, ...]
                       order=Quadrature(), workers=0, verify_serial=False,
                       check_convergence=True, rtol=.01, beta_plus_pl=("NA-22",),
                       progress=None, cancel=None) -> dict:
+    """Complete well summing calculation: local response, counts, convergence checks, report."""
     if type(workers) is not int or workers < 0:
         raise CoincidenceError("workers must be a nonnegative integer")
     if not math.isfinite(rtol) or not 0 < rtol < 1:
@@ -146,31 +167,50 @@ def calculate_spatial(installation: Path, prepared: Path, names: tuple[str, ...]
     if progress:
         progress("Calculating local detector response")
     local = prepare_local(installation, prepared, energies, order, cancel, workers=workers)
-    initial = calculate_groups(groups, local, resolving_time, count, verify_serial,cancel)
+    failed = {}   # nuclide -> reason it could not be calculated
+    initial = _split_failures(calculate_groups(groups, local, resolving_time, count, verify_serial, cancel), failed)
+    if not initial:
+        raise CoincidenceError("No nuclide could be calculated: " +
+                               "; ".join(f"{name}: {reason}" for name, reason in failed.items()))
+    groups = tuple(group for group in groups if group[0] not in failed)
     convergence = {"requested": check_convergence, "passed": None, "rtol": rtol,
                    "meaning": "Numerical refinement only; not model uncertainty"}
     if check_convergence:
-        if progress:
-            progress("Refining spatial and angular quadrature")
-        fine = prepare_local(installation, prepared, energies, order.refined(), cancel, workers=workers)
-        refined = calculate_groups(groups, fine, resolving_time, count, verify_serial,cancel)
+        # Two separate checks, both must pass: (1) more directions, (2) more
+        # sample points. The reported factors come from check (1).
+        checks = {}
+        for label, finer in (("directions", order.refined_directions()), ("points", order.refined_points())):
+            if progress:
+                progress(f"Convergence check: refining the {label}")
+            fine_local = prepare_local(installation, prepared, energies, finer, cancel, workers=workers)
+            checks[label] = (fine_local, _split_failures(
+                calculate_groups(groups, fine_local, resolving_time, count, verify_serial, cancel), failed))
+        fine, refined = checks["directions"]
+        by_points = {name: {row["energy_kev"]: row["factor"] for row in item["corrections"]} for name, item in checks["points"][1]}
         previous = {name: {row["energy_kev"]: row for row in item["corrections"]} for name, item in initial}
+
+        def relative_change(before, after):
+            return abs(after-before)/abs(after) if before is not None and after is not None and after > 0 else None
+
         differences = []
         for name, item in refined:
             for row in item["corrections"]:
-                before = previous[name].get(row["energy_kev"], {}).get("factor")
-                after = row["factor"]
-                error = abs(after-before)/abs(after) if before is not None and after is not None and after > 0 else None
+                before = previous.get(name, {}).get(row["energy_kev"], {}).get("factor")
+                changes = [relative_change(before, row["factor"]),
+                           relative_change(before, by_points.get(name, {}).get(row["energy_kev"]))]
+                error = None if None in changes else max(changes)
                 passed = error is not None and error <= rtol
                 row["refinement_relative_change"] = error
                 row["status"] = "candidate" if passed else "not_converged"
                 differences.append({"nuclide": name, "energy_kev": row["energy_kev"],
                                     "relative_change": error, "passed": passed})
         convergence.update({"passed": bool(differences) and all(row["passed"] for row in differences),
+                            "method": "separate x2 refinement of directions and of sample points; both must pass",
                             "maximum_relative_change": max((row["relative_change"] for row in differences
                                                             if row["relative_change"] is not None), default=None),
                             "failed_lines": [row for row in differences if not row["passed"]],
-                            "initial_quadrature": local.metadata["quadrature"]})
+                            "initial_quadrature": local.metadata["quadrature"],
+                            "points_check_quadrature": checks["points"][0].metadata["quadrature"]})
         results, local = refined, fine
     else:
         results = initial
@@ -178,8 +218,8 @@ def calculate_spatial(installation: Path, prepared: Path, names: tuple[str, ...]
             for row in item["corrections"]:
                 row["status"] = "convergence_not_checked"
     return {"schema_version": 1, "calculation": "wefftran-spatial-count-integration",
-            "engine_version": "0.2.0-spatial",
-            "engine_sha256": {filename: _safe_py_sha256(filename)
+            "engine_version": "0.3.0-spatial",
+            "engine_sha256": {filename: module_sha256(filename)
                               for filename in ("spatial_summing.py", "well_spatial.py")},
             "qualification": "Regression and numerical checks; laboratory qualification pending",
             "model": "Ray-traced hollow-crystal well response with probability-conserving upstream Compton/Rayleigh scattering, local peak-to-total, and exact antiparallel 511 keV pairs; pointwise cascade recursion",
@@ -187,16 +227,25 @@ def calculate_spatial(installation: Path, prepared: Path, names: tuple[str, ...]
                             "Deterministic approximation, not a Monte Carlo transport; real crystal contacts, holder and cryostat details are not modelled",
                             "Gamma peak output uses legacy transition-energy bins",
                             "Annihilation-pair sum peaks at 1022 keV and mixed pair sum-in channels are not added"],
-            "workers": count, "serial_verification": {"requested": verify_serial, "passed": True if verify_serial else None},
+            # The serial comparison only runs with more than one worker (see
+            # calculate_groups); with one worker there is nothing to compare.
+            # It raises on any difference, so reaching this line means it passed.
+            "workers": count, "serial_verification": {"requested": verify_serial,
+                                                      "performed": verify_serial and count > 1,
+                                                      "passed": True if verify_serial and count > 1 else None},
             "resolving_time": resolving_time,
             "param_sha256": sha256((prepared/"param.txt").read_bytes()).hexdigest(),
             "seconds": time.monotonic()-started,
             "transport": local.metadata, "convergence": convergence,
-            "missing_nuclides": missing,
-            "nuclides": [{"nuclide": name, **item} for name, item in results]}
+            # Failed nuclides are listed as missing too, so their library lines
+            # are exported unchanged (never with a made-up factor).
+            "missing_nuclides": list(missing) + [name for name in failed if name not in missing],
+            "failed_nuclides": [{"nuclide": name, "reason": reason} for name, reason in failed.items()],
+            "nuclides": [{"nuclide": name, **item} for name, item in results if name not in failed]}
 
 
 def legacy_text(report: dict) -> bytes:
+    """The result in the original correct.txt format (one nuclide, converged results only)."""
     if len(report["nuclides"]) != 1:
         raise CoincidenceError("Legacy correct.txt output requires one parent nuclide")
     if not report["convergence"]["passed"]:
@@ -214,6 +263,7 @@ def legacy_text(report: dict) -> bytes:
 
 
 def main(argv=None):
+    """Command-line entry point of the well spatial backend."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--original", type=Path, required=True, help="WEFFTRAN materials and Decay_Data directory")
     source = parser.add_mutually_exclusive_group(required=True)

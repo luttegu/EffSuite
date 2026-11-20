@@ -10,8 +10,9 @@ for `total`, `scatter` and `eta`. Copyright and permission notices are retained.
 The supplied archive already contained an earlier tall-sample patch. These
 new changes cover additional axial and outside-origin cases, but do not remove
 the reproduced negative or near-singular summing factors. See
-`../WEFFTRAN_FINDINGS.md` and run `../tools/check_wefftran.py` before evaluating
-a proposed geometry change. The v0.3 suite bundles new Windows/Linux numerical executables under
+`../WEFFTRAN_FIX.md` and run `../tools/check_wefftran.py` before evaluating
+a proposed geometry change. `wefftran_original` holds the supplied original
+`peak_org.f` and `total_org.f`, used only as references by the tools in `../tools`. The v0.3 suite bundles new Windows/Linux numerical executables under
 `src/effsuite/assets/engines`. This historical geometry-patch folder is retained
 for investigation; the main well summing fix is the spatial backend.
 

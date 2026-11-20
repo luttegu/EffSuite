@@ -44,13 +44,21 @@ for name, branches in groups:
     out.append(f"{label:<10}{100:10d}{1.0 + branches / 10:15.3f}\n")
 pathlib.Path("coin.txt").write_text("".join(out))
 if settings.get("trace"):
-    with open(settings["trace"], "a") as trace:
-        trace.write(json.dumps({"pid": os.getpid(), "start": start, "end": time.monotonic(),
-                                "cwd": str(pathlib.Path.cwd())}) + "\n")
+    # One file per process: processes writing to one shared file at once could mix their lines.
+    event_file = pathlib.Path(settings["trace"]) / f"{os.getpid()}-{time.time_ns()}.json"
+    event_file.write_text(json.dumps({"pid": os.getpid(), "start": start, "end": time.monotonic(),
+                                      "cwd": str(pathlib.Path.cwd())}))
 '''
 
 
 class ParallelTests(unittest.TestCase):
+    def test_nan_or_infinite_engine_value_is_an_error(self):
+        from effsuite.parallel_coincidence import _number
+        self.assertEqual(_number(b"1.5D+02"), 150.0)
+        for token in (b"NaN", b"inf", b"-Infinity"):
+            with self.subTest(token=token), self.assertRaises(CoincidenceError):
+                _number(token)
+
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
         self.root = Path(self.directory.name)
@@ -92,10 +100,11 @@ class ParallelTests(unittest.TestCase):
         self.assertIn(b"1.200", parallel.coin_bytes)  # EU's two records accumulated.
 
     def test_multiple_native_processes_overlap_and_use_private_directories(self):
-        trace = self.root / "trace.ndjson"
+        trace = self.root / "trace"
+        trace.mkdir()
         self.settings.write_text(json.dumps({"sleep": .2, "trace": str(trace)}))
         result = calculate_parallel(self.inputs, self.command, workers=3)
-        events = [json.loads(line) for line in trace.read_text().splitlines()]
+        events = [json.loads(path.read_text()) for path in sorted(trace.iterdir())]
         self.assertEqual(result.report["workers"], 3)
         self.assertEqual(len({e["pid"] for e in events}), 3)
         self.assertEqual(len({e["cwd"] for e in events}), 3)
@@ -135,6 +144,13 @@ class ParallelTests(unittest.TestCase):
         event.set()
         with self.assertRaises(CalculationCancelled):
             calculate_parallel(self.inputs, self.command, cancel=event)
+
+    def test_worker_failure_does_not_set_the_callers_cancel_event(self):
+        self.settings.write_text(json.dumps({"sleep": 3}))
+        event = threading.Event()
+        with self.assertRaisesRegex(CoincidenceError, "exceeded"):
+            calculate_parallel(self.inputs, self.command, workers=3, cancel=event, timeout_seconds=.1)
+        self.assertFalse(event.is_set())   # the caller did not cancel anything
 
     def test_cancel_running_workers(self):
         self.settings.write_text(json.dumps({"sleep": 3}))

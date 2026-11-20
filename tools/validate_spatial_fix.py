@@ -6,7 +6,6 @@ numerical checks do not establish a measurement uncertainty or lab validation.
 from __future__ import annotations
 
 import argparse
-from collections import Counter
 from hashlib import sha256
 import json
 import os

@@ -6,14 +6,20 @@ and foreign language / redirected user profile folder naming (e.g. 'Dokumenter')
 """
 
 from __future__ import annotations
+from functools import lru_cache
 import os
 from pathlib import Path
 import sys
 import tempfile
 
 
+@lru_cache(maxsize=1)
 def get_real_documents_dir() -> Path:
-    """Resolve the actual user documents directory, accounting for OneDrive redirection."""
+    """Resolve the actual user documents directory, accounting for OneDrive redirection.
+
+    The answer is remembered (lru_cache): the Documents folder does not move
+    while the program runs, and reading the registry every time is slow.
+    """
     if sys.platform == "win32":
         try:
             import winreg
@@ -44,7 +50,15 @@ def get_effsuite_root() -> Path:
     4. LocalAppData/EffSuite
     5. Temp fallback
     """
-    env_root = os.environ.get("EFFSUITE_ROOT")
+    return _find_effsuite_root(os.environ.get("EFFSUITE_ROOT"))
+
+
+@lru_cache(maxsize=4)
+def _find_effsuite_root(env_root: str | None) -> Path:
+    """Search for the root folder once per value of EFFSUITE_ROOT (remembered).
+
+    Without this, every call created folders and wrote a test file on disk.
+    """
     if env_root:
         return Path(env_root)
 
