@@ -1,4 +1,4 @@
-"""Parallel orchestration for EFFTRAN 4.8 / MEFFTRAN 1.7 coincidence.f.
+"""Parallel orchestration for EFFTRAN 5.0 / MEFFTRAN 1.9 coincidence.f.
 
 The numerical executable is unchanged. Complete nuclide groups, including all
 lowercase-b continuation records, are assigned to isolated child processes.

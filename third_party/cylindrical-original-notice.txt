@@ -1,6 +1,6 @@
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 C                                                                       C
-C  EFFTRAN (version 4.8 2026)                                           C
+C  EFFTRAN (version 5.0 2026)                                           C
 C  Copyright (c) 2005-2026                                              C
 C  Tim Vidmar                                                           C
 C                                                                       C
@@ -14,8 +14,7 @@ C  purpose. It is provided 'as is' without express or implied warranty. C
 C                                                                       C
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
--- Coincidence summing corrections calculated in one go for all the 
-   nuclides in the library
+-- Only Material, Efficiency Transfer and Coincidence Summing modules
 
 EFFTRAN website is located at https://efftran.github.io/.
 
@@ -24,5 +23,5 @@ new directory and not over an existing version. Then redefine all the materials
 and all the detector and source models. We apologise for this inconvenience, but
 there is no other way of guaranteeing that the new version will work correctly.
 
-September 2026
+November 2026
 

@@ -1,38 +1,40 @@
-# Native engine integration
+# native/ — historical WEFFTRAN geometry work
 
-The official EFFTRAN 4.8 and MEFFTRAN 1.7 sources and the supplied WEFFTRAN
-archive have now been inspected. The migration runners use those original
-programs through private subprocess working directories. They do not yet
-replace the scientific algorithms with an independent engine.
+This folder is **not** used by the calculations. The engines EffSuite runs,
+EFFTRAN 5.0, MEFFTRAN 1.9 and WEFFTRAN with their sources, Windows/Linux
+programs and build manifests, are in `src/effsuite/assets/engines/`. They run
+as separate processes in private working folders.
 
-`wefftran_geometry` contains source-derived ray/cylinder intersection changes
-for `total`, `scatter` and `eta`. Copyright and permission notices are retained.
-The supplied archive already contained an earlier tall-sample patch. These
-new changes cover additional axial and outside-origin cases, but do not remove
-the reproduced negative or near-singular summing factors. See
-`../WEFFTRAN_FIX.md` and run `../tools/check_wefftran.py` before evaluating
-a proposed geometry change. `wefftran_original` holds the supplied original
-`peak_org.f` and `total_org.f`, used only as references by the tools in `../tools`. The v0.3 suite bundles new Windows/Linux numerical executables under
-`src/effsuite/assets/engines`. This historical geometry-patch folder is retained
-for investigation; the main well summing fix is the spatial backend.
+| Folder | Contents |
+|---|---|
+| `wefftran_geometry/` | Source-derived ray/cylinder intersection changes for `total`, `scatter` and `eta`, covering additional axial and outside-origin cases. Copyright and permission notices are retained. |
+| `wefftran_original/` | The supplied original `peak_org.f` and `total_org.f`, used only as references by `tools/check_wefftran.py`. |
 
-For the historical general JSON bridge proposal, use `../docs/archive/BRIDGE_PROTOCOL.md`. Keep the
-reference executable unchanged. A DLL-based variant needs a native host that
-matches its calling convention, data types, string layout, array order,
-initialization and FPU setup. The host may need to be 32 bit even when Python
-is 64 bit; a subprocess avoids matching Python's architecture.
+The supplied WEFFTRAN archive already contained an earlier tall-sample patch.
+The geometry changes here improve the ray intersections, but they do **not**
+remove the negative or near-singular summing factors of the original
+subtraction formula. The actual fix is the spatial summing model described in
+[docs/WELL_SPATIAL_MODEL.md](../docs/WELL_SPATIAL_MODEL.md). Run
+`tools/check_wefftran.py` before evaluating any proposed geometry change.
 
-After reference validation, add a narrow Fortran `ISO_C_BINDING` wrapper around existing routines. Use `BIND(C)` and explicit interoperable types. Do not change a legacy `REAL` into `REAL(C_DOUBLE)` unless that legacy type has actually been identified as binary64. Preserve legacy `COMMON` / `SAVE` state semantics and serialize calls until reentrancy has been established. Return an error code and diagnostics rather than executing `STOP` inside Python.
+## Notes for a future in-process engine
 
-Possible native build layout:
+A DLL-based engine would need a native host matching its calling convention,
+data types, string layout, array order, initialisation and FPU set-up. The
+host may need to be 32-bit even when Python is 64-bit; a subprocess avoids
+matching Python's architecture.
 
-```text
-native/
-  original/             # controlled, unmodified sources and build metadata
-  c_api/                # BIND(C) wrapper and public C header
-  host/                 # isolated executable implementing the JSON bridge
-  cmake/                # compiler profiles per platform and target architecture
-  data/                 # versioned cross sections and decay tables, with hashes
-```
+After reference validation, a narrow Fortran `ISO_C_BINDING` wrapper could be
+added around the existing routines:
 
-A Windows executable does not become portable when launched through Python. A native Linux or macOS engine requires recompilation or a port and its own qualification. A Windows worker reached by an explicit service can be an interim deployment, but is not a standalone native cross-platform engine.
+* use `BIND(C)` and explicit interoperable types;
+* do not change a legacy `REAL` into `REAL(C_DOUBLE)` unless that legacy type
+  has been identified as binary64;
+* preserve the legacy `COMMON` / `SAVE` state semantics, and serialise calls
+  until reentrancy is established;
+* return an error code and diagnostics instead of executing `STOP` inside
+  Python.
+
+A Windows program does not become portable by being launched from Python. A
+native Linux or macOS engine needs recompilation or a port, and its own
+qualification.

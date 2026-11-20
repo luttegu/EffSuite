@@ -26,12 +26,12 @@ When executing `EffSuite_CLI.exe` as a subprocess, evaluate the process exit cod
 
 | Exit Code | Meaning | Software Handling Recommendation |
 | :---: | :--- | :--- |
-| **0** | **Success (Complete)** | All calculations completed successfully. All library gamma lines received positive summing corrections. |
-| **1** | **Success (Valid with Uncorrected Lines)** | Valid completion. The transferred `.CAL` / `.EFT` and corrected `.NLB` / `.LIB` / `.CTF` were created and verified. However, certain low-energy lines below the detector/calibration operational limit (e.g., transitions < 40 keV) could not receive summing corrections and are marked with `*` (standard GenTran / EFFTRAN convention). **Treat as success if expected output files exist.** |
-| **2** | **Fatal Execution Error** | Runtime failure (e.g., missing engine binary, file I/O error, invalid syntax, or unhandled exception). Inspect `stderr` for details. |
-| **>2** | **OS / Subprocess Abort** | Abnormal termination (e.g., process killed by timeout, permission failure). |
+| **0** | **Success (Complete)** | The calculation finished and every reported summing line has a valid correction factor. |
+| **1** | **Success with uncorrected lines** | The calculation finished and the results were published, but at least one reported line has no usable factor and is marked `*` (`status` other than `candidate` in `summing.csv`). Typical causes: no decay data for the nuclide, lines the engine does not calculate (for example I-129 X-rays), or, for wells, a failed convergence check (which also blocks the corrected-library export). Exported files keep the original value for those lines. **Treat as success if the expected output files exist.** |
+| **2** | **Error** | Invalid input, missing file or engine, or engine failure. The message is on `stderr`. No result folder is published. |
+| **130** | **Interrupted** | Ctrl+C. |
 
-> **Critical Integration Rule**: External software should check if `ExitCode == 0 || (ExitCode == 1 && File.Exists(expectedOutputCal))`. Do not treat exit code 1 as a crash.
+> **Integration rule**: accept `ExitCode == 0 || (ExitCode == 1 && File.Exists(expectedOutput))`. Do not treat exit code 1 as a crash, but review the `*` lines in `summing.csv` or `results.json`.
 
 ---
 
@@ -132,24 +132,35 @@ To verify the installation, engine binaries, and dependencies from your calling 
 EffSuite_CLI.exe doctor
 ```
 
-Returns exit code 0 and prints a machine-readable JSON object:
+Prints a machine-readable JSON object. The exit code is 0 when every engine program, XCOM and the required Python packages (NumPy, Matplotlib, xlrd) are present, otherwise 1:
 ```json
 {
-  "version": "0.3.0",
-  "dependencies": {
-    "numpy": true,
-    "matplotlib": true,
-    "xlrd": true,
-    "PySide6": true
-  },
+  "version": "0.3.1",
+  "python": "3.14.10 (...)",
+  "interpreter": "C:\\...\\python.exe",
+  "dependencies": { "numpy": true, "matplotlib": true, "xlrd": true, "PySide6": true },
   "engines": {
-    "EFFTRAN": { "mine": true, "energy": true, "total": true, "efficiency": true, "coincidence": true, ... },
+    "EFFTRAN": { "mine": true, "energy": true, "total": true, "scatter": true, "buildup": true, "eta": true, "ptt": true, "efficiency": true, "transfer": true, "coincidence": true },
     "MEFFTRAN": { ... },
     "WEFFTRAN": { ... }
   },
-  "qualification": "Beta Build (Experimental Qualification Pending)"
+  "materials": { "xcom": true, "excel_template": true, "element_data": true },
+  "qualification": "Beta Build; experimental qualification pending. Verify installation against reference data"
 }
 ```
+
+### Other commands
+
+| Command | Purpose |
+| :--- | :--- |
+| `batch jobs.csv --out DIR` | Run every job of a CSV/JSON table (`batch --template jobs.csv` writes an empty template); writes `batch_summary.csv/.json`. |
+| `examples [--run cylinder\|marinelli\|well]` | List or run the built-in example projects. |
+| `models cylinder\|marinelli\|well` | List the available detector, sample, standard and material names. |
+| `plot-geometry --geometry … --detector … --sample … --out FILE` | Draw the dimensioned cross-section (PNG/PDF/SVG). |
+| `material …` | Create a material and its XCOM attenuation table (see [MATERIALS.md](MATERIALS.md)). |
+| `gui` | Open the desktop interface. |
+
+Run any command with `--help` for its full option list.
 
 ---
 
@@ -159,7 +170,7 @@ Returns exit code 0 and prints a machine-readable JSON object:
 | :--- | :--- | :--- |
 | `--detector` | String (path or name) | Detector model file path (`.txt`) or name matching a file in `Data/Detector`. |
 | `--sample` | String (path or name) | Sample geometry file path (`.txt`) or name in `Data/Sample`. |
-| `--standard` | String (path or name) | Standard reference geometry file path (`.txt`) or name in `Data/Standard`. Defaults to `--sample` if omitted. |
+| `--standard` | String (path or name) | Standard reference geometry file path (`.txt`) or name in `Data/Standard`. Needed, together with `--calibration`, for an efficiency transfer. |
 | `--calibration` | String (path) | Reference efficiency calibration file (Genie `.CAL`, GammaVision `.EFT`, `.txt`, or `.csv`). |
 | `--library` | String (path) | Genie 2000 Nuclide Library (`.NLB`) or GammaVision library (`.LIB`) to apply cascade summing corrections to. |
 | `--software` | `genie` \| `gammavision` | Force the vendor backend. Default: auto-detect from the extension (`.LIB`/`.EFT` = GammaVision). **GammaVision is untested** (see README). |
@@ -169,14 +180,23 @@ Returns exit code 0 and prints a machine-readable JSON object:
 | `--output-nlb` | String (path) | Target file path for the summing-corrected nuclide library (Genie `.NLB` or GammaVision `.LIB`). |
 | `--output-ctf` | String (path) | Target file path for the summing-corrected Genie certificate (`.CTF`). |
 | `--sample-height` | Float (mm) | **Dynamic override**: Sample filling height in mm. |
-| `--sample-density`| Float (g/cm³) | **Dynamic override**: Sample bulk density (sets the 8th source parameter `rho`, scaling sample attenuation $\mu(E)$ by $\rho / \rho_0$ across EFFTRAN 5.0, MEFFTRAN 1.9, and WEFFTRAN without mutating global `Composition/*.txt` files). |
+| `--sample-density`| Float (g/cm³) | **Dynamic override**: Sample bulk density. Sets line 8 of the source model (`rho`); the engines scale the attenuation $\mu(E)$ by $\rho / \rho_0$. `Composition/*.txt` files are not changed. |
 | `--sample-material`| String | **Dynamic override**: Matrix material name (must exist in `Data/Composition` or `assets/common/Composition`). |
 | `--sample-diameter`| Float (mm) | **Dynamic override**: Outer container diameter in mm. |
 | `--sample-gap` | Float (mm) | **Dynamic override**: Endcap/crystal-to-container face distance in mm. |
-| `--out` | String (directory) | Destination directory for audit manifests, tables, and logs. Default: `Documents/EffSuite/Results/<timestamp>`. |
-| `--workers` | Integer | Number of worker processes: `0` = automatic (CPU core count up to 4), `1` = serial single-process. |
+| `--out` | String (directory) | Destination directory for audit manifests, tables, and logs. Default: `<user folder>\Results\<timestamp>`, where the user folder is `C:\GENIE2K\EffSuite`, or `Documents\EffSuite` when that cannot be written (`EFFSUITE_ROOT` overrides both). |
+| `--workers` | Integer | Number of worker processes: `0` = automatic (number of CPUs minus 2, at least 1), `1` = serial single-process. |
 | `--plot-geometry`| Flag or file path | Generates a CAD axial cross-section diagram with all quotes as PNG/PDF. |
 | `--verify-serial`| Flag | Cross-verifies parallel outputs against a serial reference run for audit validation. |
+| `--tcs-u-peak` | Float (%) | Relative standard uncertainty of the computed peak efficiency, used for u(C). Default 5. Also accepted by `run`. |
+| `--tcs-u-total` | Float (%) | Relative standard uncertainty of the computed total efficiency, used for u(C). Default 10. Also accepted by `run`. |
+| `--tcs-correlation` | Float (−1 … 1) | Correlation between the peak and total efficiency errors. Default 0. Also accepted by `run`. |
+| `--no-tcs-uncertainty` | Flag | Do not calculate u(C); skips the four sensitivity runs. Factors are unchanged. |
+
+In a project JSON, the same settings go in a `"tcs_uncertainty"` object
+(`peak_efficiency_percent`, `total_efficiency_percent`,
+`peak_total_correlation`, `enabled`, `step_percent`). Command-line options
+override the project values. See [TCS_UNCERTAINTY.md](TCS_UNCERTAINTY.md).
 
 ---
 
@@ -189,17 +209,19 @@ In addition to the destination files specified by `--output-cal` and `--output-n
 1. **`results.json`**:
    Comprehensive calculation manifest containing:
    - Numerical efficiency transfer values for all calibration points.
-   - Exact summing factors $C$ with cascade component breakdowns.
+   - The summing factor $C$ of every line, with its status.
+   - The relative standard uncertainty of each factor, `tcs_u_rel_percent`, with its components and sensitivity coefficients, plus a `tcs_uncertainty` section recording the settings and method.
    - SHA-256 cryptographic hashes of all engine executables, data files, and inputs.
    - Complete runtime diagnostics and timings.
 2. **`efficiency.csv`**:
    Tabular efficiency transfer factors:
-   `Energy_keV, Reference_Efficiency, Transferred_Efficiency, Transfer_Factor, Uncertainty_Percent`
+   `energy_keV, standard_efficiency, sample_efficiency, transfer_factor, sample_relative_uncertainty_percent_legacy`
 3. **`summing.csv`**:
    Tabular cascade correction factors:
-   `Nuclide, Energy_keV, Summing_Factor_C, Comment` (Comment is `*` for uncomputed/low-energy transitions).
+   `nuclide, energy_keV, activity_multiplier, status, tcs_u_rel_percent, tcs_u_peak_percent, tcs_u_total_percent, tcs_u_numerical_percent, tcs_sensitivity_peak, tcs_sensitivity_total`.
+   `tcs_u_rel_percent` is u(C) in percent (k = 1). An empty cell means no uncertainty is available (uncorrected line, or `--no-tcs-uncertainty`).
 4. **`report.html`**:
-   Self-contained interactive HTML audit report with embedded SVG efficiency curves.
+   Self-contained HTML report (opens offline) with an embedded SVG chart, the efficiency and summing tables, u(C), and the exported files.
 
 ---
 
@@ -369,8 +391,8 @@ if ($LASTEXITCODE -eq 0 -or ($LASTEXITCODE -eq 1 -and (Test-Path $outCal))) {
 
 1. **Path Spacing**:
    Always wrap file paths containing spaces in double quotes when invoking via shell strings. When using structured process APIs (`ProcessStartInfo.ArgumentList` or Python `subprocess.run(list)`), quoting is handled automatically.
-2. **Dynamic Matrix Density**:
-   When overriding `--sample-density` with a custom density (e.g. `1.346`), EffSuite automatically checks if an XCOM cross-section file matching that density exists in `Data/Material/`. If not, it invokes the built-in NIST XCOM photon engine automatically on-the-fly. No manual pre-generation step is required.
+2. **Matrix density and new materials**:
+   `--sample-density` needs no new attenuation table: the engines scale the material's table by $\rho / \rho_0$. A new *composition* needs a material: when a material named in a model has a `Composition/<name>.txt` but no `Material/<name>.txt`, EffSuite runs the bundled XCOM automatically and saves the table in the data folder. Use the `material` command to create one in advance.
 3. **Parallel Worker Allocation**:
    For maximum efficiency on multi-core lab workstations, specify `--workers 4` or `--workers 0` (automatic). If executing multiple independent sample calculations in parallel from an external scheduler, use `--workers 1` per instance to prevent CPU oversubscription.
 4. **CAM File Locks**:

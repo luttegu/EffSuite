@@ -1,11 +1,21 @@
-# Material composition — EffSuite v0.3.0
+# Materials and XCOM — EffSuite v0.3.1
 
 The original Material.xls takes up to ten chemical formulas, relative weights
 and a separately entered bulk density. Its Save action runs XCOM to create a
 mass-attenuation table, then stores the density/composition text. EffSuite now
 implements that complete workflow through one shared GUI/CLI service.
 
-Starting with **EffSuite v0.1.3** (integrating `EFFTRAN 4.9` and `MEFFTRAN 1.8` and extending the feature to `WEFFTRAN`), you only need to generate a new XCOM material when the **chemical composition** changes. If you only need to change the **bulk density** of an existing sample matrix (such as soil or aqueous solution at a different packing density), simply enter the new `Source density [g/cm³]` directly in the **Source** tab (or on line 8 of the source `.txt` file, or via `--sample-density` in the CLI); the engine scales the linear attenuation coefficient $\mu(E)$ by $\rho / \rho_0$ automatically.
+You only need a new material when the **chemical composition** changes. To
+change only the **bulk density** of an existing matrix, for example soil or a
+solution at another packing density, enter the new `Source density [g/cm³]`:
+in the **Source** tab, on line 8 of the source `.txt` file, or with
+`--sample-density` in the CLI. The engines then scale the attenuation
+coefficient $\mu(E)$ by $\rho / \rho_0$, in all three geometries.
+
+When a model names a material that has a `Composition/<name>.txt` but no
+`Material/<name>.txt`, EffSuite generates the table with XCOM as soon as a
+calculation needs it. The table is saved in the laboratory data folder, never
+in the program folder.
 
 ## GUI
 
@@ -55,8 +65,9 @@ Use `--save-definition my_material.json` to retain direct command-line inputs.
 `--density` and `--name` can override a loaded definition explicitly.
 `--base-data` selects the original data directory to copy when creating a new
 output library. Composition and material files are common across EFFTRAN,
-MEFFTRAN and WEFFTRAN; they share a single common directory (defaulting to
-`Documents/EffSuite/Data`).
+MEFFTRAN and WEFFTRAN; they share a single data folder (by default the `Data`
+folder of the EffSuite user folder: `C:\GENIE2K\EffSuite\Data`, or
+`Documents\EffSuite\Data`).
 
 Use the resulting data directory in an ordinary calculation:
 
@@ -94,5 +105,5 @@ failed generation does not publish a new material pair.
 
 The bundled source is the XCOM 3.1 version supplied with original EFFTRAN,
 not a claim to contain the latest NIST dataset. Its source/README notices are
-retained. Linux execution and downstream use were checked; Windows XCOM
-execution and independent laboratory qualification remain pending.
+retained. The automated tests run XCOM and use the generated materials on
+Windows and Linux; independent laboratory qualification remains pending.

@@ -3,8 +3,8 @@ root=Path(SPECPATH)
 datas=[(str(root/'src/effsuite/assets'),'effsuite/assets'),
        (str(root/'third_party'),'third_party'),
        (str(root/'THIRD_PARTY_NOTICES.md'),'.'),
-       (str(root/'README.md'),'.'),(str(root/'USER_GUIDE.md'),'.'),
-       (str(root/'MATERIALS.md'),'.'),
+       (str(root/'README.md'),'.'),(str(root/'RELEASE_NOTES.md'),'.'),
+       *[(str(path),'docs') for path in sorted((root/'docs').glob('*.md'))],
        (str(root/'src/effsuite/assets/templates/Material_Composition.xlsx'),'.')]
 common=dict(pathex=[str(root/'src')],binaries=[],datas=datas,hiddenimports=['effsuite.gui','matplotlib.backends.backend_qtagg','matplotlib.backends.backend_svg'],hookspath=[],runtime_hooks=[],excludes=['PySide6.QtWebEngineCore','PySide6.QtWebEngineWidgets','PySide6.QtPdf'])
 cli=Analysis([str(root/'tools/entry_cli.py')],**common)

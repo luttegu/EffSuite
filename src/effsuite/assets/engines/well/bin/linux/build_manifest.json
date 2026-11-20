@@ -844,8 +844,8 @@
     {
       "geometry": "well",
       "stage": "peak",
-      "source_sha256": "a532d8309b140332fd6ae879266bb70a4320af16f022f6cdf0f4a9dcebaa0199",
-      "compiled_source_sha256": "a532d8309b140332fd6ae879266bb70a4320af16f022f6cdf0f4a9dcebaa0199",
+      "source_sha256": "02eb1ccb579873f15dbbbef5f1b25d0fc42fc3cc184ad87a60517ec7a036683a",
+      "compiled_source_sha256": "02eb1ccb579873f15dbbbef5f1b25d0fc42fc3cc184ad87a60517ec7a036683a",
       "output_format_change": null,
       "binary_sha256": "ab2002a7b8f65fb3af0e380679d23aa07f3a3bc812af0f2859420b9ed32606d8",
       "command": [
@@ -865,7 +865,8 @@
         "-o",
         "/workspace/scratch/95f55ffea964/effsuite_blueprint/src/effsuite/assets/engines/well/bin/linux/peak",
         "/workspace/scratch/95f55ffea964/effsuite_blueprint/src/effsuite/assets/engines/well/bin/linux/peak.f"
-      ]
+      ],
+      "source_note": "Tim Vidmar's permission notice restored in the header comment after this build (v0.3.1). The binary was built from the previous source, which differs only in those comment lines."
     },
     {
       "geometry": "well",

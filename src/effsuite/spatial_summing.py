@@ -12,7 +12,7 @@ for any purpose. It is provided 'as is' without express or implied warranty.
 The legacy spatially uniform virtual-total/peak-to-total/build-up scaling was
 replaced by a local, probability-conserving ray-traced well response (see
 well_local_response). It is still a deterministic approximation, not a Monte
-Carlo simulation. See EFFTRAN_MEFFTRAN_WEFFTRAN_CHANGES.md for validation.
+Carlo simulation. See docs/CHANGES_FROM_ORIGINALS.md and docs/WELL_SPATIAL_MODEL.md.
 """
 from __future__ import annotations
 

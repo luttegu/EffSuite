@@ -1,6 +1,6 @@
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 C                                                                       C
-C  MEFFTRAN (version 1.7 2026)                                          C
+C  MEFFTRAN (version 1.8 2026)                                          C
 C  Copyright (c) 2005-2026                                              C
 C  Tim Vidmar                                                           C
 C                                                                       C
@@ -14,8 +14,8 @@ C  purpose. It is provided 'as is' without express or implied warranty. C
 C                                                                       C
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
--- Coincidence summing corrections calculated in one go for all the 
-   nuclides in the library
+-- Density added to source parameters
+-- *.xlsm Excel file format
 
 The MEFFTRAN website is located at https://efftran.github.io/.
 
@@ -25,7 +25,7 @@ and all the detector and source models that you are using. We apologies for this
 inconvenience, but there is no other way of guaranteeing that the new version 
 would work correctly.
 
-September 2026
+November 2026
 
 
 

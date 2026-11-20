@@ -4,6 +4,14 @@ C  EFFTRAN (version 4.4.4 2016) - Universal Fix for Na-22 & Standard    C
 C  Copyright (c) 1995-2016                                              C
 C  Tim Vidmar                                                           C
 C                                                                       C
+C  Permission to use, copy, modify, distribute and sell this software   C
+C  and its documentation for any purpose is hereby granted without      C
+C  fee, provided that the above copyright notice appears in all         C
+C  copies and that both that copyright notice and this permission       C
+C  notice appear in all supporting documentation. Tim Vidmar makes      C
+C  no representations about the suitability of this software for any    C
+C  purpose. It is provided 'as is' without express or implied warranty. C
+C                                                                       C
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
         program peak

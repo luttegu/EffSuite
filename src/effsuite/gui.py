@@ -12,11 +12,12 @@ import time
 from PySide6.QtCore import QObject, QThread, Signal, Slot, Qt, QTimer, QRect, QSize, QPointF
 from PySide6.QtGui import QAction, QFont, QPainter, QPen, QColor, QIcon
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget,
-                               QVBoxLayout, QHBoxLayout, QGridLayout, QFormLayout, QGroupBox, QLabel, QLineEdit, QComboBox, QPushButton, QTabWidget, QTableWidget, QTableWidgetItem, QHeaderView, QFileDialog, QMessageBox, QPlainTextEdit, QSpinBox, QSplitter, QScrollArea, QStyledItemDelegate, QFrame, QRadioButton, QButtonGroup, QDialog, QListView)
+                               QVBoxLayout, QHBoxLayout, QGridLayout, QFormLayout, QGroupBox, QLabel, QLineEdit, QComboBox, QPushButton, QTabWidget, QTableWidget, QTableWidgetItem, QHeaderView, QFileDialog, QMessageBox, QPlainTextEdit, QSpinBox, QDoubleSpinBox, QCheckBox, QSplitter, QScrollArea, QStyledItemDelegate, QFrame, QRadioButton, QButtonGroup, QDialog, QListView)
 
 from .model_io import (COMMON_DATA, MODES, fields, read_model, model_bytes, calibration_rows, normalize_nuclides, default_material_density)
 from .suite import VERSION, run_project, validate_project
 from .parallel_coincidence import CalculationCancelled, CoincidenceError
+from . import tcs_uncertainty
 
 APP_STYLESHEET = """
 QWidget {
@@ -860,6 +861,10 @@ class MainWindow(QMainWindow):
         self._target_material_input = None
         self._return_tab_index = None
         self.btn_export_cal_on_sum = {}
+        # TCS uncertainty inputs (kept here because the tabs are rebuilt on geometry changes).
+        self.tcs_settings = tcs_uncertainty.validate_settings(None)
+        self.tcs_inputs = {}
+        self._tcs_note_shown = False   # log the "result folder keeps old u(C)" note once per result
         self.btn_export_sum_on_eff = None
         self.setWindowTitle(f"EffSuite v{VERSION} — EFFTRAN / MEFFTRAN / WEFFTRAN")
         screen = QApplication.primaryScreen()
@@ -1552,14 +1557,16 @@ class MainWindow(QMainWindow):
                 nbar.addWidget(nlbl)
                 nbar.addWidget(self.nuclides, 1)
                 layout.addLayout(nbar)
-            table = QTableWidget(0, 4)
+            layout.addLayout(self._tcs_input_row(kind))
+            table = QTableWidget(0, 5)
             table.setAlternatingRowColors(True)
-            table.setHorizontalHeaderLabels(["Nuclide", "Energy E [keV]", "Summing Factor C", "Not Computed"])
+            table.setHorizontalHeaderLabels(["Nuclide", "Energy E [keV]", "Summing Factor C", "u(C) [%] (k=1)", "Not Computed"])
             table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
             table.horizontalHeader().setStretchLastSection(True)
             table.setColumnWidth(0, 140)
             table.setColumnWidth(1, 160)
             table.setColumnWidth(2, 190)
+            table.setColumnWidth(3, 150)
             table.verticalHeader().setDefaultSectionSize(25)
             table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
             layout.addWidget(table, 1)
@@ -1567,11 +1574,82 @@ class MainWindow(QMainWindow):
                 self.library_table = table
             else:
                 self.certificate_table = table
-            foot_note = QLabel("ℹ A_corr = C · A.  * = no EFFTRAN decay data (original yield preserved unchanged).")
+            foot_note = QLabel("ℹ A_corr = C · A.  * = no EFFTRAN decay data (original yield preserved unchanged).  "
+                               "u(C): propagated from the efficiency uncertainties above; decay-data uncertainties not included "
+                               "(see docs/TCS_UNCERTAINTY.md).")
+            foot_note.setWordWrap(True)
             foot_note.setStyleSheet("color:#475569;font-size:9pt;background:transparent;")
             layout.addWidget(foot_note)
             self._attach_footer(page, self._nav_row(kind))
             self.tabs.addTab(page, title)
+    def _tcs_input_row(self, kind):
+        """Inputs of the TCS uncertainty: u(ε_peak), u(ε_total), their correlation, on/off."""
+        row = QHBoxLayout()
+        label = QLabel("<b>TCS uncertainty inputs:</b>")
+        label.setStyleSheet("background:transparent;")
+        label.setToolTip("Relative standard uncertainties (k=1) of the peak and total efficiencies computed by the "
+                         "detector model. They are propagated to u(C) through sensitivity coefficients. "
+                         "Defaults are assumptions; enter your laboratory's values. See docs/TCS_UNCERTAINTY.md.")
+        row.addWidget(label)
+        widgets = {}
+        for key, text, low, high, step, decimals, suffix in [
+                ("peak_efficiency_percent", "u(ε peak)", 0., 100., .5, 2, " %"),
+                ("total_efficiency_percent", "u(ε total)", 0., 100., .5, 2, " %"),
+                ("peak_total_correlation", "correlation", -1., 1., .1, 2, "")]:
+            caption = QLabel(text)
+            caption.setStyleSheet("background:transparent;")
+            box = QDoubleSpinBox()
+            box.setRange(low, high)
+            box.setSingleStep(step)
+            box.setDecimals(decimals)
+            box.setSuffix(suffix)
+            box.setValue(self.tcs_settings[key])
+            box.setMinimumWidth(90)
+            box.valueChanged.connect(partial(self._tcs_setting_changed, key))
+            row.addWidget(caption)
+            row.addWidget(box)
+            widgets[key] = box
+        enabled = QCheckBox("Calculate u(C)")
+        enabled.setToolTip("On: each calculation also computes u(C) (four extra engine runs, about one second).\n"
+                           "Off: no u(C) column. The summing factors are the same either way.")
+        enabled.setStyleSheet("background:transparent;")
+        enabled.setChecked(self.tcs_settings["enabled"])
+        enabled.toggled.connect(partial(self._tcs_setting_changed, "enabled"))
+        row.addWidget(enabled)
+        widgets["enabled"] = enabled
+        row.addStretch()
+        self.tcs_inputs[kind] = widgets
+        return row
+    def _tcs_setting_changed(self, key, value):
+        """Store a TCS uncertainty input and show the same value on the other summing page.
+
+        These inputs change only u(C), never the summing factors or the
+        efficiency transfer, so the results stay on screen: u(C) is
+        recalculated at once from the sensitivities of the last calculation.
+        """
+        self.tcs_settings[key] = bool(value) if key == "enabled" else float(value)
+        for widgets in self.tcs_inputs.values():
+            widget = widgets.get(key)
+            if widget is None:
+                continue
+            widget.blockSignals(True)
+            if key == "enabled":
+                widget.setChecked(bool(value))
+            else:
+                widget.setValue(float(value))
+            widget.blockSignals(False)
+        if self._loading:
+            return
+        self.dirty = True
+        if self.summing_result:
+            self.populate_summing()
+            calculated = (self.summing_result.get("tcs_uncertainty") or {}).get("enabled", False)
+            if self.tcs_settings["enabled"] and not calculated:
+                self.append_log("The last calculation was made without u(C); run it again to calculate u(C).")
+            elif not self._tcs_note_shown:
+                self._tcs_note_shown = True
+                self.append_log("u(C) updated on screen for the new inputs. The saved result folder keeps the values "
+                                "of the last calculation; run again to save the new ones.")
     def refresh_geometry(self):
         """Redraw both geometry previews."""
         if hasattr(self, "diagram"):
@@ -1880,6 +1958,8 @@ class MainWindow(QMainWindow):
                    "task":task, "detector":self.detector_form.values(), "sample":self.source_form.values("sample"), "nuclides":normalize_nuclides([self.nuclides.text()]), "workers":self.workers.value()}
         if task in {"transfer", "both"}:
             project.update(standard=self.source_form.values("standard"), calibration=self.calibration())
+        if task in {"summing", "both"}:
+            project["tcs_uncertainty"] = dict(self.tcs_settings)
         if self.calibration_template:
             project["calibration_template"] = str(self.calibration_template)
         if self.data_directory:
@@ -1904,7 +1984,8 @@ class MainWindow(QMainWindow):
         """The project as it is now, even incomplete (for saving)."""
         task = self.last_task or ("both" if self.calibration() and self.nuclides.text().strip() else "transfer" if self.calibration() else "summing")
         project = {"schema_version":1, "geometry":self.current_mode(),
-                   "task":task, "detector":self.detector_form.values(), "sample":self.source_form.values("sample"), "nuclides":normalize_nuclides([self.nuclides.text()]), "workers":self.workers.value(), "calibration":self.calibration()}
+                   "task":task, "detector":self.detector_form.values(), "sample":self.source_form.values("sample"), "nuclides":normalize_nuclides([self.nuclides.text()]), "workers":self.workers.value(), "calibration":self.calibration(),
+                   "tcs_uncertainty":dict(self.tcs_settings)}
         try:
             project["standard"] = self.source_form.values("standard")
         except ValueError:
@@ -1926,6 +2007,8 @@ class MainWindow(QMainWindow):
         try:
             if project.get("task") in ("transfer", "summing", "both"):
                 self.workflow = project["task"]
+            # Before _build_tabs(), which creates the input boxes from these values.
+            self.tcs_settings = tcs_uncertainty.validate_settings(project.get("tcs_uncertainty"))
             index = list(MODES).index(project["geometry"])
             self.mode.blockSignals(True)
             self.mode.setCurrentIndex(index)
@@ -2133,6 +2216,7 @@ class MainWindow(QMainWindow):
     def accept_result(self, result):
         """Show a finished calculation in the tables, chart and log."""
         self._loading = True
+        self._tcs_note_shown = False
         if result["efficiency"]:
             self.transfer_result = result
             for i, row in enumerate(result["efficiency"]):
@@ -2314,12 +2398,19 @@ class MainWindow(QMainWindow):
                 fac_str = format(factor, ".6f") if factor is not None else ""
                 fac_item = _num_item(fac_str, editable=False,
                                      bold=(factor is not None), bg="#f0f9ff" if factor is not None else None, fg="#0f172a" if factor is not None else None, align=Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignVCenter, tooltip=reason)
+                u_value = (tcs_uncertainty.match_uncertainty(self.summing_result, row["nuclide"], float(row["energy"]),
+                                                             self.tcs_settings)
+                           if factor is not None and self.summing_result else None)
+                u_item = _num_item(format(u_value, ".3g") if u_value is not None else "", editable=False,
+                                   align=Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignVCenter,
+                                   tooltip="Relative standard uncertainty of C (k=1), decay data not included")
                 ast_item = _num_item("*" if factor is None else "",
                                      editable=False, bold=True, fg="#d97706" if factor is None else None, align=Qt.AlignmentFlag.AlignCenter, tooltip=reason)
                 table.setItem(i, 0, nuc_item)
                 table.setItem(i, 1, eng_item)
                 table.setItem(i, 2, fac_item)
-                table.setItem(i, 3, ast_item)
+                table.setItem(i, 3, u_item)
+                table.setItem(i, 4, ast_item)
     def _ask_new_export_path(self, title, default_path, extension, description, allow_csv=False):
         """Ask where to save an export. Only the file's real format is offered.
 

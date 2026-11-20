@@ -152,8 +152,13 @@ def calculate_groups(groups, local, resolving_time, workers, verify_serial=False
 def calculate_spatial(installation: Path, prepared: Path, names: tuple[str, ...], *,
                       order=Quadrature(), workers=0, verify_serial=False,
                       check_convergence=True, rtol=.01, beta_plus_pl=("NA-22",),
-                      progress=None, cancel=None) -> dict:
-    """Complete well summing calculation: local response, counts, convergence checks, report."""
+                      sensitivity_step=None, progress=None, cancel=None) -> dict:
+    """Complete well summing calculation: local response, counts, convergence checks, report.
+
+    With ``sensitivity_step`` (h, e.g. 0.02), every correction row also gets
+    "sensitivity_peak" and "sensitivity_total" (d ln C / d ln eps, see
+    tcs_uncertainty.py), from the final local response scaled by exp(+-h).
+    """
     if type(workers) is not int or workers < 0:
         raise CoincidenceError("workers must be a nonnegative integer")
     if not math.isfinite(rtol) or not 0 < rtol < 1:
@@ -217,6 +222,16 @@ def calculate_spatial(installation: Path, prepared: Path, names: tuple[str, ...]
         for _, item in results:
             for row in item["corrections"]:
                 row["status"] = "convergence_not_checked"
+    if sensitivity_step:
+        from .tcs_uncertainty import well_sensitivities
+        if progress:
+            progress("TCS uncertainty: efficiency sensitivity runs")
+        kept = tuple(group for group in groups if group[0] not in failed)
+        sensitivities = well_sensitivities(
+            local, lambda scaled: calculate_groups(kept, scaled, resolving_time, count, cancel=cancel), sensitivity_step)
+        for name, item in results:
+            for row in item["corrections"]:
+                row["sensitivity_peak"], row["sensitivity_total"] = sensitivities.get((name, row["energy_kev"]), (None, None))
     return {"schema_version": 1, "calculation": "wefftran-spatial-count-integration",
             "engine_version": "0.3.0-spatial",
             "engine_sha256": {filename: module_sha256(filename)

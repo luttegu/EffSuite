@@ -4,7 +4,7 @@
 ; =====================================================================
 
 #define MyAppName "EffSuite"
-#define MyAppVersion "0.3.0"
+#define MyAppVersion "0.3.1"
 #define MyAppPublisher "GL"
 #define MyAppURL "https://github.com/luttegu/EffSuite"
 #define MyAppExeName "EffSuite_GUI.exe"
@@ -87,9 +87,8 @@ Name: "{app}\Results"
 Source: "{#AppSource}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; Core technical documentation and validation reports
 Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\USER_GUIDE.md"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\MATERIALS.md"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\VALIDATION.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\docs\*.md"; DestDir: "{app}\docs"; Flags: ignoreversion
+Source: "..\RELEASE_NOTES.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\THIRD_PARTY_NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\src\effsuite\assets\templates\Material_Composition.xlsx"; DestDir: "{app}"; Flags: ignoreversion
 
@@ -105,9 +104,10 @@ Name: "{group}\Folders\Calculation Results"; Filename: "{app}\Results"
 Name: "{group}\Folders\Application Directory"; Filename: "{app}"
 
 ; Technical Documentation Shortcuts
-Name: "{group}\Documentation\User Guide (Markdown)"; Filename: "{app}\USER_GUIDE.md"
-Name: "{group}\Documentation\Materials Reference"; Filename: "{app}\MATERIALS.md"
-Name: "{group}\Documentation\Validation Report (DET952, DET007)"; Filename: "{app}\VALIDATION.md"
+Name: "{group}\Documentation\User Guide (Markdown)"; Filename: "{app}\docs\USER_GUIDE.md"
+Name: "{group}\Documentation\Materials Reference"; Filename: "{app}\docs\MATERIALS.md"
+Name: "{group}\Documentation\Summing Factor Uncertainty"; Filename: "{app}\docs\TCS_UNCERTAINTY.md"
+Name: "{group}\Documentation\Validation Report (DET952, DET007)"; Filename: "{app}\docs\VALIDATION.md"
 Name: "{group}\Documentation\Third-Party Notices"; Filename: "{app}\THIRD_PARTY_NOTICES.md"
 Name: "{group}\Documentation\Material Composition Template (Excel)"; Filename: "{app}\Material_Composition.xlsx"
 
@@ -126,7 +126,7 @@ Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "EFFSUITE_ROO
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
-Filename: "{app}\USER_GUIDE.md"; Description: "Open the EffSuite User Guide"; Flags: postinstall shellexec skipifsilent unchecked
+Filename: "{app}\docs\USER_GUIDE.md"; Description: "Open the EffSuite User Guide"; Flags: postinstall shellexec skipifsilent unchecked
 
 [Code]
 function GetDefaultInstallDir(Param: string): string;

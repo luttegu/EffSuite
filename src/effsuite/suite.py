@@ -37,6 +37,7 @@ from .model_io import (ASSETS, COMMON_DATA, MODES, canonical_nuclide, mode_name,
                        normalize_nuclides, validate_calibration, validate_model)
 from .parallel_coincidence import (CalculationCancelled, CoincidenceError, SharedInputs,
                                    _publish_new, _terminate, calculate_parallel)
+from . import tcs_uncertainty
 
 # Fortran programs that prepare the efficiency curves for the summing calculation, in order.
 PREP = ("mine", "energy", "total", "scatter", "buildup", "eta", "ptt", "efficiency")
@@ -82,6 +83,8 @@ def validate_project(project: dict) -> dict:
     out["nuclides"] = normalize_nuclides(names)
     if task in {"summing", "both"} and not out["nuclides"]:
         raise CoincidenceError("Select at least one nuclide")
+    if task in {"summing", "both"}:
+        out["tcs_uncertainty"] = tcs_uncertainty.validate_settings(out.get("tcs_uncertainty"))
 
     workers = out.get("workers", 0)
     if type(workers) is not int or not 0 <= workers <= 64:
@@ -296,10 +299,11 @@ def _write_outputs(root: Path, result: dict) -> None:
         for row in result["efficiency"]:
             writer.writerow({key: row[key] for key in columns})
     with (root / "summing.csv").open("w", newline="", encoding="utf-8") as file:
-        columns = ["nuclide", "energy_keV", "activity_multiplier", "status"]
+        columns = ["nuclide", "energy_keV", "activity_multiplier", "status", *tcs_uncertainty.FIELDS]
         writer = csv.DictWriter(file, fieldnames=columns)
         writer.writeheader()
-        writer.writerows({key: row[key] for key in columns} for row in result["summing"])
+        # An empty cell means "no uncertainty available" (uncorrected line or calculation disabled).
+        writer.writerows({key: row.get(key) for key in columns} for row in result["summing"])
     (root / "report.html").write_text(render_report(result), encoding="utf-8")
 
 
@@ -375,11 +379,34 @@ REPORT_STYLE = ("body{font:16px Georgia,serif;max-width:1100px;margin:40px auto;
                 ".notice{background:#e8f4fd;border-left:4px solid #2563eb;padding:14px}svg{max-width:100%;height:auto}")
 
 
+def _tcs_report_note(result: dict) -> str:
+    """Paragraph explaining the TCS uncertainty column ("" when there is no summing)."""
+    info = result.get("tcs_uncertainty")
+    if not info:
+        return ""
+    if not info["enabled"]:
+        return "<p>TCS uncertainty calculation was switched off for this job.</p>"
+    s = info["settings"]
+    monte_carlo = info.get("monte_carlo_relative_uncertainty_percent")
+    mc_text = f" Monte Carlo statistical uncertainty of the efficiencies: {monte_carlo:.2g} %." if monte_carlo is not None else ""
+    return ("<p><b>u(C)</b> is the relative standard uncertainty (k = 1) of the correction factor, propagated from "
+            f"assumed relative uncertainties of the computed peak efficiency ({s['peak_efficiency_percent']:g} %) and "
+            f"total efficiency ({s['total_efficiency_percent']:g} %), correlation {s['peak_total_correlation']:g}, "
+            f"with sensitivity coefficients from ±{s['step_percent']:g} % curve scaling, plus the engine's numerical "
+            f"uncertainty.{mc_text} Decay-data uncertainties are not included. See docs/TCS_UNCERTAINTY.md.</p>")
+
+
+def _summing_display(rows: list[dict]) -> list[dict]:
+    """Summing rows with u(C) as text ("–" when not available)."""
+    return [{**row, "u_text": "–" if row.get("tcs_u_rel_percent") is None else f"{row['tcs_u_rel_percent']:.3g}"}
+            for row in rows]
+
+
 def render_report(result: dict) -> str:
     """The HTML report of one calculation."""
     escape = html.escape
     efficiency_rows = _html_rows(result["efficiency"], ["energy_keV", "standard_efficiency", "sample_efficiency", "transfer_factor"])
-    summing_rows = _html_rows(result["summing"], ["nuclide", "energy_keV", "activity_multiplier", "status"])
+    summing_rows = _html_rows(_summing_display(result["summing"]), ["nuclide", "energy_keV", "activity_multiplier", "u_text", "status"])
     return (
         f'<!doctype html><html><meta charset="utf-8"><title>EffSuite result</title><style>{REPORT_STYLE}</style>'
         f"<h1>{escape(result['engine_name'])} — calculation result</h1>"
@@ -389,8 +416,8 @@ def render_report(result: dict) -> str:
         f"{_report_chart(result)}{_exports_table(result)}"
         "<h2>Efficiency transfer</h2><table><tr><th>E / keV</th><th>Standard efficiency</th><th>Sample efficiency</th>"
         f"<th>Transfer factor</th></tr>{efficiency_rows}</table>"
-        "<h2>True coincidence summing</h2><table><tr><th>Nuclide</th><th>E / keV</th><th>Activity multiplier</th>"
-        f"<th>Status</th></tr>{summing_rows}</table>"
+        "<h2>True coincidence summing</h2><table><tr><th>Nuclide</th><th>E / keV</th><th>Activity multiplier C</th>"
+        f"<th>u(C) / % (k=1)</th><th>Status</th></tr>{summing_rows}</table>{_tcs_report_note(result)}"
         "<p>Original inputs, intermediate files and engine hashes are included with results.json. Legacy uncertainty "
         "percentages preserve the original transfer routine's assumptions; they are not a complete uncertainty budget.</p></html>")
 
@@ -480,17 +507,30 @@ def _run_transfer(mode: str, project: dict, work: Path, stop, progress, result: 
 def _well_summing(project: dict, folder: Path, data_root: Path, stop, progress, result: dict) -> list[dict]:
     """Well detector: the ray-traced spatial model. Returns one row per gamma line."""
     from .well_spatial import calculate_spatial
+    settings = project["tcs_uncertainty"]
     report = calculate_spatial(data_root, folder, tuple(project["nuclides"]), workers=project["workers"],
                                verify_serial=project.get("verify_serial", False),
                                check_convergence=project.get("check_convergence", True),
-                               rtol=project.get("numerical_rtol", .01), progress=progress, cancel=stop)
+                               rtol=project.get("numerical_rtol", .01),
+                               sensitivity_step=settings["step_percent"] / 100 if settings["enabled"] else None,
+                               progress=progress, cancel=stop)
     result["well_spatial_diagnostics"] = report
     for failure in report.get("failed_nuclides", []):
         result["warnings"].append(f"{failure['nuclide']} was not corrected (its library lines are exported unchanged): "
                                   f"{failure['reason']}")
-    rows = [{"nuclide": item["nuclide"], "energy_keV": row["energy_kev"], "activity_multiplier": row["factor"],
-             "status": row["status"]}
-            for item in report["nuclides"] for row in item["corrections"]]
+    rows = []
+    for item in report["nuclides"]:
+        for row in item["corrections"]:
+            if settings["enabled"] and row["factor"] is not None:
+                # Numerical term: the change of C when the quadrature is refined.
+                uncertainty = tcs_uncertainty.line_uncertainty(row.get("sensitivity_peak"), row.get("sensitivity_total"),
+                                                               settings, row.get("refinement_relative_change"))
+            else:
+                uncertainty = tcs_uncertainty.empty_fields()
+            rows.append({"nuclide": item["nuclide"], "energy_keV": row["energy_kev"], "activity_multiplier": row["factor"],
+                         "status": row["status"], **uncertainty})
+    result["tcs_uncertainty"] = tcs_uncertainty.summary(settings, "change of C under x2 quadrature refinement (directions and "
+                                                                  "sample points); omitted when the refinement check is off")
     if not report["convergence"]["passed"]:
         result["warnings"].append("Some well correction factors failed numerical refinement; do not export them to Genie or GammaVision")
     if report.get("missing_nuclides"):
@@ -506,7 +546,8 @@ def _cascade_summing(mode: str, project: dict, folder: Path, stop, progress, res
         _stage(stage, mode, folder, stop, project["timeout_seconds"], progress, result["engine_sha256"])
     program = engine_folder(mode) / ("coincidence.exe" if os.name == "nt" else "coincidence")
     show = (lambda done, total, name: progress(f"Nuclides {done}/{total}: {name}")) if progress else None
-    report = calculate_parallel(SharedInputs.from_directory(folder), (str(program.resolve()),), workers=project["workers"],
+    inputs = SharedInputs.from_directory(folder)
+    report = calculate_parallel(inputs, (str(program.resolve()),), workers=project["workers"],
                                 nuclides=tuple(project["nuclides"]), cancel=stop,
                                 verify_serial=project.get("verify_serial", False),
                                 timeout_seconds=project["timeout_seconds"], progress=show)
@@ -515,12 +556,33 @@ def _cascade_summing(mode: str, project: dict, folder: Path, stop, progress, res
     if report.report.get("missing_nuclides"):
         result["warnings"].append("Decay data not available in EFFTRAN for: " + ", ".join(report.report["missing_nuclides"])
                                   + ". These nuclides remain uncorrected (* in table).")
+    settings = project["tcs_uncertainty"]
+    sensitivities, monte_carlo = {}, None
+    if settings["enabled"]:
+        if progress:
+            progress("TCS uncertainty: efficiency sensitivity runs")
+
+        def run(scaled):
+            return calculate_parallel(scaled, (str(program.resolve()),), workers=project["workers"],
+                                      nuclides=tuple(project["nuclides"]), cancel=stop,
+                                      timeout_seconds=project["timeout_seconds"]).coin_bytes
+        sensitivities = tcs_uncertainty.cascade_sensitivities(inputs, run, settings["step_percent"] / 100)
+        monte_carlo = tcs_uncertainty.monte_carlo_uncertainty((folder / "total.txt").read_bytes())
+    result["tcs_uncertainty"] = tcs_uncertainty.summary(
+        settings, "Monte Carlo statistical uncertainty of the efficiency integration (largest value of column 4 "
+                  "of total.txt), applied to peak and total efficiency together: u_num = |S_P + S_T| s_MC", monte_carlo)
     rows = []
     # coin.txt has fixed columns: nuclide (10 characters), energy (10), factor.
     for line in report.coin_bytes.splitlines():
         name, energy, factor = line[:10].decode().strip(), int(line[10:20]), float(line[20:])
+        s_peak, s_total = sensitivities.get((name, energy), (None, None))
+        if settings["enabled"] and factor > 0 and s_peak is not None and s_total is not None:
+            numerical = None if monte_carlo is None else abs(s_peak + s_total) * monte_carlo
+            uncertainty = tcs_uncertainty.line_uncertainty(s_peak, s_total, settings, numerical)
+        else:
+            uncertainty = tcs_uncertainty.empty_fields()
         rows.append({"nuclide": name, "energy_keV": energy, "activity_multiplier": factor if factor > 0 else None,
-                     "status": "candidate" if factor > 0 else "invalid"})
+                     "status": "candidate" if factor > 0 else "invalid", **uncertainty})
     return rows
 
 
@@ -548,7 +610,8 @@ def _library_lines(project: dict, result: dict) -> list[dict] | None:
     return rows
 
 
-def _match_library_lines(library_rows: list[dict], calculated: list[dict], missing: set[str]) -> list[dict]:
+def _match_library_lines(library_rows: list[dict], calculated: list[dict], missing: set[str],
+                         uncertainty_enabled: bool = True) -> list[dict]:
     """One factor for every library line, from the calculated factors.
 
     A line gets the calculated factor of the same nuclide within 1 keV (the
@@ -556,6 +619,9 @@ def _match_library_lines(library_rows: list[dict], calculated: list[dict], missi
     * "uncorrected": the nuclide was calculated but not this line, or its
       decay data is missing (a factor of 1 would be a guess);
     * "candidate": the nuclide has no coincidence at all (1.0 is correct).
+
+    The TCS uncertainty fields follow the factor: copied from the matched
+    line, None for an uncorrected line, zero for a line without coincidences.
     """
     matched = []
     for item in library_rows:
@@ -567,9 +633,11 @@ def _match_library_lines(library_rows: list[dict], calculated: list[dict], missi
             closest = min(nearby, key=lambda row: abs(row["energy_keV"] - energy))
             factor = closest["activity_multiplier"]
             if factor is not None and factor > 0 and math.isfinite(factor) and closest.get("status") == "candidate":
-                matched.append({"nuclide": label, "energy_keV": energy, "activity_multiplier": factor, "status": "candidate"})
+                matched.append({"nuclide": label, "energy_keV": energy, "activity_multiplier": factor, "status": "candidate",
+                                **{key: closest.get(key) for key in tcs_uncertainty.FIELDS}})
             else:
-                matched.append({"nuclide": label, "energy_keV": energy, "activity_multiplier": 1.0, "status": "uncorrected"})
+                matched.append({"nuclide": label, "energy_keV": energy, "activity_multiplier": 1.0, "status": "uncorrected",
+                                **tcs_uncertainty.empty_fields()})
             continue
         nuclide_was_calculated = any(canonical_nuclide(row["nuclide"]) == nuclide for row in calculated)
         # I-129 below 35 keV: X-ray lines that the engines do not calculate.
@@ -577,7 +645,9 @@ def _match_library_lines(library_rows: list[dict], calculated: list[dict], missi
             status = "uncorrected"
         else:
             status = "candidate"
-        matched.append({"nuclide": label, "energy_keV": energy, "activity_multiplier": 1.0, "status": status})
+        uncertainty = (tcs_uncertainty.zero_fields() if status == "candidate" and uncertainty_enabled
+                       else tcs_uncertainty.empty_fields())
+        matched.append({"nuclide": label, "energy_keV": energy, "activity_multiplier": 1.0, "status": status, **uncertainty})
     return matched
 
 
@@ -598,7 +668,7 @@ def _run_summing(mode: str, project: dict, work: Path, data_root: Path, stop, pr
     for key in ("parallel_diagnostics", "well_spatial_diagnostics"):
         if key in result:
             missing.update(canonical_nuclide(name) for name in result[key].get("missing_nuclides", []))
-    result["summing"] = _match_library_lines(library_rows, calculated, missing)
+    result["summing"] = _match_library_lines(library_rows, calculated, missing, project["tcs_uncertainty"]["enabled"])
 
 
 # ---------------------------------------------------------------------------

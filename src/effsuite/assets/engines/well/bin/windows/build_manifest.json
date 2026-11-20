@@ -774,8 +774,8 @@
     {
       "geometry": "well",
       "stage": "peak",
-      "source_sha256": "a532d8309b140332fd6ae879266bb70a4320af16f022f6cdf0f4a9dcebaa0199",
-      "compiled_source_sha256": "a532d8309b140332fd6ae879266bb70a4320af16f022f6cdf0f4a9dcebaa0199",
+      "source_sha256": "02eb1ccb579873f15dbbbef5f1b25d0fc42fc3cc184ad87a60517ec7a036683a",
+      "compiled_source_sha256": "02eb1ccb579873f15dbbbef5f1b25d0fc42fc3cc184ad87a60517ec7a036683a",
       "output_format_change": null,
       "binary_sha256": "6f54590617d522c182c70049bd62e2ba507f5d0b85465aa18e56b9bdf6d115e5",
       "command": [
@@ -793,7 +793,8 @@
         "-o",
         "C:\\PGM\\EffSuite\\src\\effsuite\\assets\\engines\\well\\bin\\windows\\peak.exe",
         "C:\\PGM\\EffSuite\\src\\effsuite\\assets\\engines\\well\\bin\\windows\\peak.f"
-      ]
+      ],
+      "source_note": "Tim Vidmar's permission notice restored in the header comment after this build (v0.3.1). The binary was built from the previous source, which differs only in those comment lines."
     },
     {
       "geometry": "well",

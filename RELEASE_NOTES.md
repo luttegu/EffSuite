@@ -1,5 +1,27 @@
 # Release Notes
 
+## EffSuite 0.3.1 (November 2026)
+
+The EFFTRAN and MEFFTRAN Fortran engines and all summing factors are unchanged from 0.3.0.
+
+- **New: uncertainty of the coincidence summing factors, u(C)**. The original EFFTRAN, MEFFTRAN and WEFFTRAN give the factors without uncertainty. EffSuite now reports a relative standard uncertainty (k = 1) for every factor, in all three geometries. The factors themselves are unchanged.
+  - Method: sensitivity coefficients ∂ln C/∂ln ε for the peak and total efficiency curves, from four extra runs of the unchanged engine with each curve scaled by ±2 %. They are combined with the relative uncertainties of the computed peak efficiency (default 5 %) and total efficiency (default 10 %), with an optional correlation, plus the engine's numerical uncertainty (Monte Carlo statistics for cylinder/Marinelli, quadrature refinement for wells). This adds about one second per calculation.
+  - Shown in the GUI tables and in `summing.csv` (new `tcs_*` columns), `results.json` and `report.html`. Set the inputs in the new **TCS uncertainty inputs** row on the Library / Certificate tab, with the CLI options `--tcs-u-peak`, `--tcs-u-total`, `--tcs-correlation` and `--no-tcs-uncertainty`, or with a `"tcs_uncertainty"` section in the project JSON.
+  - Decay-data uncertainties are not included, and exported `.NLB` / `.CTF` / `.LIB` files do not carry u(C). See [docs/TCS_UNCERTAINTY.md](docs/TCS_UNCERTAINTY.md).
+  - The GUI summing tables gained a column: "Not Computed" (`*`) is now the fifth column.
+  - Changing the u(C) inputs or the **Calculate u(C)** check box keeps the summing factors and transferred efficiencies on screen, and recalculates u(C) at once from the stored sensitivities (no new engine run).
+- **Documentation reorganised** into `docs/` with an index ([docs/README.md](docs/README.md)). README, release notes and third-party notices stay at the top level, and the installer puts the documents in `{app}\docs`.
+  - `EFFTRAN_MEFFTRAN_WEFFTRAN_CHANGES.md` and `SCIENTIFIC_AUDIT_REPORT.md` are merged into one topic-organised [docs/CHANGES_FROM_ORIGINALS.md](docs/CHANGES_FROM_ORIGINALS.md). `WEFFTRAN_FIX.md` is now [docs/WELL_SPATIAL_MODEL.md](docs/WELL_SPATIAL_MODEL.md).
+  - Corrected outdated statements:
+    - CLI exit-code meanings, the automatic worker count, and the `efficiency.csv` columns;
+    - the coincidence output format (`f15.3` → `e23.15`), GUI button names, and the default data and result folders;
+    - the compiler (GCC 15.2), and the test count (16 modules, 155 tests);
+    - the well transfer uncertainty (only wells keep the 0.5 % terms), and the WEFFTRAN source comparison (`mine.f`, `scatter.f` and `efficiency.f` also differ);
+    - the decay-data audit (224 of 227 records; Pa-234, Th-227 and W-187 rejected), and the legacy well calculation (`effsuite-well-coincidence`; there is no `--engine original` option).
+  - The bundled EFFTRAN/MEFFTRAN README and notice copies are updated to the 5.0 / 1.9 distributions.
+  - `Build_Windows.bat` copies `docs/` into `dist\EffSuite\docs`, and the PyInstaller spec and installer ship the same documents.
+- **Licence notice restored in the well `peak.f`**: the EffSuite copy of WEFFTRAN `peak.f` had lost Tim Vidmar's permission notice from its header comment; it is restored as in the original. Only comments changed. The bundled `peak.exe` (used only by the legacy `effsuite-well-coincidence` calculation) is unchanged, and its build manifest records the new source hash with a note.
+
 ## EffSuite 0.3.0 (November 2026)
 
 The EFFTRAN and MEFFTRAN Fortran engines are unchanged. Cylindrical and Marinelli results are identical to 0.2.0.

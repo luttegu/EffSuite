@@ -10,7 +10,11 @@ pushd "%~dp0"
 if errorlevel 1 goto failed
 ".venv\Scripts\python.exe" -m PyInstaller --noconfirm --clean EffSuite.spec
 if errorlevel 1 goto failed
-for %%F in (README.md USER_GUIDE.md MATERIALS.md VALIDATION.md THIRD_PARTY_NOTICES.md) do copy /y "%%F" "dist\EffSuite\%%F" >nul
+for %%F in (README.md RELEASE_NOTES.md THIRD_PARTY_NOTICES.md) do copy /y "%%F" "dist\EffSuite\%%F" >nul
+if errorlevel 1 goto failed
+if not exist "dist\EffSuite\docs" mkdir "dist\EffSuite\docs"
+copy /y "docs\*.md" "dist\EffSuite\docs\" >nul
+if errorlevel 1 goto failed
 copy /y "src\effsuite\assets\templates\Material_Composition.xlsx" "dist\EffSuite\Material_Composition.xlsx" >nul
 echo GUI and CLI executables are in dist\EffSuite.
 echo To create an installer, compile installer\EffSuite.iss with Inno Setup 7.

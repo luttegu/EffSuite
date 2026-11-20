@@ -167,12 +167,29 @@ class ClassicGuiTests(unittest.TestCase):
         # Check CO-60 has correction factor and no asterisk
         co60_factor = self.window.library_table.item(0, 2).text()
         self.assertTrue(len(co60_factor) > 0)
-        self.assertEqual(self.window.library_table.item(0, 3).text(), "")
-        # Check RA-223 and RN-219 have blank factor and asterisk in Not Computed
+        self.assertEqual(self.window.library_table.item(0, 4).text(), "")
+        # CO-60 also has a TCS uncertainty u(C) in percent
+        self.assertGreater(float(self.window.library_table.item(0, 3).text()), 0)
+        # Check RA-223 and RN-219 have blank factor, blank u(C) and asterisk in Not Computed
         self.assertEqual(self.window.library_table.item(2, 2).text(), "")
-        self.assertEqual(self.window.library_table.item(2, 3).text(), "*")
+        self.assertEqual(self.window.library_table.item(2, 3).text(), "")
+        self.assertEqual(self.window.library_table.item(2, 4).text(), "*")
         self.assertEqual(self.window.library_table.item(3, 2).text(), "")
-        self.assertEqual(self.window.library_table.item(3, 3).text(), "*")
+        self.assertEqual(self.window.library_table.item(3, 3).text(), "")
+        self.assertEqual(self.window.library_table.item(3, 4).text(), "*")
+        # The u(C) inputs change only u(C): the factors stay on screen.
+        factor_before = self.window.library_table.item(0, 2).text()
+        u_before = float(self.window.library_table.item(0, 3).text())
+        enabled = self.window.tcs_inputs["nlb"]["enabled"]
+        enabled.setChecked(False)
+        self.assertIsNotNone(self.window.summing_result)
+        self.assertEqual(self.window.library_table.item(0, 2).text(), factor_before)
+        self.assertEqual(self.window.library_table.item(0, 3).text(), "")
+        enabled.setChecked(True)
+        self.assertEqual(float(self.window.library_table.item(0, 3).text()), u_before)
+        self.window.tcs_inputs["ctf"]["total_efficiency_percent"].setValue(20.)   # the other page's box
+        self.assertEqual(self.window.library_table.item(0, 2).text(), factor_before)
+        self.assertGreater(float(self.window.library_table.item(0, 3).text()), u_before)
 
     def test_detector_geometry_preservation_and_conversion_between_efftran_and_mefftran(self):
         # Cylindrical (EFFTRAN) has 19 fields (including absorber diameter, thickness, and material)

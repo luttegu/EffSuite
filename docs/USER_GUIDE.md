@@ -1,0 +1,286 @@
+# EffSuite User Guide — v0.3.1
+
+> **Spectrometry software.** EffSuite reads and writes **Canberra / Mirion
+> Genie 2000** files (`.CAL`, `.NLB`, `.CTF`) and **ORTEC GammaVision** files
+> (`.EFT`, `.LIB`). GammaVision support follows EFFTRAN and MEFFTRAN exactly
+> but is **untested**: I do not have the software, so volunteers are welcome
+> to test it and give feedback. Other formats (ORTEC Maestro `.spc` / `.cal`,
+> InterWinner) are not supported.
+
+> **WEFFTRAN (well detectors).** The well engine has been patched for ray
+> boundary handling and uses a 3D spatial summing model, but it is **not yet
+> qualified in the laboratory**. Treat well results as experimental and
+> verify them independently.
+
+## 1. Getting started
+
+On the **Welcome** page, choose what to calculate:
+
+| Choice | Needs | Produces |
+|---|---|---|
+| **Complete Analysis** (recommended) | detector, standard and sample, reference calibration, nuclides | transferred calibration and summing factors |
+| **Efficiency Transfer Only** | detector, standard and sample, reference calibration | transferred sample calibration (`.CAL` / `.EFT`) |
+| **True Coincidence Summing Only** | detector, sample, nuclides or a library | summing factors and a corrected `.NLB` / `.CTF` / `.LIB` |
+
+At the top of the window, choose the application: `EFFTRAN` 5.0 (cylinder),
+`MEFFTRAN` 1.9 (Marinelli) or `WEFFTRAN` (well). There you also set the
+software (Genie or GammaVision, detected automatically by default), the
+number of workers (Auto = number of CPUs minus 2), and the data folder.
+
+Then go through the tabs with **Start Guided Setup** and **Next ▶**:
+**Detector → Source → Efficiency → Library / Certificate**. The **Material**
+tab creates new materials (section 7). **📋 Load Built-in Example** fills
+every tab with a working example, and **📂 Open Project…** opens a saved
+project.
+
+## 2. Detector and source models
+
+* **Detector.** Load a detector text file, or type the dimensions. 16-line
+  (MEFFTRAN) and 19-line (EFFTRAN) detector files are both accepted. Well
+  detectors accept optional extended fields (mount cup, mantle and bottom dead
+  layers, sample offset); see
+  [CHANGES_FROM_ORIGINALS.md, section 2.5](CHANGES_FROM_ORIGINALS.md#25-optional-extended-well-detector-inputs).
+* **Source.** Load or enter the standard and the sample side by side.
+  * Both 7-line source files and 8-line source files (with
+    `Source density [g/cm³]`) load.
+  * Choosing a `Source material` fills the density with the nominal value
+    from `Composition/<material>.txt`; you can then change it.
+  * Do not infer dimensions from a model's name.
+* The cross-section view updates live and shows every dimension.
+
+## 3. Efficiency transfer
+
+In **Efficiency**, import the standard calibration with
+**① Import Standard Efficiency**. It accepts a Genie `.CAL`, a GammaVision
+`.EFT`, or a two- or three-column text/CSV file. You can also paste cells from
+a spreadsheet into the first three columns.
+
+The columns are:
+* energy in keV;
+* efficiency as a fraction (0.05 means 5 %);
+* optionally, the relative uncertainty in percent (3 means 3 % relative).
+
+The calibration needs 2 to 93 points with strictly increasing energies.
+
+Press **▶ Check Transfer Only**, or the run button in the page footer, then
+inspect the transferred values and the standard/sample graph.
+
+The **Sample u [%]** column keeps the original programs' transfer
+uncertainty:
+* **Cylinder and Marinelli:** the reference uncertainty combined with the
+  Monte Carlo statistics of the standard and sample efficiencies;
+* **Wells:** fixed 0.5 % + 0.5 % terms.
+
+Neither is a complete uncertainty budget.
+
+## 4. Coincidence summing
+
+In **Library** (or **Certificate**), either type the nuclides
+(`Co-60, Cs-134, Eu-152`) or open a Genie `.NLB` / `.CTF` or a GammaVision
+`.LIB`; its nuclides fill in automatically. Then press
+**▶ Check Summing Only**, or the run button. No standard calibration is
+needed. Parent and continuation decay records stay together, and workers run
+in separate processes and private folders.
+
+The table shows the summing factor *C*, where *A*<sub>corrected</sub> = *C* · *A*.
+A factor below 1 is allowed, for summing-in. It also shows **u(C)** (see
+below) and an asterisk `*` for lines without a usable factor.
+
+* **Asterisk.** `*` means not computed, missing, invalid or blocked by a
+  numerical check; hover over it for the reason.
+* **Matching.** Library lines are matched to the calculated factors by
+  nuclide, in standard spelling ("Co60" = "CO-60"), and by energy within
+  1 keV.
+* **Export.** A line without a usable factor is exported with its original
+  abundance or rate. An ambiguous match (two different factors equally close)
+  blocks the export.
+* **Interpretation.** The factors use the original integer-keV bins. A
+  positive factor alone is not a physical validation.
+
+**Wells.** WEFFTRAN calculates the local coincident counts throughout the
+sample, including material above the crystal. It then forms a ratio of the
+integrated counts.
+
+* **Convergence.** The result is checked twice, with twice as many directions
+  and with twice as many sample points. Both checks must change the factors
+  by less than 1 %.
+* **Blocked export.** Failed convergence or probability saturation blocks the
+  Genie export, and so do unsupported annihilation-pair sum-in channels.
+* **Unusable decay data.** If a nuclide's decay data cannot be used (for
+  example inconsistent conversion coefficients), it is reported as not
+  corrected and its lines are exported unchanged. All other nuclides are
+  calculated normally.
+
+Details: [WELL_SPATIAL_MODEL.md](WELL_SPATIAL_MODEL.md).
+
+### Uncertainty of the summing factors, u(C)
+
+The original EFFTRAN, MEFFTRAN and WEFFTRAN give no uncertainty for *C*.
+EffSuite adds the relative standard uncertainty **u(C)** (k = 1, percent). It
+appears in the table and in `summing.csv`, `results.json` and `report.html`.
+
+* **Method.** It is propagated from the uncertainties of the peak and total
+  efficiencies that the detector model computes. The sensitivity coefficients
+  come from rerunning the unchanged engine with each efficiency curve scaled
+  by ±2 %.
+* **Numerical part.** The engine's own numerical uncertainty is added: Monte
+  Carlo statistics for cylinder and Marinelli, quadrature refinement for
+  wells.
+
+Set the inputs in the **TCS uncertainty inputs** row above the table:
+
+| Input | Default | Meaning |
+|---|---|---|
+| u(ε peak) | 5 % | relative standard uncertainty of the computed peak efficiency |
+| u(ε total) | 10 % | relative standard uncertainty of the computed total efficiency |
+| correlation | 0 | correlation between the two errors (−1 to 1) |
+
+**The defaults are assumptions. Enter values that describe your own detector
+model.**
+
+* **Calculate u(C)** (check box) switches the calculation on or off; the
+  factors are the same either way.
+* Changing these inputs after a calculation updates the u(C) column at once,
+  and the factors and the transferred efficiencies stay on screen. The result
+  folder keeps the values of the last run, so run again to save the new ones.
+* Decay-data uncertainties are not included.
+* The exported `.NLB` / `.CTF` / `.LIB` files do not carry u(C), so add it to
+  your activity budget yourself.
+
+[TCS_UNCERTAINTY.md](TCS_UNCERTAINTY.md) explains the method, how to choose
+the inputs, and the limitations.
+
+## 5. Results, projects and recovery
+
+Each calculation creates a new result folder:
+
+| File | Contents |
+|---|---|
+| `results.json` | the complete result: all values, warnings, settings, and SHA-256 hashes of programs, data and inputs |
+| `efficiency.csv` | energy, standard and sample efficiency, transfer factor, transfer uncertainty |
+| `summing.csv` | nuclide, energy, factor *C*, status, u(C) and its components (`tcs_*` columns; an empty cell means no uncertainty is available) |
+| `report.html` | self-contained report that opens offline |
+| exported files | corrected Genie / GammaVision files (section 6) |
+
+The folder also holds the native logs and a snapshot of the inputs used. A
+cancelled or failed calculation publishes no result folder.
+
+**Projects.** A saved project (`*.effsuite.json`) contains the detector and
+source values, the calibration, the nuclides and the u(C) inputs. It can be
+re-run without the GUI:
+
+```bat
+CLI.bat run your_project.effsuite.json --out your_new_result_folder
+```
+
+Genie templates and a custom data folder are stored as paths, so keep those
+files when moving a project to another PC.
+
+**User folder.** `C:\GENIE2K\EffSuite`, or `Documents\EffSuite` when that
+location cannot be written. The `EFFSUITE_ROOT` environment variable
+overrides both.
+
+| Folder | Contents |
+|---|---|
+| Data | default location for all inputs: Calibration, Composition, Detector, Material, Standard, NuclideLibrary |
+| Projects | default Save/Open project location |
+| Results | one new folder per calculation |
+| Export | default CSV/Genie export location |
+| Recovery | `last_project.json`, saved before each calculation |
+| Logs | GUI start-up error log |
+
+**Recovery.** After a crash, open `Recovery\last_project.json` with
+**Open Project**. It holds the inputs of the last calculation; it is not a
+continuous autosave. Save your project before loading another example or
+changing the application.
+
+## 6. Genie 2000 and GammaVision export
+
+### Genie 2000
+
+Genie `.CAL` import/export and `.NLB` / `.CTF` processing need Windows with
+the Genie CAM components registered. EffSuite tries the installed 32-bit and
+64-bit COM hosts.
+
+* **Safe export.** The source file is never changed. The export writes a
+  private copy, saves it, reopens it and checks every value, then publishes
+  it under a new name (one PowerShell start per export). Existing files are
+  never overwritten.
+* **In the GUI.** The calculation itself exports the corrected files into its
+  result folder. The **💾 Export** buttons then copy that verified file to
+  the place you choose.
+* **`.CAL` template.** A `.CAL` export needs a vendor `.CAL` template with
+  the same number of points as the transferred calibration. A `.CAL` imported
+  as the reference supplies it; for a text/CSV calibration the GUI asks for
+  one.
+* **Corrected values.** Each abundance or rate is divided by *C*. The
+  displayed correction multiplies the activity. A line without a usable
+  factor keeps its original value. An ambiguous factor or a failed well model
+  stops the export.
+
+```bat
+CLI.bat cylinder --detector my_detector.txt --sample my_sample.txt --standard my_standard.txt --calibration reference.CAL --export-cal
+CLI.bat cylinder --detector my_detector.txt --sample my_sample.txt --library original.NLB --certificate original.CTF
+```
+
+`--output-cal`, `--output-nlb` and `--output-ctf` copy the verified file to
+a new path, and report an error when that file could not be produced.
+
+### GammaVision (untested)
+
+> **GammaVision support is untested.** It has been implemented as EFFTRAN
+> does it, but I cannot test it because I do not have the software.
+> Volunteers are welcome to test it and give feedback.
+
+GammaVision files are handled in pure Python, with no vendor components and on
+any OS:
+
+- **Library (`.LIB`).** Nuclide, energy and gamma yield are read. On export
+  each yield is divided by *C*; lines without a match within 1 keV keep their
+  yield. A `<name>_gv.txt` report (energy, old yield, new yield, factor,
+  applied flag) is written beside the output, like EFFTRAN `gv.txt`.
+- **Efficiency (`.EFT`).** Efficiency and uncertainty are read (EFFTRAN or
+  MEFFTRAN layout). The export rewrites a template `.EFT` with the same
+  number of points, keeping the other columns and the trailer lines.
+- **Selection.** The software is chosen from the extension (`.LIB`, `.EFT` =
+  GammaVision). Override it with the GUI **Software** selector,
+  `--software genie|gammavision`, or the `EFFSUITE_SOFTWARE` environment
+  variable.
+- **Genie-only files.** Certificates (`.CTF`) and `.CAL` files are Genie
+  only.
+
+```bat
+CLI.bat cylinder --detector d.txt --sample s.txt --standard st.txt --calibration ref.EFT --export-cal --library nuclides.LIB --software gammavision
+```
+
+## 7. Materials
+
+The Material tab, the editable Excel workbook and `CLI.bat material` are
+described in [MATERIALS.md](MATERIALS.md). Generated data folders can be used
+for efficiency transfer and summing in all three applications. A density
+change alone needs no new material: edit `Source density [g/cm³]`.
+
+## 8. Reproducing an original EFFTRAN / MEFFTRAN / WEFFTRAN case
+
+1. Choose the matching application. Load the original detector file in
+   **Detector**, and the original standard and sample files in **Source**.
+   Cylinder, Marinelli and well formats differ and are checked separately.
+2. Select your original installation's data folder with **📁 Data Folder…**,
+   so that the same materials and decay data are used. The material lists
+   update, and the result records the data hashes.
+3. Import the same calibration and run.
+
+Expected differences from the originals, such as the well model, output
+precision and density handling, are listed in
+[CHANGES_FROM_ORIGINALS.md](CHANGES_FROM_ORIGINALS.md).
+
+## More information
+
+* Command line and integration with other software:
+  [CLI_INTEGRATION_GUIDE.md](CLI_INTEGRATION_GUIDE.md)
+* Validation status: [VALIDATION.md](VALIDATION.md)
+* All documents: [docs/README.md](README.md)
+
+Real Genie CAM operation on your own PCs, Windows packaging and your
+laboratory's physical cases remain release checks. This evaluation build does
+not authorise routine use.

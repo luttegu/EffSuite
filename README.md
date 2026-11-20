@@ -1,7 +1,7 @@
 # EffSuite — Gamma Spectrometry Efficiency Transfer & Summing Suite
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-0.3.0-yellow.svg" alt="Version 0.3.0" />
+  <img src="https://img.shields.io/badge/Version-0.3.1-yellow.svg" alt="Version 0.3.1" />
   <img src="https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue.svg" alt="Python Version" />
   <img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011%20(x64)-0078D6.svg" alt="Windows Platform" />
   <img src="https://img.shields.io/badge/Genie%202000-CAM%20%7C%20CAL%20%7C%20NLB%20%7C%20CTF-8A2BE2.svg" alt="Genie 2000 Integration" />
@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/License-GPL--3.0%20%2F%20Vidmar%20Attribution-orange.svg" alt="License" />
 </p>
 
-*EffSuite (v0.3.0) built by ChatGPT & Gemini under the supervision of G. Lutter.*
+*EffSuite (v0.3.1) built by ChatGPT & Gemini under the supervision of G. Lutter.*
 
 ---
 
@@ -75,15 +75,16 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
 **EffSuite** unites EFFTRAN, MEFFTRAN, and WEFFTRAN under a single high-performance framework designed for high-resolution gamma-ray spectrometry (HPGe) laboratories:
 
-1. **Native Fortran Physics Precision**: Executes verified Fortran numerical engines with updated double-precision numerical token sanitization and scientific format output.
-2. **Modern Desktop GUI (Qt6)**: Engineered with a dark GL-GUM Workbench theme, automatic 1080p/4K DPI scaling, live 2D CAD dimension schematics, interactive efficiency curves, and dedicated calculation activity logs.
-3. **High-Throughput Parallel Coincidence Summing**: Coincidence summing correction factors ($F_{corr}$) are computed in one go across all nuclides in the calibration or certificate library, leveraging multi-core parallelization (`workers = max(1, os.cpu_count() - 2)`).
-4. **Canberra / Mirion Genie 2000 and ORTEC GammaVision Integration**: Directly imports and updates `.CAL` efficiency calibrations, `.NLB` nuclide libraries, and `.CTF` certificate files. File selectors default directly to `C:\GENIE2K\CAMFILES`. GammaVision `.LIB` libraries and `.EFT` efficiency files go through the pure-Python backend in `gammavision.py`.
+1. **Original Fortran physics**: the EFFTRAN 5.0 and MEFFTRAN 1.9 engines run unchanged apart from small numerical safeguards and a higher-precision output format. Wells use a new spatial summing model that fixes the original's tall-sample failure.
+2. **Desktop GUI (Qt)**: the original workbook tabs as forms, with automatic 1080p/4K scaling, a live dimensioned cross-section, efficiency charts and a calculation log.
+3. **Parallel coincidence summing**: summing correction factors *C* for every nuclide of a library in one run, on all CPU cores (`workers = 0`: number of CPUs minus 2).
+4. **Summing-factor uncertainty**: a relative standard uncertainty u(C) for every factor, which the original programs do not provide ([details](docs/TCS_UNCERTAINTY.md)).
+5. **Genie 2000 and GammaVision**: reads `.CAL` efficiency calibrations, `.NLB` nuclide libraries and `.CTF` certificates, and writes verified corrected copies (file dialogs open in `C:\GENIE2K\CAMFILES`). GammaVision `.LIB` and `.EFT` files are handled in pure Python.
+6. **NIST XCOM materials**: composition editor and automatic XCOM 3.1 attenuation tables; 71 bundled material compositions.
+7. **Command line**: `EffSuite_CLI.exe` (or `python -m effsuite.app_cli`) for scripts, LIMS integration and batch runs.
 
 > [!IMPORTANT]
 > **GammaVision has been implemented as EFFTRAN is doing it, but I cannot test it because I do not have the software. Volunteers are welcome to test it and provide feedback.**
-5. **Integrated NIST XCOM Cross-Section Engine**: Built-in composition editor and automated NIST XCOM 3.1 calculation for photon attenuation cross-sections ($\mu/\rho$) across 60+ pre-configured gamma materials.
-6. **Headless Automation CLI**: Full command-line interface (`EffSuite_CLI.exe` or `python -m effsuite.app_cli`) enabling automated LIMS integration and batch recalculations.
 
 ---
 
@@ -119,15 +120,18 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 The GUI follows the intuitive workflow of analytical gamma spectrometry:
 
 ```
-[ Detector ] ➔ [ Source ] ➔ [ Efficiency ] ➔ [ Certificate / Library ] ➔ [ Material ] ➔ [ Calculate ]
+[ Welcome ] ➔ [ Detector ] ➔ [ Source ] ➔ [ Efficiency ] ➔ [ Library / Certificate ]      (+ [ Material ])
 ```
 
-* **Detector Tab**: Configure crystal diameter, length, dead layers, core hole, endcap distance, and materials. Features a live 2D CAD schematic with real-time dimension callouts.
-* **Source Tab**: Define standard calibration source and unknown sample side by side (fill height, container wall/bottom, density, and matrix composition).
-* **Efficiency Tab**: Import experimental calibration points from Genie 2000 `.CAL`, GammaVision `.EFT`, or CSV/text, compute transfer factors, preview interactive log-log efficiency curves, and export transferred `.CAL` (Genie 2000) or `.EFT` (GammaVision).
-* **Certificate / Library Tab**: Open Genie `.NLB` / `.CTF` files (from `C:\GENIE2K\CAMFILES`) or GammaVision `.LIB` libraries, or input nuclides manually (e.g. `Co-60, Cs-134, Eu-152`). Calculates coincidence summing corrections in a single parallel pass and exports clearly labeled Genie (`.NLB` / `.CTF`) or GammaVision (`.LIB` + `_gv.txt`) files.
-* **Material Tab**: Add or edit custom chemical formulas and densities. Calls the embedded NIST XCOM engine to generate photon cross-section attenuation files on the fly.
-* **Activity & Audit Log**: High-contrast console (`#38bdf8` cyan on dark background) reporting engine stages, ray-tracing counts, and convergence diagnostics in real time.
+* **Welcome**: choose Complete Analysis, Efficiency Transfer Only or True Coincidence Summing Only; load an example or a saved project.
+* **Detector**: crystal dimensions, dead layers, core hole, end cap and materials, with a live dimensioned cross-section.
+* **Source**: the standard and the sample side by side (filling height, container, density, matrix).
+* **Efficiency**: import the standard calibration (Genie `.CAL`, GammaVision `.EFT`, CSV/text), transfer it to the sample, see the efficiency curves, and export the sample `.CAL` / `.EFT`.
+* **Library / Certificate**: open a Genie `.NLB` / `.CTF` or a GammaVision `.LIB`, or type nuclides (`Co-60, Cs-134, Eu-152`). Calculates the summing factors *C* and their uncertainty u(C), and exports corrected Genie or GammaVision (`.LIB` + `_gv.txt`) files.
+* **Material**: create materials from chemical formulas and a density; XCOM generates the attenuation table.
+* **Log**: engine stages, warnings and convergence diagnostics as the calculation runs.
+
+Step-by-step instructions: [User Guide](docs/USER_GUIDE.md).
 
 ---
 
@@ -140,25 +144,25 @@ EffSuite provides a headless CLI (`EffSuite_CLI.exe` or `CLI.bat`) for batch aut
 CLI.bat run "C:\MyLab\Soil_Sample_01.effsuite.json" --out "C:\MyLab\Results_01"
 ```
 
-### 2. Parametric Invocation (Cylindrical Geometry)
+### 2. Complete Analysis (Cylindrical Geometry)
 ```cmd
 CLI.bat cylinder ^
   --detector High-energy ^
   --standard Solution ^
+  --calibration "C:\GENIE2K\CAMFILES\Standard.CAL" ^
   --sample Soil ^
   --sample-height 45.0 ^
-  --nuclides Co-60,Cs-134,Eu-152 ^
-  --workers 0 ^
+  --library "C:\GENIE2K\CAMFILES\NUTECH.NLB" ^
   --out "C:\MyLab\Results_Cylinder"
 ```
 
-### 3. Marinelli Beaker Execution
+### 3. Summing Only (Marinelli Beaker)
 ```cmd
 CLI.bat marinelli ^
   --detector High-energy ^
-  --standard Standard ^
   --sample Sample ^
   --nuclides Co-60,Cs-137,I-131 ^
+  --tcs-u-peak 4 --tcs-u-total 8 ^
   --out "C:\MyLab\Results_Marinelli"
 ```
 
@@ -167,35 +171,34 @@ CLI.bat marinelli ^
 ```cmd
 CLI.bat well ^
   --detector well ^
-  --standard Standard ^
   --sample Sample ^
   --nuclides Eu-152 ^
-  --workers 0 ^
   --out "C:\MyLab\Results_Well"
 ```
 
 ### CLI Exit Codes
 | Exit Code | Status | Meaning |
 | :---: | :--- | :--- |
-| **0** | **Success** | All calculations finished cleanly; valid `.CAL` and `.NLB`/`.CTF` generated. |
-| **1** | **Diagnostic Success** | Calculations succeeded, but low-energy lines below detector threshold (<40 keV) could not be corrected and are flagged with `*`. |
-| **2** | **Runtime Error** | Invalid input parameters, missing geometry files, or engine execution error. |
+| **0** | **Success** | The calculation finished and every reported summing line has a valid factor. |
+| **1** | **Success with uncorrected lines** | Results were published, but some lines have no usable factor and are marked `*` (no decay data, line not calculated, or a failed well convergence check). |
+| **2** | **Error** | Invalid input, missing file or engine, or engine failure; nothing is published. |
 
-For detailed inter-process integration guidance, see [CLI_INTEGRATION_GUIDE.md](CLI_INTEGRATION_GUIDE.md).
+All commands and options, and how to call EffSuite from other software: [CLI Integration Guide](docs/CLI_INTEGRATION_GUIDE.md).
 
 ---
 
 ## 🔬 Scientific & Physics Implementation
 
-Detailed technical comparisons against the original codes are documented in [SCIENTIFIC_AUDIT_REPORT.md](SCIENTIFIC_AUDIT_REPORT.md) and [EFFTRAN_MEFFTRAN_WEFFTRAN_CHANGES.md](EFFTRAN_MEFFTRAN_WEFFTRAN_CHANGES.md).
+Every difference from the original programs is documented in [CHANGES_FROM_ORIGINALS.md](docs/CHANGES_FROM_ORIGINALS.md); the test evidence is in [VALIDATION.md](docs/VALIDATION.md).
 
 ### Summary of Physics & Engineering Enhancements:
 | Feature | Original Implementation | EffSuite Modernization |
 | :--- | :--- | :--- |
 | **Sample Bulk Density (`rho`)** | Added in EFFTRAN 4.9–5.0 / MEFFTRAN 1.8–1.9 (absent in WEFFTRAN) | Full 8-line source density scaling ($\rho / \rho_0$) across Cylindrical, Marinelli, and Well (`WEFFTRAN`) with validated loop bounds, `Point.txt` guard, and GUI auto-fill |
-| **Transfer Uncertainty** | Fixed 0.5% standard/sample placeholders in older versions | Full dynamic Monte Carlo relative standard error propagation ($u = \sqrt{u_{\mathrm{ref}}^2 + (100 s_{\mathrm{std}})^2 + (100 s_{\mathrm{sample}})^2}$) unified across Cylindrical (EFFTRAN 5.0) and Marinelli (MEFFTRAN 1.9) |
-| **Coincidence Summing** | Serial Fortran loop per nuclide | Parallelized Monte Carlo cascade recursion across all CPU cores in one pass |
-| **Numerical Format** | 3-decimal fixed format (`F8.3`) in coincidence dumps | Scientific format (`ES14.6`) to preserve small positive summing factors |
+| **Transfer Uncertainty** | Fixed 0.5% standard/sample placeholders in older versions | Dynamic Monte Carlo propagation ($u = \sqrt{u_{\mathrm{ref}}^2 + (100 s_{\mathrm{std}})^2 + (100 s_{\mathrm{sample}})^2}$) for Cylindrical (EFFTRAN 5.0) and Marinelli (MEFFTRAN 1.9); wells keep the original 0.5% terms |
+| **Summing Factor Uncertainty** | None: factors are given without uncertainty | Relative standard uncertainty u(C) for every factor, propagated from the peak and total efficiency uncertainties through engine-computed sensitivity coefficients, plus the engine's numerical uncertainty (see [TCS_UNCERTAINTY.md](docs/TCS_UNCERTAINTY.md)) |
+| **Coincidence Summing** | One nuclide at a time, run from Excel | All library nuclides in one run, in parallel native processes (unchanged Fortran cascade calculation) |
+| **Numerical Format** | 3-decimal fixed format (`f15.3`) in `coin.txt` | Scientific format (`e23.15`) to preserve small positive summing factors |
 | **Token Sanitization** | Failed on denormalized or empty tokens | Strict token parser (Fortran `D` exponents accepted); since v0.3.0 a NaN or infinite engine value stops the calculation instead of being replaced by $10^{-15}$ |
 | **WEFFTRAN Spatial Patch** | Zero-volume integration defect on tall samples | Full spatial integration over cylinder and well volume, eliminating negative/near-singular factors |
 | **Ray-Tracing Boundary** | Critical ray boundary condition bugs in well cavity | Fixed Fortran boundary crossing in `path_fixed.f` |
@@ -206,43 +209,39 @@ Detailed technical comparisons against the original codes are documented in [SCI
 
 ---
 
+## 📚 Documentation
+
+| Document | For |
+| :--- | :--- |
+| [User Guide](docs/USER_GUIDE.md) | Using the desktop program: transfer, summing, export, results |
+| [Materials and XCOM](docs/MATERIALS.md) | Creating materials, changing sample density |
+| [Summing-Factor Uncertainty](docs/TCS_UNCERTAINTY.md) | Method, inputs and limits of u(C) |
+| [CLI Integration Guide](docs/CLI_INTEGRATION_GUIDE.md) | Command line, exit codes, calling EffSuite from other software |
+| [Changes from the Originals](docs/CHANGES_FROM_ORIGINALS.md) | Every physics, source and data difference from EFFTRAN, MEFFTRAN and WEFFTRAN |
+| [Well Spatial Model](docs/WELL_SPATIAL_MODEL.md) | The well-detector summing model and its evidence |
+| [Validation](docs/VALIDATION.md) | What is tested, and what remains before routine use |
+| [Architecture](docs/ARCHITECTURE.md) | Code structure, modules, repository layout, builds |
+| [Release Notes](RELEASE_NOTES.md) | Changes per version |
+| [Third-Party Notices](THIRD_PARTY_NOTICES.md) | Licences and original notices |
+
+---
+
 ## 📁 Repository Structure
 
 ```text
 EffSuite/
-├── native/                         # Fortran source files & boundary patches
-│   ├── wefftran_geometry/          # Patched WEFFTRAN ray-tracing routines
-│   └── README.md
-├── src/effsuite/                   # Core Python application package
-│   ├── assets/                     # Pre-compiled engines, XCOM, compositions, & libraries
-│   │   ├── common/Composition/     # Pre-configured material composition cards
-│   │   ├── Decay_Data/             # Evaluated decay data libraries
-│   │   └── xcom/                   # NIST XCOM 3.1 photon attenuation engine
-│   ├── licensing/                  # Unrestricted community license verification
-│   ├── app_cli.py                  # Headless command-line interface
-│   ├── gammavision.py              # ORTEC GammaVision .LIB / .EFT pure-Python adapter
-│   ├── genie.py                    # Genie 2000 CAM/CAL/NLB/CTF engine adapter
-│   ├── geometry_view.py            # Matplotlib 2D CAD cross-section renderer
-│   ├── gui.py                      # Modern Qt6 desktop user interface
-│   ├── materials.py                # Material builder & XCOM wrapper
-│   ├── parallel_coincidence.py     # Multiprocessing coincidence summing engine
-│   ├── software.py                 # Genie 2000 / GammaVision backend dispatcher
-│   ├── spatial_summing.py          # Spatial cascade integration engine
-│   ├── suite.py                    # Shared calculation coordinator
-│   └── well_spatial.py             # WEFFTRAN 3D spatial integration
-├── tests/                          # Automated unit and regression test suite
-├── tools/                          # Developer build & diagnostic utilities
-├── Build_Installer.bat             # Compiles Inno Setup installer
-├── Build_Windows.bat               # Compiles standalone PyInstaller executable
-├── CLI.bat                         # Windows CLI launcher
-├── Run_Tests_Windows.bat           # Executes automated test suite
-├── Setup_Windows.bat               # Initializes .venv & installs dependencies
-├── Start_GUI.bat                   # Desktop GUI launcher
-├── EFFTRAN_MEFFTRAN_WEFFTRAN_CHANGES.md # Complete scientific audit & bugfix log
-├── SCIENTIFIC_AUDIT_REPORT.md      # Detailed comparison vs original Tim Vidmar codes
-├── USER_GUIDE.md                   # Complete end-user tutorial
-└── README.md                       # This file
+├── docs/            # documentation (index: docs/README.md) and project web page
+├── src/effsuite/    # Python package; assets/ holds the Fortran engines, data and XCOM
+├── native/          # historical WEFFTRAN geometry patches and original references
+├── tests/           # automated tests
+├── tools/           # build, validation and release utilities
+├── examples/        # validation evidence and example inputs
+├── installer/       # Inno Setup script
+├── third_party/     # original notices and licences
+└── *.bat            # Setup_Windows, Start_GUI, CLI, Run_Tests_Windows, Build_Windows, Build_Installer
 ```
+
+Module-level details: [Architecture](docs/ARCHITECTURE.md).
 
 ---
 
@@ -261,7 +260,7 @@ or directly in the virtual environment (parallel runner across CPU cores):
 ```cmd
 Build_Windows.bat
 ```
-Produces standalone `dist\EffSuite\` containing `EffSuite.exe` and `EffSuite_CLI.exe`.
+Produces standalone `dist\EffSuite\` containing `EffSuite_GUI.exe` and `EffSuite_CLI.exe`.
 
 ### Compiling the Installer
 Open `installer\EffSuite.iss` in Inno Setup 7 and compile, or run:
@@ -274,7 +273,7 @@ Build_Installer.bat
 ## 📄 License & Third-Party Notices
 
 * **EffSuite Codebase**: Licensed under the GNU General Public License v3.0 (see [GPL-3.0](third_party/GPL-3.txt)).
-* **EFFTRAN, MEFFTRAN, WEFFTRAN Engines**: Copyright (c) 2005–2026 Tim Vidmar. Provided with permission for use, copy, modification, and distribution with attribution (see [third_party](third_party/)).
+* **EFFTRAN, MEFFTRAN, WEFFTRAN Engines**: Copyright (c) 2005–2026 Tim Vidmar. Provided with permission for use, copy, modification, and distribution with attribution (see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and [third_party](third_party/)).
 * **NIST XCOM**: Photon cross-sections database developed by M.J. Berger and J.H. Hubbell, National Institute of Standards and Technology (NIST).
 
 *EffSuite built by ChatGPT & Gemini & Claude (no jealousy!) under the supervision of G. Lutter.*

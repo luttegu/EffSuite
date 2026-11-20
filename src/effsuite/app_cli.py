@@ -32,6 +32,32 @@ def load_project(path):
     return validate_project(json.loads(Path(path).read_text(encoding="utf-8")))
 
 
+def _add_tcs_uncertainty_args(c):
+    """Options of the TCS (summing factor) uncertainty; None means "keep the project/default value"."""
+    g = c.add_argument_group("TCS uncertainty (see docs/TCS_UNCERTAINTY.md)")
+    g.add_argument("--tcs-u-peak", type=float, metavar="PERCENT",
+                   help="Relative standard uncertainty of the computed peak efficiency (default 5)")
+    g.add_argument("--tcs-u-total", type=float, metavar="PERCENT",
+                   help="Relative standard uncertainty of the computed total efficiency (default 10)")
+    g.add_argument("--tcs-correlation", type=float, metavar="RHO",
+                   help="Correlation between peak and total efficiency errors, -1 to 1 (default 0)")
+    g.add_argument("--no-tcs-uncertainty", action="store_true", help="Do not calculate u(C) (saves the four sensitivity runs)")
+
+
+def _apply_tcs_uncertainty_args(project, args):
+    """Put the TCS uncertainty options into project["tcs_uncertainty"] (checked by validate_project)."""
+    settings = dict(project.get("tcs_uncertainty") or {})
+    for option, key in (("tcs_u_peak", "peak_efficiency_percent"), ("tcs_u_total", "total_efficiency_percent"),
+                        ("tcs_correlation", "peak_total_correlation")):
+        if getattr(args, option, None) is not None:
+            settings[key] = getattr(args, option)
+    if getattr(args, "no_tcs_uncertainty", False):
+        settings["enabled"] = False
+    if settings:
+        project["tcs_uncertainty"] = settings
+    return project
+
+
 def _add_common_calc_args(c):
     """Command-line options shared by the cylinder, marinelli and well commands."""
     c.add_argument("--detector", required=True, help="Detector model (.txt path or name in Data/Detector)")
@@ -40,7 +66,7 @@ def _add_common_calc_args(c):
     c.add_argument("--sample-diameter", type=float, metavar="MM", help="Override sample container outer diameter [mm] on the fly")
     c.add_argument("--sample-gap", type=float, metavar="MM", help="Override sample-to-detector positioning gap [mm] on the fly")
     c.add_argument("--sample-material", metavar="NAME", help="Override sample matrix material name on the fly")
-    c.add_argument("--sample-density", type=float, metavar="G_CM3", help="Override sample matrix bulk density [g/cm³] and auto-generate XCOM attenuation")
+    c.add_argument("--sample-density", type=float, metavar="G_CM3", help="Override sample matrix bulk density [g/cm³] (line 8 of the source model; attenuation is scaled by rho/rho0)")
     c.add_argument("--container-material", metavar="NAME", help="Override sample container material name on the fly")
     c.add_argument("--standard", help="Reference standard source model (.txt path or name in Data/Standard)")
     c.add_argument("--calibration", type=Path, help="Reference efficiency .CAL, .txt or .csv (in Data/Calibration)")
@@ -53,12 +79,13 @@ def _add_common_calc_args(c):
     c.add_argument("--output-nlb", type=Path, metavar="FILE.NLB", help="Copy the exported corrected .NLB directly to this file path")
     c.add_argument("--output-ctf", type=Path, metavar="FILE.CTF", help="Copy the exported corrected .CTF directly to this file path")
     c.add_argument("--plot-geometry", nargs="?", const="geometry.png", metavar="PNG_OR_PDF", help="Save CAD axial cross-section diagram with all quotes (default: geometry.png in result folder)")
-    c.add_argument("--out", type=Path, help="Result folder (default: Documents/EffSuite/Results/<timestamp>)")
+    c.add_argument("--out", type=Path, help="Result folder (default: <EffSuite user folder>/Results/<timestamp>)")
     c.add_argument("--save-project", type=Path, help="Save the resolved project JSON for one-command repeat")
     c.add_argument("--workers", type=int, default=0, help="Worker processes: 0 = automatic, 1 = serial")
     c.add_argument("--software", choices=["genie", "gammavision"], help="Library software (default: auto-detect; .LIB = GammaVision)")
-    c.add_argument("--data-dir", type=Path, help="Data directory (default: Documents/EffSuite/Data if present)")
+    c.add_argument("--data-dir", type=Path, help="Data directory (default: <EffSuite user folder>/Data if present)")
     c.add_argument("--verify-serial", action="store_true", help="Verify parallel coincidence results against serial execution")
+    _add_tcs_uncertainty_args(c)
 
 
 def parser():
@@ -77,7 +104,7 @@ def parser():
     material.add_argument("--density", type=float, help="Bulk density in g/cm³ (e.g. 1.346)")
     material.add_argument("--compound", action="append", default=[], metavar="H2O=90", help="Chemical formula and relative weight; repeat for mixtures")
     material.add_argument("--geometry", choices=("cylinder", "marinelli", "well"), default="cylinder")
-    material.add_argument("--library", type=Path, help="Output data folder (default: Documents/EffSuite/Data)")
+    material.add_argument("--library", type=Path, help="Output data folder (default: <EffSuite user folder>/Data)")
     material.add_argument("--base-data", type=Path, help="Base data folder when initializing a new library")
     material.add_argument("--save-definition", type=Path, help="Also save the composition definition as JSON")
     material.add_argument("--overwrite", action="store_true", help="Overwrite existing material & recalculate XCOM attenuation")
@@ -87,7 +114,7 @@ def parser():
 
     models = sub.add_parser("models", help="List available detector, sample, standard, and material names")
     models.add_argument("geometry", choices=("cylinder", "marinelli", "well"))
-    models.add_argument("--data-dir", type=Path, help="Data directory to inspect (default: Documents/EffSuite/Data)")
+    models.add_argument("--data-dir", type=Path, help="Data directory to inspect (default: <EffSuite user folder>/Data)")
 
     plot_cmd = sub.add_parser("plot-geometry", help="Render dimensioned axial cross-section diagram with all quotes to PNG/PDF/SVG")
     plot_cmd.add_argument("--geometry", choices=("cylinder", "marinelli", "well", "cylindrical", "efftran", "mefftran", "wefftran"), default="cylinder")
@@ -119,6 +146,7 @@ def parser():
     run.add_argument("--output-nlb", type=Path, help="Copy exported corrected .NLB to this path")
     run.add_argument("--output-ctf", type=Path, help="Copy exported corrected .CTF to this path")
     run.add_argument("--plot-geometry", nargs="?", const="geometry.png", help="Save CAD cross-section diagram")
+    _add_tcs_uncertainty_args(run)
 
     for name, aliases in [("cylinder", ["efftran"]), ("marinelli", ["mefftran"]), ("well", ["wefftran"])]:
         c = sub.add_parser(name, aliases=aliases, help=f"Run {name} calculation from model files/names with inline overrides")
@@ -303,6 +331,7 @@ def _build_project_from_args(mode, args, progress=None):
         raise CoincidenceError("--export-cal/--output-cal need --standard and a .CAL/.EFT calibration input or --cal-template")
     if genie_sources:
         project["genie_exports"] = genie_sources
+    _apply_tcs_uncertainty_args(project, args)
     project = validate_project(project)
     if data_dir:
         project["data_directory"] = str(Path(data_dir).resolve())
@@ -673,6 +702,7 @@ def _command_calculation(args, progress):
         project = load_project(args.project)
         if args.workers is not None:
             project["workers"] = args.workers
+        _apply_tcs_uncertainty_args(project, args)
         if any(v is not None for v in (args.sample_height, args.sample_material, args.sample_density)):
             project["sample"] = _apply_sample_overrides(
                 project["geometry"], project["sample"],
