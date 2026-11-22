@@ -56,3 +56,5 @@ EFFTRAN_4.9_MEFFTRAN_1.8_Bug_Report_for_Author.docx
 *.cer
 *.crt
 publisher/official_keys/*.pem
+
+CLAUDE.md
