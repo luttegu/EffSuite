@@ -344,24 +344,27 @@ def generate_attenuation(definition, *, cancel=None, timeout=60, progress=None) 
 # ---------------------------------------------------------------------------
 
 def default_library(geometry=None) -> Path:
-    """The laboratory data folder where new materials are saved by default.
+    """The user's data folder where new materials are saved by default.
 
     Same folder as the rest of EffSuite uses (see paths.get_data_dir), so a
     material created here is found by the next calculation.
     """
-    from .paths import get_data_dir, get_effsuite_root
-    return get_data_dir() or get_effsuite_root() / "Data"
+    from .paths import get_data_dir
+    return get_data_dir()
 
 
-def _new_library(staged: Path, base: Path) -> None:
-    """Fill a new data folder with a copy of the base data (bundled or chosen)."""
+def _new_library(staged: Path, base: Path | None) -> None:
+    """Set up a new data folder: Composition and Material, plus a copy of the
+    base data when one is chosen (the bundled originals are never copied:
+    they are always available from the program itself)."""
     staged.mkdir()
-    for folder in ("Composition", "Material", "Decay_Data", "Material_Metadata"):
-        if (base / folder).is_dir():
-            shutil.copytree(base / folder, staged / folder)
-    for name in ("param.txt", "zzaa.txt", "kordaten.txt"):
-        if (base / name).is_file():
-            shutil.copyfile(base / name, staged / name)
+    if base is not None:
+        for folder in ("Composition", "Material", "Decay_Data", "Material_Metadata"):
+            if (base / folder).is_dir():
+                shutil.copytree(base / folder, staged / folder)
+        for name in ("param.txt", "zzaa.txt", "kordaten.txt"):
+            if (base / name).is_file():
+                shutil.copyfile(base / name, staged / name)
     (staged / "Composition").mkdir(parents=True, exist_ok=True)
     (staged / "Material").mkdir(parents=True, exist_ok=True)
 
@@ -371,8 +374,9 @@ def create_material(definition, library=None, *, geometry="cylindrical", base_di
     """Calculate a material's attenuation table and save its three files.
 
     ``library`` is the data folder (default: default_library()). A new or
-    empty folder is first filled with a copy of the base data. Existing
-    materials are only replaced when ``overwrite`` is True.
+    empty folder is created with Composition and Material (and a copy of
+    ``base_directory`` when given). Existing materials, including the bundled
+    originals, are only replaced (shadowed) when ``overwrite`` is True.
     """
     d = validate_composition(definition)
     if library is None:
@@ -381,11 +385,19 @@ def create_material(definition, library=None, *, geometry="cylindrical", base_di
     # An existing but empty folder (e.g. the Data folder made by the installer)
     # is set up exactly like a folder that does not exist yet.
     is_new_library = not library.exists() or not any(library.iterdir())
-    if not is_new_library and not all((library / folder).is_dir() for folder in ("Composition", "Material")):
-        raise CoincidenceError("The data folder must contain Composition and Material directories")
+    if not is_new_library:
+        # A data folder that holds other things (Detector, Calibration…) but no
+        # materials yet simply gets its Composition and Material subfolders.
+        for folder in ("Composition", "Material"):
+            try:
+                (library / folder).mkdir(exist_ok=True)
+            except OSError as exc:
+                raise CoincidenceError(f"Cannot create {library / folder}: {exc}") from exc
     name_taken = any((library / folder / (d["name"] + ".txt")).exists() for folder in ("Composition", "Material"))
     if not overwrite and not is_new_library and name_taken:
         raise CoincidenceError("Material name already exists; save under a new name to preserve the original")
+    if not overwrite and any((COMMON_DATA / folder / (d["name"] + ".txt")).exists() for folder in ("Composition", "Material")):
+        raise CoincidenceError("This is the name of a bundled original material; choose a new material name")
 
     raw, metadata = generate_attenuation(d, cancel=cancel, progress=progress)
     library.parent.mkdir(parents=True, exist_ok=True)
@@ -394,7 +406,7 @@ def create_material(definition, library=None, *, geometry="cylindrical", base_di
         # at the end, so a failure never leaves a half-made library behind.
         staged = Path(temporary) / "library"
         if is_new_library:
-            _new_library(staged, Path(base_directory) if base_directory else COMMON_DATA)
+            _new_library(staged, Path(base_directory) if base_directory else None)
             target = staged
         else:
             target = library

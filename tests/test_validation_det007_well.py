@@ -13,6 +13,9 @@ from effsuite.spatial_summing import (LocalEfficiencies, Quadrature, integrated_
                                       prepare_local, required_energies)
 from effsuite.suite import run_project, validate_project
 
+# Laboratory materials of this validation case (not original EFFTRAN materials, so not bundled).
+MATERIALS = Path(__file__).parent/"data"/"materials"
+
 DET007 = [72.0, 69.0, 0.7, 25.5, 43.0, "Ge", "aluminium"]
 STANDARD = [17.0, 20.75, 1.5, 1.5, 10.0, "water", "Plastic_vial_det07"]
 SAMPLE = [17.0, 58.46, 1.5, 1.5, 10.0, "water", "Plastic_vial_det07"]
@@ -52,7 +55,7 @@ class Det007MonteCarloValidation(unittest.TestCase):
                        for e, eff in sorted({row[1]: row[4] for row in MC}.items())]
         project = {"schema_version": 1, "geometry": "well", "task": "both", "detector": DET007,
                    "standard": STANDARD, "sample": SAMPLE, "calibration": calibration,
-                   "nuclides": list(CASCADES), "workers": 0}
+                   "nuclides": list(CASCADES), "workers": 0, "data_directory": str(MATERIALS)}
         cls.result = run_project(project, Path(cls.tmp.name)/"det007")
 
     @classmethod
@@ -116,9 +119,9 @@ class WellBugRegressions(unittest.TestCase):
                 folder = Path(folder)
                 (folder/"detector.txt").write_text("\n".join(map(str, detector))+"\n")
                 (folder/"source.txt").write_text("\n".join(map(str, SAMPLE))+"\n")
-                fortran = prepare_local(COMMON_DATA, folder, energies, Quadrature(3, 4, 8, 16))
+                fortran = prepare_local(MATERIALS, folder, energies, Quadrature(3, 4, 8, 16))
                 with patch.dict("os.environ", {"EFFSUITE_PYTHON_RAYTRACE": "1"}):
-                    python = prepare_local(COMMON_DATA, folder, energies, Quadrature(3, 4, 8, 16))
+                    python = prepare_local(MATERIALS, folder, energies, Quadrature(3, 4, 8, 16))
                 for name in ("peak", "total", "pair_miss", "pair_single_peak"):
                     np.testing.assert_allclose(getattr(fortran, name), getattr(python, name), rtol=1e-12, atol=0, err_msg=name)
                 self.assertEqual(fortran.metadata["probability_saturation_count"], python.metadata["probability_saturation_count"])
@@ -129,7 +132,7 @@ class WellBugRegressions(unittest.TestCase):
         (folder/"detector.txt").write_text("\n".join(map(str, DET007))+"\n")
         (folder/"source.txt").write_text("\n".join(map(str, source))+"\n")
         energies = np.asarray([30.4, 81., 100., 356., 511., 1173.2, 1274.5])
-        return prepare_local(COMMON_DATA, folder, energies, order)
+        return prepare_local(MATERIALS, folder, energies, order)
 
     def test_bug2_wide_vial_has_no_probability_saturation(self):
         local = self.local([24.0, 58.46, 1.5, 1.5, 10.0, "water", "Plastic_vial_det07"])
@@ -237,8 +240,8 @@ holder_material = copper
             (folder_h / "source.txt").write_text("\n".join(map(str, STANDARD)) + "\n")
 
             energies = np.array([122.06, 661.66, 1173.23, 1332.49])
-            loc_no_h = prepare_local(COMMON_DATA, folder_no_h, energies, Quadrature(2, 2, 4, 8))
-            loc_h = prepare_local(COMMON_DATA, folder_h, energies, Quadrature(2, 2, 4, 8))
+            loc_no_h = prepare_local(MATERIALS, folder_no_h, energies, Quadrature(2, 2, 4, 8))
+            loc_h = prepare_local(MATERIALS, folder_h, energies, Quadrature(2, 2, 4, 8))
 
             self.assertEqual(loc_h.metadata["probability_saturation_count"], 0)
             self.assertLessEqual(loc_h.metadata["maximum_unsaturated_total"], 1.0)

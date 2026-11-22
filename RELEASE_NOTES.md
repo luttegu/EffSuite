@@ -1,5 +1,26 @@
 # Release Notes
 
+## EffSuite 0.3.2 (November 2026)
+
+The engines and the results for the same inputs are unchanged from 0.3.1.
+
+- **Only the original materials are bundled.** The program now installs the 20 materials of the EFFTRAN 5.0 and MEFFTRAN 1.9 distributions (CLYC, CZT, CsI, Ge, LaBr3, NaI, air, aluminium, beryllium, cellulose, copper, heavy, iron, lead, plexiglass, polystyrene, silica, soil, vacuum, water). The 51 other materials of earlier versions (laboratory matrices, `Plastic_vial`, `HeavyWater`, `polyethylene`…) are removed: **copy them into your data folder** if your models use them (`HeavyWater` = the original `heavy`).
+  - Each user keeps their own materials and models in **their data folder** (default `C:\GENIE2K\EffSuite\Data`). Search order: project data folder, default data folder, legacy `Documents\EffSuite\Data`, bundled originals.
+  - **New: choose the default data folder.** GUI **Tools → 📁 Default Data Folder…** / **↺ Reset Default Data Folder**; CLI `config` (show), `config --data-dir DIR`, `config --reset-data-dir`. Saved in `%APPDATA%\EffSuite\settings.json`; the `EFFSUITE_DATA` environment variable takes precedence. The `Composition` and `Material` subfolders are created as needed, also in an existing data folder that had none.
+  - A new material library no longer receives a copy of the bundled materials (use `--base-data` to copy a folder explicitly). Creating a material with the name of an original asks before shadowing it.
+  - Well runs and the spatial model now find materials in every data folder, not only in the project's.
+  - The GUI Load / Store model and calibration dialogs open in the data folder in use (`Detector`, `Sample`, `Standard`, `Calibration`), not always in `<EffSuite root>\Data`. The top bar shows the data folder in use.
+  - The bundled well example models use `polystyrene` instead of `Plastic_vial`; the default new-source materials are `water` / `polystyrene`.
+  - Tests run with an isolated, empty data folder; the two laboratory materials needed by the validation cases are in `tests/data/materials`.
+
+- **Material Editor in its own window.** The Material tab is replaced by a separate, non-modal window, so you can create or modify a material while filling in the Detector and Standard & Sample pages.
+  - Open it with the new **🧪 Materials…** button on the Detector and Standard & Sample pages, with **Tools → Material Editor…**, or with **✏️ Edit** next to a material field (which loads that material).
+  - **✔ Apply** (formerly "Create Material and Attenuation Table") runs XCOM and updates every material list at once. When the window was opened with **✏️ Edit**, the material is selected in that field, and for a source material its density is filled in, also when an existing material is overwritten under the same name. The window shows which field Apply will update, and stays open.
+  - What you type in the window is kept across geometry changes. Apply is unavailable while a calculation runs. Closing the main window closes the editor.
+- **Source tab renamed "Standard & Sample"** (just **"Sample"** with True Coincidence Summing Only, where the Standard is not needed), with the Standard column first, as in the original EFFTRAN.
+  - With **True Coincidence Summing Only**, the Standard column (and the Standard choice in the geometry preview) is hidden: the summing factors need only the detector and the sample. The page title and the **Next** button say "Sample", and the Standard values are kept for when you switch back to a workflow with efficiency transfer.
+- Documentation updated: new "Where materials are stored" section in the Materials guide, the `config` command in the CLI guide, the data folder in the User Guide, the bundled well models in Changes from the Originals, and the new window and tab name throughout; test count now 166 (17 modules).
+
 ## EffSuite 0.3.1 (November 2026)
 
 The EFFTRAN and MEFFTRAN Fortran engines and all summing factors are unchanged from 0.3.0.

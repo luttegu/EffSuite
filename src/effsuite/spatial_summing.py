@@ -31,7 +31,7 @@ import tempfile
 import threading
 import time
 
-from .model_io import ASSETS, COMMON_DATA
+from .model_io import ASSETS, COMMON_DATA, find_material_file
 from .parallel_coincidence import CoincidenceError, CalculationCancelled, StopSignal, run_supervised, stderr_tail
 
 
@@ -162,13 +162,14 @@ def _xcom_table(installation: Path, name: str, density_override: float | None = 
     total with coherent, total without coherent (the legacy attenuation)."""
     comp_path = installation / "Composition" / (name+".txt")
     if not comp_path.is_file():
-        comp_path = COMMON_DATA / "Composition" / (name+".txt")
+        # The user's own data folders, then the bundled original materials.
+        comp_path = find_material_file(name, "Composition", installation) or COMMON_DATA / "Composition" / (name+".txt")
     density = float(comp_path.read_text().split()[0])
     if density_override is not None and math.isfinite(float(density_override)) and float(density_override) > 0:
         density = float(density_override)
     mat_path = installation / "Material" / (name+".txt")
     if not mat_path.is_file():
-        mat_path = COMMON_DATA / "Material" / (name+".txt")
+        mat_path = find_material_file(name, "Material", installation) or COMMON_DATA / "Material" / (name+".txt")
     rows = []
     for line in mat_path.read_text(encoding="cp1252").splitlines():
         try:
@@ -776,7 +777,8 @@ def prepare_local(installation: Path, prepared: Path, energies: np.ndarray,
     for name in material_names:
         for category in ("Material", "Composition"):
             filename = category+"/"+name+".txt"
-            fpath = installation/filename if (installation/filename).is_file() else COMMON_DATA/filename
+            fpath = installation/filename if (installation/filename).is_file() else (
+                find_material_file(name, category, installation) or COMMON_DATA/filename)
             hashes[filename] = sha256(fpath.read_bytes()).hexdigest()
     local.metadata["input_sha256"] = {"detector.txt": sha256(detector_raw).hexdigest(),
                                       "source.txt": sha256(source_raw).hexdigest(), **hashes}

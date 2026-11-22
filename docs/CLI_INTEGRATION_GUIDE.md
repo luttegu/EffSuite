@@ -51,7 +51,7 @@ EffSuite_CLI.exe cylinder ^
   --sample-density 1.000 ^
   --sample-material "water" ^
   --calibration "C:\GENIE2K\CAMFILES\Standard.CAL" ^
-  --library "C:\GENIE2K\CAMFILES\NUTECH.NLB" ^
+  --library "C:\GENIE2K\CAMFILES\LIBRARY.NLB" ^
   --output-cal "C:\Calculations\Job123\Sample_transferred.CAL" ^
   --output-nlb "C:\Calculations\Job123\Sample_corrected.NLB" ^
   --out "C:\Calculations\Job123\Results" ^
@@ -84,7 +84,7 @@ EffSuite_CLI.exe well ^
   --sample-height 32.50 ^
   --sample-density 1.000 ^
   --calibration "C:\GENIE2K\CAMFILES\Well_Standard.CAL" ^
-  --library "C:\GENIE2K\CAMFILES\NUTECH.NLB" ^
+  --library "C:\GENIE2K\CAMFILES\LIBRARY.NLB" ^
   --output-cal "C:\Calculations\Job125\Well_transferred.CAL" ^
   --output-nlb "C:\Calculations\Job125\Well_corrected.NLB" ^
   --out "C:\Calculations\Job125\Results" ^
@@ -135,7 +135,7 @@ EffSuite_CLI.exe doctor
 Prints a machine-readable JSON object. The exit code is 0 when every engine program, XCOM and the required Python packages (NumPy, Matplotlib, xlrd) are present, otherwise 1:
 ```json
 {
-  "version": "0.3.1",
+  "version": "0.3.2",
   "python": "3.14.10 (...)",
   "interpreter": "C:\\...\\python.exe",
   "dependencies": { "numpy": true, "matplotlib": true, "xlrd": true, "PySide6": true },
@@ -158,6 +158,7 @@ Prints a machine-readable JSON object. The exit code is 0 when every engine prog
 | `models cylinder\|marinelli\|well` | List the available detector, sample, standard and material names. |
 | `plot-geometry --geometry … --detector … --sample … --out FILE` | Draw the dimensioned cross-section (PNG/PDF/SVG). |
 | `material …` | Create a material and its XCOM attenuation table (see [MATERIALS.md](MATERIALS.md)). |
+| `config [--data-dir DIR \| --reset-data-dir]` | Show the data folders in use, or save / reset the default data folder (your own materials and models). The `EFFSUITE_DATA` environment variable takes precedence. |
 | `gui` | Open the desktop interface. |
 
 Run any command with `--help` for its full option list.
@@ -168,6 +169,7 @@ Run any command with `--help` for its full option list.
 
 | Argument | Type / Format | Description |
 | :--- | :--- | :--- |
+| `--data-dir` | String (path) | Data folder for this run (materials and models); searched before your default data folder (see `config`) and the bundled originals. |
 | `--detector` | String (path or name) | Detector model file path (`.txt`) or name matching a file in `Data/Detector`. |
 | `--sample` | String (path or name) | Sample geometry file path (`.txt`) or name in `Data/Sample`. |
 | `--standard` | String (path or name) | Standard reference geometry file path (`.txt`) or name in `Data/Standard`. Needed, together with `--calibration`, for an efficiency transfer. |
@@ -181,7 +183,7 @@ Run any command with `--help` for its full option list.
 | `--output-ctf` | String (path) | Target file path for the summing-corrected Genie certificate (`.CTF`). |
 | `--sample-height` | Float (mm) | **Dynamic override**: Sample filling height in mm. |
 | `--sample-density`| Float (g/cm³) | **Dynamic override**: Sample bulk density. Sets line 8 of the source model (`rho`); the engines scale the attenuation $\mu(E)$ by $\rho / \rho_0$. `Composition/*.txt` files are not changed. |
-| `--sample-material`| String | **Dynamic override**: Matrix material name (must exist in `Data/Composition` or `assets/common/Composition`). |
+| `--sample-material`| String | **Dynamic override**: Matrix material name (must exist in `Composition` of the `--data-dir`, of your data folder, or among the bundled original materials). |
 | `--sample-diameter`| Float (mm) | **Dynamic override**: Outer container diameter in mm. |
 | `--sample-gap` | Float (mm) | **Dynamic override**: Endcap/crystal-to-container face distance in mm. |
 | `--out` | String (directory) | Destination directory for audit manifests, tables, and logs. Default: `<user folder>\Results\<timestamp>`, where the user folder is `C:\GENIE2K\EffSuite`, or `Documents\EffSuite` when that cannot be written (`EFFSUITE_ROOT` overrides both). |

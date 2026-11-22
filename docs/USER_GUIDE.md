@@ -1,4 +1,4 @@
-# EffSuite User Guide — v0.3.1
+# EffSuite User Guide — v0.3.2
 
 > **Spectrometry software.** EffSuite reads and writes **Canberra / Mirion
 > Genie 2000** files (`.CAL`, `.NLB`, `.CTF`) and **ORTEC GammaVision** files
@@ -28,8 +28,9 @@ software (Genie or GammaVision, detected automatically by default), the
 number of workers (Auto = number of CPUs minus 2), and the data folder.
 
 Then go through the tabs with **Start Guided Setup** and **Next ▶**:
-**Detector → Source → Efficiency → Library / Certificate**. The **Material**
-tab creates new materials (section 7). **📋 Load Built-in Example** fills
+**Detector → Standard & Sample → Efficiency → Library / Certificate**. New
+materials are created in the **Material Editor** window (section 7).
+**📋 Load Built-in Example** fills
 every tab with a working example, and **📂 Open Project…** opens a saved
 project.
 
@@ -40,7 +41,11 @@ project.
   detectors accept optional extended fields (mount cup, mantle and bottom dead
   layers, sample offset); see
   [CHANGES_FROM_ORIGINALS.md, section 2.5](CHANGES_FROM_ORIGINALS.md#25-optional-extended-well-detector-inputs).
-* **Source.** Load or enter the standard and the sample side by side.
+* **Standard & Sample** (named **Sample** with True Coincidence Summing Only). Load or enter the sample and the standard side by
+  side. The standard (reference calibration source) is needed only for
+  efficiency transfer: with **True Coincidence Summing Only** the Standard
+  column is hidden and only the sample is used. Its values are kept and
+  come back when you choose a workflow with efficiency transfer.
   * Both 7-line source files and 8-line source files (with
     `Source density [g/cm³]`) load.
   * Choosing a `Source material` fills the density with the nominal value
@@ -182,7 +187,15 @@ overrides both.
 
 | Folder | Contents |
 |---|---|
-| Data | default location for all inputs: Calibration, Composition, Detector, Material, Standard, NuclideLibrary |
+| Data | your data folder, default location for all inputs: Calibration, Composition, Detector, Material, Sample, Standard, NuclideLibrary |
+
+**Your data folder.** Only the original EFFTRAN / MEFFTRAN materials are
+bundled; your own materials (`Composition`, `Material`) and models
+(`Detector`, `Sample`, `Standard`) go in your data folder. Change it for every
+session with **Tools → 📁 Default Data Folder…** (or `CLI.bat config --data-dir
+<folder>`); **📁 Data Folder…** in the top bar changes it for the current
+project only. The top bar shows the folder in use. See
+[MATERIALS.md](MATERIALS.md#where-materials-are-stored).
 | Projects | default Save/Open project location |
 | Results | one new folder per calculation |
 | Export | default CSV/Genie export location |
@@ -255,17 +268,22 @@ CLI.bat cylinder --detector d.txt --sample s.txt --standard st.txt --calibration
 
 ## 7. Materials
 
-The Material tab, the editable Excel workbook and `CLI.bat material` are
-described in [MATERIALS.md](MATERIALS.md). Generated data folders can be used
+The Material Editor window, the editable Excel workbook and `CLI.bat material` are
+described in [MATERIALS.md](MATERIALS.md). Open the window with
+**🧪 Materials…** on the Detector or Standard & Sample page, with
+**Tools → Material Editor…**, or with **✏️ Edit** next to a material field. It
+does not block the main window. **✔ Apply** creates the material and updates
+the material lists at once. Generated data folders can be used
 for efficiency transfer and summing in all three applications. A density
 change alone needs no new material: edit `Source density [g/cm³]`.
 
 ## 8. Reproducing an original EFFTRAN / MEFFTRAN / WEFFTRAN case
 
 1. Choose the matching application. Load the original detector file in
-   **Detector**, and the original standard and sample files in **Source**.
+   **Detector**, and the original standard and sample files in **Standard & Sample**.
    Cylinder, Marinelli and well formats differ and are checked separately.
-2. Select your original installation's data folder with **📁 Data Folder…**,
+2. Select your original installation's data folder with **📁 Data Folder…**
+   (it then comes before your default data folder and the bundled originals),
    so that the same materials and decay data are used. The material lists
    update, and the result records the data hashes.
 3. Import the same calibration and run.

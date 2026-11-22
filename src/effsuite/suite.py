@@ -33,7 +33,7 @@ from pathlib import Path
 from uuid import uuid4
 
 from . import __version__ as VERSION
-from .model_io import (ASSETS, COMMON_DATA, MODES, canonical_nuclide, mode_name, model_bytes,
+from .model_io import (ASSETS, COMMON_DATA, MODES, canonical_nuclide, material_roots, mode_name, model_bytes,
                        normalize_nuclides, validate_calibration, validate_model)
 from .parallel_coincidence import (CalculationCancelled, CoincidenceError, SharedInputs,
                                    _publish_new, _terminate, calculate_parallel)
@@ -149,33 +149,38 @@ def _stage(stage: str, mode: str, work: Path, stop, timeout: float, progress, pr
 # Data folders and materials
 # ---------------------------------------------------------------------------
 
-def _user_data_directory(project: dict) -> Path | None:
-    """The laboratory data folder used on top of the bundled data, or None.
-
-    The project's own "data_directory" wins; otherwise the default EffSuite
-    data folder is used when it contains a Composition folder. Every part of a
-    run (folder preparation, well model, provenance report) uses this one rule.
+def _user_data_directory(project: dict) -> Path:
+    """The laboratory data folder of a run: the project's own "data_directory",
+    otherwise the user's default data folder (paths.get_data_dir). New
+    attenuation tables are saved there. Every part of a run (folder
+    preparation, well model, provenance report) uses this one rule.
     """
     if project.get("data_directory"):
         return Path(project["data_directory"]).expanduser().resolve()
     from .paths import get_data_dir
-    default = get_data_dir()
-    return default if default and (default / "Composition").is_dir() else None
+    return get_data_dir()
 
 
-def _data_fingerprint(dataset: Path | None, engine_dir: Path) -> dict:
+def _material_roots(project: dict) -> list[Path]:
+    """Material/Composition folders of a run, most specific first (bundled originals last)."""
+    return material_roots(project.get("data_directory"))
+
+
+def _data_fingerprint(roots: list[Path], engine_dir: Path, mode: str) -> dict:
     """SHA-256 of every data file a run uses: bundled Material/Composition files,
-    replaced by the laboratory's files of the same name, plus the engine tables."""
+    replaced by the user's files of the same name (``roots``, most specific
+    first), plus the engine tables."""
     hashes = {}
-    for root in (COMMON_DATA, dataset):
-        if root is None:
-            continue
+    for root in reversed(roots):
         for directory in ("Material", "Composition"):
             for path in sorted((root / directory).glob("*.txt")):
                 hashes[f"{directory}/{path.name}"] = sha256(path.read_bytes()).hexdigest()
     for name in ("zzaa.txt", "param.txt", "kordaten.txt"):
-        if (engine_dir / name).is_file():
-            hashes[name] = sha256((engine_dir / name).read_bytes()).hexdigest()
+        # Same choice as _prepare_folder: the lab's table, else the bundled one.
+        for folder in (engine_dir, ASSETS / mode):
+            if (folder / name).is_file():
+                hashes[name] = sha256((folder / name).read_bytes()).hexdigest()
+                break
     return hashes
 
 
@@ -205,10 +210,20 @@ def _attenuation_table(material: str, comp_file: Path, user_data: Path | None, s
             raise CoincidenceError(f"Material '{material}' is missing from Material and automatic generation failed: {exc}") from exc
         _generated_tables[key] = raw
     raw = _generated_tables[key]
-    if user_data and (user_data / "Material").is_dir():
+    if user_data and not user_data.is_dir():
+        # Only the user's default data folder is created; a missing project folder
+        # (e.g. a path from another PC) is left alone.
+        from .paths import ensure_data_dir, get_data_dir
+        if user_data == get_data_dir():
+            try:
+                ensure_data_dir(user_data)
+            except OSError:
+                pass
+    if user_data and user_data.is_dir():
         target = user_data / "Material" / (material + ".txt")
         if not target.exists():
             try:
+                target.parent.mkdir(exist_ok=True)
                 _publish_new(target, raw)
             except OSError as exc:
                 if progress:
@@ -219,20 +234,19 @@ def _attenuation_table(material: str, comp_file: Path, user_data: Path | None, s
 def _prepare_folder(mode: str, project: dict, destination: Path, source_kind: str, stop=None, progress=None) -> None:
     """Create a working folder with everything the engines read.
 
-    It contains: all bundled materials (replaced by the laboratory's own files
-    of the same name), the engine tables, and the detector and source models
-    under the file names the Fortran programs expect.
+    It contains: the bundled original materials, overlaid by the user's own
+    files (legacy, default, then project data folder), the engine tables, and
+    the detector and source models under the file names the Fortran programs expect.
     """
     destination.mkdir()
     lab_data = _user_data_directory(project)
-    engine_dir = lab_data if (lab_data and (lab_data / "Detector").is_dir()) else ASSETS / mode
+    engine_dir = lab_data if (lab_data / "Detector").is_dir() else ASSETS / mode
 
     for name in ("Material", "Composition"):
-        shutil.copytree(COMMON_DATA / name, destination / name)
-    if lab_data:
-        for name in ("Material", "Composition"):
-            if (lab_data / name).is_dir():
-                shutil.copytree(lab_data / name, destination / name, dirs_exist_ok=True)
+        (destination / name).mkdir()
+        for root in reversed(_material_roots(project)):   # least specific first: later copies win
+            if (root / name).is_dir():
+                shutil.copytree(root / name, destination / name, dirs_exist_ok=True)
     for name in ("zzaa.txt", "param.txt", "kordaten.txt"):
         if (engine_dir / name).is_file():
             shutil.copyfile(engine_dir / name, destination / name)
@@ -737,10 +751,10 @@ def run_project(project: dict, output: Path, *, cancel=None, progress=None) -> d
                   "qualification": "beta_build", "project": project,
                   "efficiency": [], "summing": [], "engine_sha256": {}, "warnings": [], "output_directory": str(output)}
         lab_data = _user_data_directory(project)
-        data_root = lab_data if (lab_data and (lab_data / "Composition").is_dir()) else COMMON_DATA
-        engine_dir = lab_data if (lab_data and (lab_data / "Detector").is_dir()) else ASSETS / mode
-        result["scientific_data_directory"] = str(lab_data or COMMON_DATA)
-        result["scientific_data_sha256"] = _data_fingerprint(lab_data, engine_dir)
+        data_root = lab_data if (lab_data / "Composition").is_dir() else COMMON_DATA
+        engine_dir = lab_data if (lab_data / "Detector").is_dir() else ASSETS / mode
+        result["scientific_data_directory"] = str(lab_data)
+        result["scientific_data_sha256"] = _data_fingerprint(_material_roots(project), engine_dir, mode)
 
         if project["task"] in {"transfer", "both"}:
             _run_transfer(mode, project, work, stop, progress, result)

@@ -4,7 +4,7 @@
 ; =====================================================================
 
 #define MyAppName "EffSuite"
-#define MyAppVersion "0.3.1"
+#define MyAppVersion "0.3.2"
 #define MyAppPublisher "GL"
 #define MyAppURL "https://github.com/luttegu/EffSuite"
 #define MyAppExeName "EffSuite_GUI.exe"
@@ -80,6 +80,9 @@ Name: "addtopath"; Description: "Add EffSuite installation folder to System PATH
 [Dirs]
 Name: "{app}"
 Name: "{app}\Data"
+; The user's own materials (only the original EFFTRAN / MEFFTRAN materials are bundled)
+Name: "{app}\Data\Composition"
+Name: "{app}\Data\Material"
 Name: "{app}\Results"
 
 [Files]

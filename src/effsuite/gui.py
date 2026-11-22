@@ -14,7 +14,8 @@ from PySide6.QtGui import QAction, QFont, QPainter, QPen, QColor, QIcon
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget,
                                QVBoxLayout, QHBoxLayout, QGridLayout, QFormLayout, QGroupBox, QLabel, QLineEdit, QComboBox, QPushButton, QTabWidget, QTableWidget, QTableWidgetItem, QHeaderView, QFileDialog, QMessageBox, QPlainTextEdit, QSpinBox, QDoubleSpinBox, QCheckBox, QSplitter, QScrollArea, QStyledItemDelegate, QFrame, QRadioButton, QButtonGroup, QDialog, QListView)
 
-from .model_io import (COMMON_DATA, MODES, fields, read_model, model_bytes, calibration_rows, normalize_nuclides, default_material_density)
+from .model_io import (COMMON_DATA, MODES, fields, read_model, model_bytes, calibration_rows, normalize_nuclides, default_material_density,
+                       find_material_file, material_names)
 from .suite import VERSION, run_project, validate_project
 from .parallel_coincidence import CalculationCancelled, CoincidenceError
 from . import tcs_uncertainty
@@ -437,7 +438,7 @@ class ModelForm(QWidget):
         grid.setHorizontalSpacing(14)
         grid.setVerticalSpacing(8)
         grid.setContentsMargins(2, 2, 2, 2)
-        materials = sorted(p.stem for p in (COMMON_DATA/"Composition").glob('*.txt'))
+        materials = material_names()
         def_fields = fields(mode, kind, extended=True)
         if kind=="detector":
             if mode=="well":
@@ -505,7 +506,8 @@ class ModelForm(QWidget):
     def modify_material(self, index):
         """Open the material editor for the material chosen in field ``index``."""
         if self.owner and hasattr(self.owner, "open_material_editor_for_input"):
-            self.owner.open_material_editor_for_input(self.inputs[index], return_tab_index=1)
+            label = fields(self.mode, self.kind, extended=True)[index][0]
+            self.owner.open_material_editor_for_input(self.inputs[index], "Detector — "+label)
     def values(self):
         """The detector model as a list, in file order (raises ValueError on bad input)."""
         def_fields = fields(self.mode, self.kind, extended=True)
@@ -571,7 +573,7 @@ class SourceForm(QWidget):
     changed = Signal()
     kind_edited = Signal(str)
     def __init__(self, mode, owner=None):
-        """Forms for the sample and the standard, side by side."""
+        """Forms for the sample and the standard, side by side (standard first, as in the original EFFTRAN)."""
         super().__init__()
         self.mode = mode
         self.owner = owner
@@ -587,14 +589,18 @@ class SourceForm(QWidget):
         hdr_param.setStyleSheet("font-weight:600;color:#475569;padding:6px 4px;background:transparent;")
         g.addWidget(hdr_param, 0, 0)
         self._col_headers = {}
+        self._standard_widgets = []   # everything in the standard column (hidden for summing only)
+        self._grid = g
         for column, (kind, subtitle) in enumerate([("standard", "Standard (Reference)"), ("sample", "Sample (Measured)")], 1):
             hdr = QLabel(f"<b>{subtitle}</b>")
             hdr.setAlignment(Qt.AlignmentFlag.AlignCenter)
             hdr.setStyleSheet("background:#f1f5f9;color:#0f172a;border:1px solid #cbd5e1;border-radius:4px;padding:5px 8px;")
             g.addWidget(hdr, 0, column)
             self._col_headers[kind] = hdr
+            if kind=="standard":
+                self._standard_widgets.append(hdr)
         order = [2, 5, 7, 0, 4, 1, 3, 6] if mode=="marinelli" else [1, 5, 7, 0, 2, 3, 6, 4]
-        materials = sorted(p.stem for p in (COMMON_DATA/"Composition").glob('*.txt'))
+        materials = material_names()
         for row, index in enumerate(order, 1):
             label, unit = fields(mode, "sample")[index]
             g.addWidget(_field_label(label, unit), row, 0)
@@ -630,12 +636,16 @@ class SourceForm(QWidget):
                     cl.addWidget(btn)
                     self.inputs[kind, index] = edit
                     g.addWidget(cell, row, column)
+                    if kind=="standard":
+                        self._standard_widgets.append(cell)
                 else:
                     edit = NumberEdit()
                     edit.setPlaceholderText(f"0.0 {unit}")
                     edit.textEdited.connect(lambda _t, k=kind:(self.kind_edited.emit(k.title()), self.changed.emit()))
                     self.inputs[kind, index] = edit
                     g.addWidget(edit, row, column)
+                    if kind=="standard":
+                        self._standard_widgets.append(edit)
         row = len(order)+1
         self.load_buttons = {}
         self.save_buttons = {}
@@ -650,6 +660,8 @@ class SourceForm(QWidget):
             g.addLayout(bar, row, column)
             self.load_buttons[kind] = load
             self.save_buttons[kind] = save
+            if kind=="standard":
+                self._standard_widgets += [load, save]
         g.setColumnStretch(1, 1)
         g.setColumnStretch(2, 1)
         outer.addWidget(card)
@@ -666,24 +678,20 @@ class SourceForm(QWidget):
                     pass  # name not complete or unknown yet: keep the density already shown
         self.kind_edited.emit(kind.title())
         self.changed.emit()
-    def set_standard_enabled(self, enabled:bool):
-        """Enable the standard form only when an efficiency transfer is done."""
-        for (kind, idx), widget in self.inputs.items():
-            if kind=="standard":
-                widget.setEnabled(enabled)
-        if "standard" in self.load_buttons:
-            self.load_buttons["standard"].setEnabled(enabled)
-        if "standard" in self.save_buttons:
-            self.save_buttons["standard"].setEnabled(enabled)
-        if "standard" in self._col_headers:
-            self._col_headers["standard"].setStyleSheet(
-                "background:#f1f5f9;color:#0f172a;border:1px solid #cbd5e1;border-radius:4px;padding:6px 10px;" if enabled else
-                "background:#f8fafc;color:#94a3b8;border:1px dashed #cbd5e1;border-radius:4px;padding:6px 10px;"
-            )
+    def set_standard_visible(self, visible:bool):
+        """Show the standard column only when an efficiency transfer is done.
+
+        Coincidence summing only needs the sample: the standard column is then
+        hidden (its values are kept and come back with the column).
+        """
+        for widget in self._standard_widgets:
+            widget.setVisible(visible)
+        self._grid.setColumnStretch(1, 1 if visible else 0)
     def modify_material(self, kind, index):
         """Open the material editor for a material of the sample or standard form."""
         if self.owner and hasattr(self.owner, "open_material_editor_for_input"):
-            self.owner.open_material_editor_for_input(self.inputs[kind, index], return_tab_index=2)
+            label = fields(self.mode, "sample")[index][0]
+            self.owner.open_material_editor_for_input(self.inputs[kind, index], kind.title()+" — "+label)
     def values(self, kind):
         """The sample or standard model (``kind``) as a list, in file order."""
         return [form_value(self.inputs[kind, i], kind.title()+" — "+label, unit) for i, (label, unit) in enumerate(fields(self.mode, kind))]
@@ -848,8 +856,7 @@ class MainWindow(QMainWindow):
         self.project_path = None
         self.setWindowIcon(get_app_icon())
         from .paths import get_data_dir
-        default_data = get_data_dir()
-        self.data_directory = str(default_data) if default_data else None
+        self.data_directory = str(get_data_dir())   # the user's own materials and models
         self.transfer_result = None
         self.summing_result = None
         self.library_file = None
@@ -859,7 +866,6 @@ class MainWindow(QMainWindow):
         self.calibration_template = None
         self.last_task = None
         self._target_material_input = None
-        self._return_tab_index = None
         self.btn_export_cal_on_sum = {}
         # TCS uncertainty inputs (kept here because the tabs are rebuilt on geometry changes).
         self.tcs_settings = tcs_uncertainty.validate_settings(None)
@@ -879,6 +885,13 @@ class MainWindow(QMainWindow):
         outer.setSpacing(6)
         self.setCentralWidget(body)
         self._build_top_bar(outer)
+        # The material editor is a separate, non-modal window. It is created
+        # once here (not with the tabs, which are rebuilt on geometry changes),
+        # so a material being typed survives a geometry change.
+        from .material_gui import MaterialEditor
+        self.material_editor = MaterialEditor(self)
+        self.material_editor.setStyleSheet(APP_STYLESHEET)
+        self.material_editor.setWindowIcon(get_app_icon())
         self._build_tabs_and_log(outer)
         self._build_menus()
         self.workers.valueChanged.connect(self.changed)
@@ -926,11 +939,13 @@ class MainWindow(QMainWindow):
         sep_v.setStyleSheet("color:#cbd5e1;")
         top.addWidget(sep_v)
         self.data_button = QPushButton("📁 Data Folder…")
-        self.data_button.setToolTip("Select the folder containing Composition, Material, Detector, Standard, and NuclideLibrary")
+        self.data_button.setToolTip("Data folder of this session/project (your own Composition, Material, Detector, Sample, Standard).\n"
+                                    "The original EFFTRAN / MEFFTRAN materials are always available.\n"
+                                    "To change the default for every session: Tools → Default Data Folder…")
         self.data_button.clicked.connect(self.choose_data)
         top.addWidget(self.data_button)
-        self.data_label = QLabel("Data library: "+(self.data_directory if self.data_directory else "bundled original files"))
-        self.data_label.setToolTip(self.data_directory if self.data_directory else "Bundled original files")
+        self.data_label = QLabel()
+        self._show_data_directory()
         self.data_label.setStyleSheet("color:#59677a;font-size:9pt;border:none;background:transparent;")
         top.addWidget(self.data_label, 1)
         sep_v2 = QFrame()
@@ -1030,6 +1045,17 @@ class MainWindow(QMainWindow):
             action = QAction(label, self)
             action.triggered.connect(slot)
             menu.addAction(action)
+
+        tools_menu = self.menuBar().addMenu("Tools")
+        action = QAction("🧪 Material Editor…", self)
+        action.triggered.connect(lambda:self.open_material_editor_for_input(None))
+        tools_menu.addAction(action)
+        tools_menu.addSeparator()
+        for label, slot in [("📁 Default Data Folder…", self.choose_default_data),
+                            ("↺ Reset Default Data Folder", self.reset_default_data)]:
+            action = QAction(label, self)
+            action.triggered.connect(slot)
+            tools_menu.addAction(action)
 
         help_menu = self.menuBar().addMenu("Help")
         for label, topic in [
@@ -1151,7 +1177,7 @@ class MainWindow(QMainWindow):
         page.layout().addWidget(foot, 0)
     # ---------------------------------------------------------------- guided workflow
     STEP_KEYS = ("welcome", "detector", "source", "efficiency", "ctf", "nlb")
-    STEP_TITLES = {"welcome":"Choose calculation", "detector":"Detector", "source":"Source (Standard / Sample)",
+    STEP_TITLES = {"welcome":"Choose calculation", "detector":"Detector", "source":"Standard & Sample",
                  "efficiency":"Efficiency (.CAL / .EFT)", "ctf":"Certificate (.CTF)", "nlb":"Nuclide library (.NLB / .LIB)"}
     RUN_LABELS = {"transfer":"▶ Run Efficiency Transfer", "summing":"▶ Run Coincidence Summing", "both":"🚀 Run Complete Analysis"}
     def tab_index(self, key):
@@ -1230,10 +1256,17 @@ class MainWindow(QMainWindow):
         for key in ("efficiency", "ctf", "nlb"):
             self.tabs.setTabVisible(self.tab_index(key), key in keys)
         total = len(keys)-1
+        if "source" in self._banners:
+            label, _ = self._banners["source"]
+            self._banners["source"] = (label, "Sample geometry (Standard not needed for coincidence summing only)"
+                                       if self.workflow=="summing" else "Standard & Sample geometries")
+            self.tabs.setTabText(self.tab_index("source"),
+                                 "Sample" if self.workflow=="summing" else "Standard && Sample")   # "&&" shows a single "&"
         for i, key in enumerate(keys[1:], 1):
             if key in self._banners:
                 label, title = self._banners[key]
                 label.setText(f"<b>STEP {i} of {total}: {title}</b>")
+        summing_only = self.workflow=="summing"
         for key, button in self._nav_next.items():
             if key not in keys:
                 continue
@@ -1243,7 +1276,9 @@ class MainWindow(QMainWindow):
                 button.setStyleSheet("font-weight:600;background:#16a34a;color:#ffffff;"
                                      "border:1px solid #15803d;padding:7px 18px;border-radius:5px;")
             else:
-                button.setText(f"Next: {self.STEP_TITLES[keys[pos+1]]} ▶")
+                following = keys[pos+1]
+                title = "Sample" if following=="source" and summing_only else self.STEP_TITLES[following]
+                button.setText(f"Next: {title.replace('&', '&&')} ▶")   # "&&" shows a single "&"
                 button.setStyleSheet("font-weight:600;background:#2563eb;color:#ffffff;"
                                      "border:1px solid #1d4ed8;padding:7px 16px;border-radius:5px;")
         for value, radio in self._workflow_radios.items():
@@ -1259,7 +1294,10 @@ class MainWindow(QMainWindow):
         self.needs_label.setText(self.needs_text())
         self.source_hint.setVisible(self.workflow=="summing")
         if hasattr(self, "source_form"):
-            self.source_form.set_standard_enabled(self.workflow!="summing")
+            self.source_form.set_standard_visible(self.workflow!="summing")
+        for diagram in (getattr(self, "diagram", None), getattr(self, "source_diagram", None)):
+            if diagram is not None:
+                diagram.live_widget.set_standard_available(self.workflow!="summing")
         if getattr(self, "btn_export_sum_on_eff", None) is not None:
             self.btn_export_sum_on_eff.setVisible(self.workflow=="both")
             self.btn_export_sum_on_eff.setText("💾 Export Corrected "+("Library (.NLB / .LIB)…" if self.summing_source=="nlb" else "Certificate (.CTF)…"))
@@ -1337,9 +1375,9 @@ class MainWindow(QMainWindow):
         self._build_source_tab(mode)
         self._build_efficiency_tab()
         self._build_summing_tabs()
-        from .material_gui import MaterialEditor
-        self.material_editor = MaterialEditor(self)
-        self.tabs.addTab(self.material_editor, "Material")
+        # The old form fields are gone: "Apply" in the material window has no target any more.
+        self._target_material_input = None
+        self.material_editor.set_target(None)
         self._building = False
         self.apply_workflow()
         self.refresh_geometry()
@@ -1440,7 +1478,8 @@ class MainWindow(QMainWindow):
         load.clicked.connect(partial(self.load_model, "detector"))
         save.clicked.connect(partial(self.store_model, "detector"))
         layout.addWidget(self._step_banner("detector", "Detector geometry & materials",
-                                           input_req="Data\\Detector\\*.txt", extra_widgets=[load, save]))
+                                           input_req="Data\\Detector\\*.txt",
+                                           extra_widgets=[self._materials_button(), load, save]))
         det_split = QHBoxLayout()
         det_split.setSpacing(10)
         self.detector_form = ModelForm(mode, "detector", owner=self)
@@ -1451,11 +1490,21 @@ class MainWindow(QMainWindow):
         layout.addLayout(det_split, 1)
         self._attach_footer(page, self._nav_row("detector"))
         self.tabs.addTab(page, "Detector")
+    def _materials_button(self):
+        """Page button that opens the material editor window (no target field)."""
+        button = QPushButton("🧪 Materials…")
+        button.setToolTip("Open the Material Editor in a separate window (create or modify a material "
+                          "while you keep filling in this page)")
+        button.setStyleSheet("font-weight:600;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;padding:4px 10px;")
+        button.clicked.connect(lambda:self.open_material_editor_for_input(None))
+        return button
     def _build_source_tab(self, mode):
-        """The Source page: standard and sample forms and their preview."""
+        """The Standard & Sample page: sample and standard forms and their preview."""
         page, layout = self._page("Source Geometries — Standard & Sample")
-        layout.addWidget(self._step_banner("source", "Source geometries (Standard & Sample)", input_req="Data\\Standard\\*.txt"))
-        self.source_hint = QLabel("ℹ Coincidence summing only: Standard column disabled.")
+        layout.addWidget(self._step_banner("source", "Standard & Sample geometries", input_req="Data\\Standard\\*.txt",
+                                           extra_widgets=[self._materials_button()]))
+        self.source_hint = QLabel("ℹ Coincidence summing only: only the Sample is needed. The Standard (reference "
+                                  "calibration source) is used for efficiency transfer only and is hidden.")
         self.source_hint.setStyleSheet("color:#1e40af;background:#eff6ff;border:1px solid #bfdbfe;border-radius:4px;padding:4px 8px;")
         layout.addWidget(self.source_hint)
         src_split = QHBoxLayout()
@@ -1471,7 +1520,7 @@ class MainWindow(QMainWindow):
             self.source_form.load_buttons[kind].clicked.connect(partial(self.load_model, kind))
             self.source_form.save_buttons[kind].clicked.connect(partial(self.store_model, kind))
         self._attach_footer(page, self._nav_row("source"))
-        self.tabs.addTab(page, "Source")
+        self.tabs.addTab(page, "Standard && Sample")   # "&&" shows a single "&"
     def _build_efficiency_tab(self):
         """The Efficiency page: reference calibration table, chart and export buttons."""
         page, layout = self._page("Efficiency Transfer")
@@ -1708,7 +1757,7 @@ class MainWindow(QMainWindow):
         self.calibration_template = None
         self.last_task = None
         self.data_directory = data_dir
-        self.data_label.setText("Data library: "+(self.data_directory or "bundled original files"))
+        self._show_data_directory()
         self.refresh_materials()
         if saved_detector is not None:
             try:
@@ -1719,26 +1768,86 @@ class MainWindow(QMainWindow):
         if self.current_mode() == "well":
             self.status.setText("⚠️ WEFFTRAN (Well detector): The physics and spatial summing model is currently experimental / not fully tested. Verify results.")
             self.log.appendPlainText("[NOTICE] WEFFTRAN geometry selected. Note: WEFFTRAN spatial summing & ray-tracing updates are not fully laboratory qualified yet. Users must independently verify all results.")
-    def choose_data(self, *unused):
-        """Choose the laboratory data folder (with Material and Composition)."""
-        default_dir = documents("Data") if (documents("Data")).is_dir() else documents()
-        filename = QFileDialog.getExistingDirectory(self, "EFFTRAN / MEFFTRAN / WEFFTRAN data folder", str(default_dir))
+    def data_folder(self, sub=""):
+        """A subfolder (Detector, Sample, Calibration…) of the data folder in use (created if needed)."""
+        from .paths import get_data_dir
+        path = Path(self.data_directory or get_data_dir()) / sub
+        try:
+            path.mkdir(parents=True, exist_ok=True)
+        except OSError:
+            return documents()
+        return path
+    def _show_data_directory(self):
+        """Show the session's data folder in the top bar."""
+        from .paths import get_data_dir
+        folder = self.data_directory or str(get_data_dir())
+        default = Path(folder) == get_data_dir()
+        self.data_label.setText("Data folder: "+folder+("" if default else "  (project)"))
+        self.data_label.setToolTip(folder+"\n\nYour own materials (Composition, Material) and models are read from and saved here;\n"
+                                   "the original EFFTRAN / MEFFTRAN materials are bundled with the program.")
+    def _pick_data_folder(self, title):
+        """Ask for a data folder; create its Composition and Material subfolders. None when cancelled."""
+        from .paths import ensure_data_dir, get_data_dir
+        start = self.data_directory or str(get_data_dir())
+        filename = QFileDialog.getExistingDirectory(self, title, start if Path(start).is_dir() else str(documents()))
         if not filename:
+            return None
+        folder = Path(filename)
+        if not all((folder/sub).is_dir() for sub in ("Composition", "Material")):
+            answer = QMessageBox.question(self, title, f"{folder}\n\nhas no Composition / Material folders yet. Create them?",
+                                          QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+            if answer != QMessageBox.StandardButton.Yes:
+                return None
+            try:
+                ensure_data_dir(folder)
+            except OSError as exc:
+                self.error(f"Cannot create the data folder: {exc}")
+                return None
+        return folder
+    def choose_data(self, *unused):
+        """Choose the data folder of this session / project (with Material and Composition)."""
+        folder = self._pick_data_folder("Data folder for this project")
+        if folder is None:
             return
-        if not any((Path(filename)/folder).is_dir() for folder in ("Material", "Composition")):
-            self.error("Choose the folder containing Material and Composition.")
-            return
-        self.data_directory = filename
-        self.data_label.setText("Data library: "+filename)
+        self.data_directory = str(folder)
+        self._show_data_directory()
         self.refresh_materials()
         self.changed()
+    def choose_default_data(self, *unused):
+        """Choose the default data folder, saved for every next session (and the CLI)."""
+        from .paths import data_dir_source, get_data_dir, set_data_dir
+        if data_dir_source() == "environment":
+            self.error(f"The default data folder is set by the EFFSUITE_DATA environment variable:\n{get_data_dir()}\n\n"
+                       "Remove that variable to choose it here.")
+            return
+        folder = self._pick_data_folder("Default data folder (your own materials and models)")
+        if folder is None:
+            return
+        try:
+            set_data_dir(folder)
+        except OSError as exc:
+            self.error(f"Cannot save the setting: {exc}")
+            return
+        self.data_directory = str(folder)
+        self._show_data_directory()
+        self.refresh_materials()
+        self.append_log(f"Default data folder set to {folder}")
+    def reset_default_data(self, *unused):
+        """Go back to the built-in default data folder (<EffSuite root>\\Data)."""
+        from .paths import set_data_dir
+        try:
+            folder = set_data_dir(None)
+        except OSError as exc:
+            self.error(f"Cannot save the setting: {exc}")
+            return
+        self.data_directory = str(folder)
+        self._show_data_directory()
+        self.refresh_materials()
+        self.append_log(f"Default data folder reset to {folder}")
     def refresh_materials(self):
-        """Fill every material list with the bundled and the laboratory materials."""
-        folder = Path(self.data_directory) if self.data_directory else COMMON_DATA
-        comp_dir = folder/"Composition"
-        names = set(p.stem for p in comp_dir.glob("*.txt")) if comp_dir.is_dir() else set()
-        names |= set(p.stem for p in (COMMON_DATA/"Composition").glob("*.txt"))
-        sorted_names = sorted(names)
+        """Fill every material list with the user's and the bundled original materials."""
+        folder = Path(self.data_directory) if self.data_directory else None
+        sorted_names = material_names(self.data_directory)
         for edit in list(self.detector_form.inputs.values())+list(self.source_form.inputs.values()):
             if isinstance(edit, QComboBox):
                 current = edit.currentText()
@@ -1750,40 +1859,57 @@ class MainWindow(QMainWindow):
                 edit.blockSignals(False)
         if self.data_directory:
             self.material_editor.library.setText(str(folder))
-    def open_material_editor_for_input(self, target_input, return_tab_index=None):
-        """Open the material editor for one material field, then come back."""
+    def open_material_editor_for_input(self, target_input=None, target_description=None):
+        """Show the material editor window (non-modal).
+
+        With ``target_input`` (a material field of a form), the field's material
+        is loaded and "Apply" selects the new material in that field. Without
+        it, the window opens with its current content and Apply only updates
+        the material lists.
+        """
         from .materials import load_composition
+        editor = self.material_editor
         self._target_material_input = target_input
-        self._return_tab_index = return_tab_index
-        mat_name = target_input.currentText().strip() if target_input else ""
-        comp_file = None
-        search_dirs = []
-        if self.data_directory:
-            search_dirs.append(Path(self.data_directory)/"Composition")
-        search_dirs.append(COMMON_DATA/"Composition")
-        if mat_name:
-            for sdir in search_dirs:
-                candidate = sdir/f"{mat_name}.txt"
-                if candidate.is_file():
-                    comp_file = candidate
-                    break
-        if comp_file is not None:
+        editor.set_target(target_description if target_input is not None else None)
+        if target_input is not None:
+            mat_name = target_input.currentText().strip()
+            comp_file = find_material_file(mat_name, "Composition", self.data_directory) if mat_name else None
+            if comp_file is not None:
+                try:
+                    editor.set_definition(load_composition(comp_file))
+                    editor.status.setText(f"Loaded '{mat_name}'. Adjust density [g/cm³] or formula, then click Apply.")
+                except Exception as exc:
+                    editor.status.setText("")
+                    editor.error(f"Could not load composition for '{mat_name}': {exc}")
+            else:
+                editor.clear()
+                if mat_name:
+                    editor.name.setText(mat_name)
+                editor.status.setText(f"Define the composition of '{mat_name or 'new material'}', then click Apply.")
+        editor.set_busy(self.thread is not None)
+        editor.show()
+        editor.raise_()
+        editor.activateWindow()
+    def material_applied(self, definition, result):
+        """A material was created in the editor window: update lists and the target field."""
+        name = definition["name"]
+        self.data_directory = result["data_directory"]
+        self._show_data_directory()
+        self.refresh_materials()
+        target = self._target_material_input
+        if target is not None:
             try:
-                d = load_composition(comp_file)
-                self.material_editor.set_definition(d)
-                self.status.setText(f"Loaded '{mat_name}' into Material Editor. Adjust density [g/cm³] or formula, then click 'Create Material'.")
-            except Exception as exc:
-                self.error(f"Could not load composition for '{mat_name}': {exc}")
-        else:
-            self.material_editor.clear()
-            if mat_name:
-                self.material_editor.name.setText(mat_name)
-            self.status.setText(f"Define composition for '{mat_name or 'new material'}', then click 'Create Material'.")
-        if hasattr(self.material_editor, "return_button"):
-            target_name = "Detector" if return_tab_index==1 else "Source" if return_tab_index==2 else "Previous Step"
-            self.material_editor.return_button.setText(f"◀ Return to {target_name}")
-            self.material_editor.return_button.setVisible(return_tab_index is not None)
-        self.tabs.setCurrentWidget(self.material_editor)
+                target.setCurrentText(name)
+                # A source matrix material: show the density just entered, also when
+                # the name did not change (an existing material was overwritten).
+                for (kind, index), edit in self.source_form.inputs.items():
+                    if edit is target and index==5 and (kind, 7) in self.source_form.inputs:
+                        self.source_form.inputs[kind, 7].setText(str(float(definition["density_g_cm3"])))
+            except RuntimeError:
+                pass   # the form was rebuilt meanwhile (geometry change): nothing to select
+        self.changed()
+        self.status.setText(f"Material '{name}' created and applied.")
+        self.append_log("Material saved: "+result["attenuation_file"])
     def new_project(self, *unused):
         """Start a new, empty project (asks first if there are unsaved changes)."""
         if self.dirty and QMessageBox.question(self, "New project", "Discard the current unsaved project?")!=QMessageBox.StandardButton.Yes:
@@ -1821,16 +1947,16 @@ class MainWindow(QMainWindow):
              "<li><b>True Coincidence Summing Only:</b> Computes cascade summing factors <i>C</i> (where <i>A<sub>corr</sub> = C · A</i>) for the Sample geometry without requiring a reference calibration curve.</li>"
              "</ul>"
              "<p><b>2. Detector Tab:</b> Load your detector model (<code>Data/Detector/*.txt</code>) or enter crystal, dead-layer, window, and housing dimensions in mm. The live axial cross-section updates in real time with all quotes.</p>"
-             "<p><b>3. Source Tab:</b> Load or edit the <b>Standard</b> (reference calibration geometry) and <b>Sample</b> (measured sample geometry). Enter the apparent <b>Source density [g/cm³]</b> directly in the Source tab (auto-filled when selecting a material), or click <b>✏️ Edit</b> next to any material to define a new chemical composition.</p>"
+             "<p><b>3. Standard &amp; Sample Tab</b> (just <b>Sample</b> for coincidence summing only)<b>:</b> Load or edit the <b>Sample</b> (measured sample geometry) and the <b>Standard</b> (reference calibration geometry). The Standard is needed for efficiency transfer only: with <i>True Coincidence Summing Only</i> its column is hidden. Enter the apparent <b>Source density [g/cm³]</b> directly on this tab (auto-filled when selecting a material), or click <b>✏️ Edit</b> next to any material to define a new chemical composition.</p>"
              "<p><b>4. Efficiency (.CAL / .EFT) &amp;"
              " Library (.NLB / .LIB) / Certificate (.CTF) Tabs:</b> Import your Genie 2000 (<code>.CAL</code> / <code>.NLB</code> / <code>.CTF</code>) or GammaVision (<code>.EFT</code> / <code>.LIB</code>) reference files, run the calculation, and export the corrected files. Every exported file explicitly displays whether it targets <b>Genie 2000</b> or <b>GammaVision</b>.</p>"),
             ("materials", "🧪 Materials & Density (XCOM)",
              "<h3>Material Composition &amp; Bulk Density Guide</h3>"
              "<p>Self-attenuation in gamma-ray spectrometry depends on both the <b>chemical composition</b> (mass attenuation coefficient <i>μ/ρ</i>) and the <b>bulk density</b> <i>ρ</i> [g/cm³] of the sample matrix (<i>μ = (μ/ρ) · ρ</i>).</p>"
              "<ul>"
-             "<li><b>Direct Source Density Entry (EFFTRAN 4.9 / MEFFTRAN 1.8):</b> You can enter the apparent bulk density <i>ρ</i> [g/cm³] directly in the <b>Source density [g/cm³]</b> field of the Source tab without creating a separate material file. The engine scales the linear attenuation coefficient dynamically by <i>ρ / ρ<sub>0</sub></i>.</li>"
+             "<li><b>Direct Source Density Entry (EFFTRAN 4.9 / MEFFTRAN 1.8):</b> You can enter the apparent bulk density <i>ρ</i> [g/cm³] directly in the <b>Source density [g/cm³]</b> field of the Standard &amp; Sample tab without creating a separate material file. The engine scales the linear attenuation coefficient dynamically by <i>ρ / ρ<sub>0</sub></i>.</li>"
              "<li><b>Automatic XCOM Generation:</b> If a material exists in <code>Composition/</code> but is missing in <code>Material/</code>, EffSuite automatically runs NIST XCOM to generate its photon attenuation table before calculation.</li>"
-             "<li><b>Defining New Chemical Matrices:</b> Click <b>✏️ Edit</b> next to the Sample material (or open the <b>Material</b> tab), enter the chemical formulas and nominal density in <code>g/cm³</code>, and click <b>⚡ Create Material and Attenuation Table</b>.</li>"
+             "<li><b>Defining New Chemical Matrices:</b> Click <b>✏️ Edit</b> next to a material (or <b>🧪 Materials…</b> on the Detector and Standard &amp; Sample pages, or <i>Tools → Material Editor</i>). The Material Editor opens in a separate window, so you can keep working on the Detector and Standard &amp; Sample pages. Enter the chemical formulas and nominal density in <code>g/cm³</code> and click <b>✔ Apply</b>: the attenuation table is generated and the material appears at once in the Detector and Standard &amp; Sample material lists (and is selected in the field you clicked <b>✏️ Edit</b> for).</li>"
              "<li><b>Formula Entry:</b> Up to 10 chemical compounds (e.g. <code>H2O</code>, <code>C6H12O6</code>, <code>SiO2</code>, <code>CaCO3</code>) with relative weights by mass (automatically normalized to 100%).</li>"
              "</ul>"),
             ("cli", "💻 CLI & Batch Calculations",
@@ -1840,7 +1966,7 @@ class MainWindow(QMainWindow):
              "<pre style='background:#f1f5f9;padding:8px;border-radius:4px;'>"
              "effsuite cylinder --detector High-energy --standard Solution --sample Water \\\n"
              "  --sample-height 33.4 --sample-material Glucose --sample-density 1.346 \\\n"
-             "  --calibration TF400_268_2025.CAL --library NUTECH.NLB \\\n"
+             "  --calibration TF400_268_2025.CAL --library LIBRARY.NLB \\\n"
              "  --output-cal Sample_207724.CAL --output-nlb Sample_207724.NLB --plot-geometry"
              "</pre>"
              "<p><b>1b. GammaVision Single Calculation (<code>.EFT</code> + <code>.LIB</code>, auto-detected or <code>--software gammavision</code>):</b></p>"
@@ -1910,7 +2036,7 @@ class MainWindow(QMainWindow):
     def load_model(self, kind, *unused):
         """Load a detector, sample or standard model file into the form."""
         folder = {"detector":"Detector", "sample":"Sample", "standard":"Standard"}[kind]
-        default_dir = documents("Data/"+folder)
+        default_dir = self.data_folder(folder)
         filename, _ = QFileDialog.getOpenFileName(self, "Load "+kind, str(default_dir), "EFFTRAN models (*.txt);;All files (*)")
         if not filename:
             return
@@ -1930,7 +2056,7 @@ class MainWindow(QMainWindow):
     def store_model(self, kind, *unused):
         """Save the form of a detector, sample or standard as a model file."""
         folder = {"detector":"Detector", "sample":"Sample", "standard":"Standard"}[kind]
-        target_dir = documents("Data/"+folder)
+        target_dir = self.data_folder(folder)
         filename, _ = QFileDialog.getSaveFileName(self, "Store "+kind, str(target_dir/(kind+".txt")), "EFFTRAN models (*.txt)")
         if not filename:
             return
@@ -2024,7 +2150,7 @@ class MainWindow(QMainWindow):
             self.calibration_template = project.get("calibration_template")
             # Examples and older projects have no data folder: keep the one already chosen.
             self.data_directory = project.get("data_directory") or self.data_directory
-            self.data_label.setText("Data library: "+(self.data_directory or "bundled original files"))
+            self._show_data_directory()
             self.refresh_materials()
             self.last_task = project.get("task")
         finally:
@@ -2096,7 +2222,7 @@ class MainWindow(QMainWindow):
     def import_calibration(self, *unused):
         """Import the reference calibration from .CAL, .EFT, .txt or .csv."""
         filename, _ = QFileDialog.getOpenFileName(self, "Import standard efficiency",
-                                                  str(documents("Data/Calibration")), "Calibration (*.CAL *.cal *.EFT *.eft *.txt *.csv);"
+                                                  str(self.data_folder("Calibration")), "Calibration (*.CAL *.cal *.EFT *.eft *.txt *.csv);"
                                                                                                                           ";Genie calibration (*.CAL *.cal);"
                                                                                                                           ";GammaVision efficiency (*.EFT *.eft);;"
                                                                                                                           "Text calibration (*.txt *.csv);;All files (*)")
@@ -2134,6 +2260,7 @@ class MainWindow(QMainWindow):
         self.data_button.setEnabled(False)
         self.menuBar().setEnabled(False)
         self.cancel_button.setEnabled(cancellable)
+        self.material_editor.set_busy(True)
         self.status.setText("Working…")
         self.thread.start()
     def copy_log(self):
@@ -2190,6 +2317,7 @@ class MainWindow(QMainWindow):
         self.data_button.setEnabled(True)
         self.menuBar().setEnabled(True)
         self.cancel_button.setEnabled(False)
+        self.material_editor.set_busy(False)
     def calculate(self, task, *unused):
         """Run a calculation (transfer, summing or both) in the background."""
         try:
@@ -2348,7 +2476,7 @@ class MainWindow(QMainWindow):
         """Open a nuclide library (.NLB/.LIB) or a certificate (.CTF)."""
         folder = "NuclideLibrary" if kind=="nlb" else "Certificates"
         camfiles = Path("C:/GENIE2K/CAMFILES")
-        default_dir = camfiles if (kind == "nlb" and camfiles.is_dir()) else documents("Data/" + folder)
+        default_dir = camfiles if (kind == "nlb" and camfiles.is_dir()) else self.data_folder(folder)
         filename, _ = QFileDialog.getOpenFileName(self, "Open Genie / GammaVision file",
                                                   str(default_dir), "Genie / GammaVision files (*."+kind.upper()+" *."+kind+(" *.LIB *.lib" if kind=="nlb" else "")+")")
         if not filename:
@@ -2477,7 +2605,7 @@ class MainWindow(QMainWindow):
             return
         # No template was loaded before the calculation: export now from a template the user picks.
         source, _ = QFileDialog.getOpenFileName(self, "Choose a CAL/EFT template with the same point count",
-                                                str(documents("Data/Calibration")), f"{description} (*{extension})")
+                                                str(self.data_folder("Calibration")), f"{description} (*{extension})")
         if not source:
             return
         from .software import export_copy, label
@@ -2519,6 +2647,7 @@ class MainWindow(QMainWindow):
                                                "Close without saving this project?")!=QMessageBox.StandardButton.Yes:
             event.ignore()
             return
+        self.material_editor.close()   # a separate window: it would keep the application running
         event.accept()
 
 

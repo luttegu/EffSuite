@@ -11,7 +11,7 @@ from pathlib import Path
 import sys
 
 
-from .model_io import ASSETS, COMMON_DATA, MODES, mode_name, find_model, read_model, calibration_rows, normalize_nuclides, default_material_density
+from .model_io import ASSETS, COMMON_DATA, MODES, material_names, mode_name, find_model, read_model, calibration_rows, normalize_nuclides, default_material_density
 from .parallel_coincidence import CoincidenceError, _publish_new
 from .paths import get_results_dir, get_data_dir
 from .suite import VERSION, engine_folder, run_project, validate_project
@@ -83,7 +83,7 @@ def _add_common_calc_args(c):
     c.add_argument("--save-project", type=Path, help="Save the resolved project JSON for one-command repeat")
     c.add_argument("--workers", type=int, default=0, help="Worker processes: 0 = automatic, 1 = serial")
     c.add_argument("--software", choices=["genie", "gammavision"], help="Library software (default: auto-detect; .LIB = GammaVision)")
-    c.add_argument("--data-dir", type=Path, help="Data directory (default: <EffSuite user folder>/Data if present)")
+    c.add_argument("--data-dir", type=Path, help="Data directory (default: your data folder, see 'config')")
     c.add_argument("--verify-serial", action="store_true", help="Verify parallel coincidence results against serial execution")
     _add_tcs_uncertainty_args(c)
 
@@ -104,17 +104,22 @@ def parser():
     material.add_argument("--density", type=float, help="Bulk density in g/cm³ (e.g. 1.346)")
     material.add_argument("--compound", action="append", default=[], metavar="H2O=90", help="Chemical formula and relative weight; repeat for mixtures")
     material.add_argument("--geometry", choices=("cylinder", "marinelli", "well"), default="cylinder")
-    material.add_argument("--library", type=Path, help="Output data folder (default: <EffSuite user folder>/Data)")
-    material.add_argument("--base-data", type=Path, help="Base data folder when initializing a new library")
+    material.add_argument("--library", type=Path, help="Output data folder (default: your data folder, see 'config')")
+    material.add_argument("--base-data", type=Path, help="Folder to copy into a new, empty output data folder (default: none)")
     material.add_argument("--save-definition", type=Path, help="Also save the composition definition as JSON")
     material.add_argument("--overwrite", action="store_true", help="Overwrite existing material & recalculate XCOM attenuation")
+
+    config = sub.add_parser("config", help="Show or change the default data folder (your own materials and models)")
+    config_group = config.add_mutually_exclusive_group()
+    config_group.add_argument("--data-dir", type=Path, help="Save this folder as the default data folder (Composition and Material are created)")
+    config_group.add_argument("--reset-data-dir", action="store_true", help="Go back to the built-in default (<EffSuite root>/Data)")
 
     examples = sub.add_parser("examples", help="List or run ready-to-use example projects")
     examples.add_argument("--run", choices=("cylinder", "marinelli", "well"))
 
     models = sub.add_parser("models", help="List available detector, sample, standard, and material names")
     models.add_argument("geometry", choices=("cylinder", "marinelli", "well"))
-    models.add_argument("--data-dir", type=Path, help="Data directory to inspect (default: <EffSuite user folder>/Data)")
+    models.add_argument("--data-dir", type=Path, help="Data directory to inspect (default: your data folder, see 'config')")
 
     plot_cmd = sub.add_parser("plot-geometry", help="Render dimensioned axial cross-section diagram with all quotes to PNG/PDF/SVG")
     plot_cmd.add_argument("--geometry", choices=("cylinder", "marinelli", "well", "cylindrical", "efftran", "mefftran", "wefftran"), default="cylinder")
@@ -352,7 +357,7 @@ def _run_batch(args, progress):
         with tpl.open("w", newline="", encoding="utf-8") as f:
             w = csv.writer(f)
             w.writerow(BATCH_COLUMNS)
-            w.writerow(["Sample_001", "cylinder", "High-energy", "Water", "33.4", "water", "1.0", "0", "Solution", "TF400_268_2025.CAL", "NUTECH.NLB", "", "", "Sample_001.CAL", "Sample_001.NLB", ""])
+            w.writerow(["Sample_001", "cylinder", "High-energy", "Water", "33.4", "water", "1.0", "0", "Solution", "TF400_268_2025.CAL", "LIBRARY.NLB", "", "", "Sample_001.CAL", "Sample_001.NLB", ""])
         print(f"Created batch template: {tpl}", file=sys.stderr)
         return 0
     if not args.batch_file or not args.batch_file.is_file():
@@ -663,10 +668,29 @@ def _command_models(args):
         if data_dir and (Path(data_dir)/label).is_dir():
             names |= set(p.stem for p in (Path(data_dir)/label).glob("*.txt"))
         print(label+": "+", ".join(sorted(names)))
-    mats = set(p.stem for p in (COMMON_DATA/"Composition").glob("*.txt"))
-    if data_dir and (Path(data_dir)/"Composition").is_dir():
-        mats |= set(p.stem for p in (Path(data_dir)/"Composition").glob("*.txt"))
-    print("Materials: "+", ".join(sorted(mats)))
+    print("Materials: "+", ".join(material_names(data_dir)))
+    print("Original materials (bundled): "+", ".join(sorted((p.stem for p in (COMMON_DATA/"Composition").glob("*.txt")), key=str.lower)))
+    return 0
+
+
+def _command_config(args):
+    """config: show or change the default data folder."""
+    from .paths import builtin_data_dir, data_dir_source, legacy_data_dirs, set_data_dir, settings_file
+    if args.data_dir or args.reset_data_dir:
+        if data_dir_source() == "environment":
+            print("Note: EFFSUITE_DATA is set and still takes precedence over the saved setting.", file=sys.stderr)
+        folder = set_data_dir(None if args.reset_data_dir else args.data_dir)
+        print(("Default data folder reset: " if args.reset_data_dir else "Default data folder saved: ")+str(folder))
+        return 0
+    folder = get_data_dir()
+    print(f"Data folder:      {folder}  (from {data_dir_source()})")
+    print(f"  Composition:    {'present' if (folder/'Composition').is_dir() else 'not created yet'}")
+    print(f"  Material:       {'present' if (folder/'Material').is_dir() else 'not created yet'}")
+    print(f"Built-in default: {builtin_data_dir()}")
+    for legacy in legacy_data_dirs():
+        print(f"Legacy (read):    {legacy}{'' if legacy.is_dir() else '  (absent)'}")
+    print(f"Bundled originals:{COMMON_DATA}")
+    print(f"Settings file:    {settings_file()}")
     return 0
 
 
@@ -770,6 +794,8 @@ def main(argv=None):
             return _run_batch(args, progress)
         if args.command=="examples":
             return _command_examples(args, progress)
+        if args.command=="config":
+            return _command_config(args)
         return _command_calculation(args, progress)
     except (CoincidenceError, OSError, ValueError) as exc:
         print(f"EffSuite: {exc}", file=sys.stderr)

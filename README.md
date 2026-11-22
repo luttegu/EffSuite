@@ -1,7 +1,7 @@
 # EffSuite — Gamma Spectrometry Efficiency Transfer & Summing Suite
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-0.3.1-yellow.svg" alt="Version 0.3.1" />
+  <img src="https://img.shields.io/badge/Version-0.3.2-yellow.svg" alt="Version 0.3.2" />
   <img src="https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue.svg" alt="Python Version" />
   <img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011%20(x64)-0078D6.svg" alt="Windows Platform" />
   <img src="https://img.shields.io/badge/Genie%202000-CAM%20%7C%20CAL%20%7C%20NLB%20%7C%20CTF-8A2BE2.svg" alt="Genie 2000 Integration" />
@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/License-GPL--3.0%20%2F%20Vidmar%20Attribution-orange.svg" alt="License" />
 </p>
 
-*EffSuite (v0.3.1) built by ChatGPT & Gemini under the supervision of G. Lutter.*
+*EffSuite (v0.3.2) built by ChatGPT & Gemini under the supervision of G. Lutter.*
 
 ---
 
@@ -80,7 +80,7 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 3. **Parallel coincidence summing**: summing correction factors *C* for every nuclide of a library in one run, on all CPU cores (`workers = 0`: number of CPUs minus 2).
 4. **Summing-factor uncertainty**: a relative standard uncertainty u(C) for every factor, which the original programs do not provide ([details](docs/TCS_UNCERTAINTY.md)).
 5. **Genie 2000 and GammaVision**: reads `.CAL` efficiency calibrations, `.NLB` nuclide libraries and `.CTF` certificates, and writes verified corrected copies (file dialogs open in `C:\GENIE2K\CAMFILES`). GammaVision `.LIB` and `.EFT` files are handled in pure Python.
-6. **NIST XCOM materials**: composition editor and automatic XCOM 3.1 attenuation tables; 71 bundled material compositions.
+6. **NIST XCOM materials**: composition editor and automatic XCOM 3.1 attenuation tables; the 20 original EFFTRAN / MEFFTRAN materials are bundled; your own materials live in your data folder (changeable with **Tools → Default Data Folder…** or `CLI.bat config --data-dir`).
 7. **Command line**: `EffSuite_CLI.exe` (or `python -m effsuite.app_cli`) for scripts, LIMS integration and batch runs.
 
 > [!IMPORTANT]
@@ -120,15 +120,15 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 The GUI follows the intuitive workflow of analytical gamma spectrometry:
 
 ```
-[ Welcome ] ➔ [ Detector ] ➔ [ Source ] ➔ [ Efficiency ] ➔ [ Library / Certificate ]      (+ [ Material ])
+[ Welcome ] ➔ [ Detector ] ➔ [ Standard & Sample ] ➔ [ Efficiency ] ➔ [ Library / Certificate ]      (+ Material Editor window)
 ```
 
 * **Welcome**: choose Complete Analysis, Efficiency Transfer Only or True Coincidence Summing Only; load an example or a saved project.
 * **Detector**: crystal dimensions, dead layers, core hole, end cap and materials, with a live dimensioned cross-section.
-* **Source**: the standard and the sample side by side (filling height, container, density, matrix).
+* **Standard & Sample**: the sample and the standard side by side (filling height, container, density, matrix). With True Coincidence Summing Only, the tab is renamed **Sample**, only the sample is needed and the Standard column is hidden.
 * **Efficiency**: import the standard calibration (Genie `.CAL`, GammaVision `.EFT`, CSV/text), transfer it to the sample, see the efficiency curves, and export the sample `.CAL` / `.EFT`.
 * **Library / Certificate**: open a Genie `.NLB` / `.CTF` or a GammaVision `.LIB`, or type nuclides (`Co-60, Cs-134, Eu-152`). Calculates the summing factors *C* and their uncertainty u(C), and exports corrected Genie or GammaVision (`.LIB` + `_gv.txt`) files.
-* **Material**: create materials from chemical formulas and a density; XCOM generates the attenuation table.
+* **Material Editor** (separate window, opened with **🧪 Materials…** or **✏️ Edit** on the Detector and Standard & Sample pages): create materials from chemical formulas and a density; **✔ Apply** generates the XCOM attenuation table and updates the material lists at once, while the other pages stay usable.
 * **Log**: engine stages, warnings and convergence diagnostics as the calculation runs.
 
 Step-by-step instructions: [User Guide](docs/USER_GUIDE.md).
@@ -152,7 +152,7 @@ CLI.bat cylinder ^
   --calibration "C:\GENIE2K\CAMFILES\Standard.CAL" ^
   --sample Soil ^
   --sample-height 45.0 ^
-  --library "C:\GENIE2K\CAMFILES\NUTECH.NLB" ^
+  --library "C:\GENIE2K\CAMFILES\LIBRARY.NLB" ^
   --out "C:\MyLab\Results_Cylinder"
 ```
 

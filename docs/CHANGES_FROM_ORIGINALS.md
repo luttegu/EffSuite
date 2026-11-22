@@ -1,6 +1,6 @@
 # EffSuite Compared with the Original EFFTRAN, MEFFTRAN and WEFFTRAN
 
-*EffSuite v0.3.1 (November 2026). For the original author (Dr. Tim Vidmar), maintainers and scientific reviewers.*
+*EffSuite v0.3.2 (November 2026). For the original author (Dr. Tim Vidmar), maintainers and scientific reviewers.*
 
 > **Disclaimer:** Provided strictly on an AS-IS basis. G. Lutter accepts NO responsibility or liability under any circumstances for incorrect calculations, inaccurate analytical results, or damages resulting from software use. Users must independently verify all results.
 
@@ -61,8 +61,8 @@ EffSuite has the same model, with these differences:
 | Loop bound in `mine.f`, `scatter.f` | first 4.9/1.8 sources used `do j=1,ne` (`ne` = 0 in `mine.f`, 25 in `scatter.f`, so ρ was partly ignored); **corrected upstream** to `ns` | `do j=1,ns` |
 | Well geometry | not available in WEFFTRAN | same scaling added to the well engine and to the spatial model |
 
-Check: `Water` at ρ = 2.0 g/cm³ gives the same results as `HeavyWater`
-(ρ₀ = 2.0 g/cm³) to 6 decimal places in all three geometries. 7-line source
+Check: `Water` at ρ = 2.0 g/cm³ gives the same results as `heavy`
+(H₂O, ρ₀ = 2.0 g/cm³) to 6 decimal places in all three geometries. 7-line source
 files and older projects still load, with ρ = ρ₀.
 
 ### 1.2 Efficiency-transfer uncertainty
@@ -142,8 +142,18 @@ accepts either format and writes each engine exactly the lines it reads
 The cylinder and Marinelli engines read the same `kordaten.txt` (9,870
 lines). It contains Nb-94, which upstream added in 5.0/1.9, and also W-187,
 which upstream still lacks. Pa-234 keeps the upstream transition `41 43`.
-MEFFTRAN 1.9's `heavy.txt` (H₂O, ρ₀ = 2.0 g/cm³) is bundled beside
-`HeavyWater.txt`, so files created in MEFFTRAN 1.9 open unchanged.
+MEFFTRAN 1.9's `heavy.txt` (H₂O, ρ₀ = 2.0 g/cm³) is bundled, so files
+created in MEFFTRAN 1.9 open unchanged. Only the original EFFTRAN 5.0 and
+MEFFTRAN 1.9 materials are bundled; the earlier `HeavyWater.txt` (identical
+composition) was removed in 0.3.2.
+
+The cylinder and Marinelli Detector, Sample and Standard models are the
+original EFFTRAN 5.0 / MEFFTRAN 1.9 ones. The original WEFFTRAN distribution
+has no usable well-format models (only EFFTRAN-format leftovers), so EffSuite
+bundles its own well models, which are always kept: `Detector/well.txt`
+(Ge crystal, aluminium end cap), `Sample/Sample.txt` and
+`Standard/Standard.txt` (water in a `polystyrene` vial; `Plastic_vial` until
+0.3.1, which is not an original material).
 
 ### 1.8 Compilation
 
@@ -384,7 +394,7 @@ Full description: [TCS_UNCERTAINTY.md](TCS_UNCERTAINTY.md).
 ### 3.3 Materials and XCOM
 
 The original requires `Material.xls` and a separate XCOM run.
-EffSuite has a Material tab, a `material` CLI command and a macro-free
+EffSuite has a Material Editor window, a `material` CLI command and a macro-free
 workbook, all of which run the bundled XCOM 3.1. A material that has a
 composition but no attenuation table is generated automatically during a
 calculation. Density changes need only line 8 of the source model, or

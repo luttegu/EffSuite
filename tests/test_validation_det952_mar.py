@@ -1,6 +1,7 @@
 """Regression test validating Marinelli beaker calculation against MEFFTRAN laboratory reference dataset (Sample 2025-0051C on DET952)."""
 import math
 from pathlib import Path
+import shutil
 import tempfile
 import unittest
 
@@ -32,6 +33,10 @@ class MefftranValidationCaseDET952MarTests(unittest.TestCase):
             "components": [{"formula": "C6H10O5", "weight": 1.0}],
         }
         create_material(comp_def, library=data_dir)
+        # polypropylene is a laboratory material (not an original MEFFTRAN one): use the test copy.
+        fixture = Path(__file__).parent / "data" / "materials"
+        for folder in ("Composition", "Material"):
+            shutil.copyfile(fixture / folder / "polypropylene.txt", data_dir / folder / "polypropylene.txt")
 
         # 2. Reference calibration points from DET952 / MAR_1000.CAL
         cal_points = [

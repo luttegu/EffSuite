@@ -45,8 +45,10 @@ def prepare_well_case(installation: Path, engine_dir: Path, detector: Path,
                       sample: Path, destination: Path, progress=None) -> None:
     """Run coin1 stages in a private directory for the exact selected inputs."""
     for folder in ("Composition", "Material"):
-        source = installation/folder if (installation/folder).is_dir() else COMMON_DATA/folder
-        shutil.copytree(source, destination/folder)
+        # Bundled original materials, overlaid by the installation's own files.
+        shutil.copytree(COMMON_DATA/folder, destination/folder)
+        if (installation/folder).is_dir():
+            shutil.copytree(installation/folder, destination/folder, dirs_exist_ok=True)
     for filename in ("zzaa.txt", "param.txt"):
         if (installation/filename).is_file():
             shutil.copyfile(installation/filename, destination/filename)

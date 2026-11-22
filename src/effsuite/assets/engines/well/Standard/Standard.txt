@@ -4,5 +4,5 @@
 1.50
 10.00
 water
-Plastic_vial
+polystyrene
 1.00

@@ -7,6 +7,7 @@ and foreign language / redirected user profile folder naming (e.g. 'Dokumenter')
 
 from __future__ import annotations
 from functools import lru_cache
+import json
 import os
 from pathlib import Path
 import sys
@@ -97,15 +98,114 @@ def is_readable_dir(path: Path | None) -> bool:
         return False
 
 
-def get_data_dir() -> Path | None:
-    for cand in [
-        get_effsuite_root() / "Data",
-        Path("C:/GENIE2K/EffSuite/Data"),
-        get_real_documents_dir() / "EffSuite/Data",
-    ]:
-        if is_readable_dir(cand / "Composition") or is_readable_dir(cand / "Material"):
-            return cand
-    return None
+# Older location of the laboratory data, still searched (read only) so existing files keep working.
+LEGACY_DATA_DIR = Path.home() / "Documents/EffSuite/Data"
+
+
+def legacy_data_dirs() -> list[Path]:
+    """Legacy Documents/EffSuite/Data folders: the real (OneDrive / redirected) Documents and ~/Documents."""
+    folders = [LEGACY_DATA_DIR]
+    real = get_real_documents_dir() / "EffSuite/Data"
+    if real not in folders:
+        folders.insert(0, real)
+    return folders
+
+
+def settings_file() -> Path:
+    """Per-user settings file (JSON), independent of the data folder it points to.
+
+    Windows: %APPDATA%\\EffSuite\\settings.json; elsewhere ~/.config/effsuite/settings.json.
+    """
+    if sys.platform == "win32" and os.environ.get("APPDATA"):
+        return Path(os.environ["APPDATA"]) / "EffSuite" / "settings.json"
+    return Path(os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config") / "effsuite" / "settings.json"
+
+
+def load_settings() -> dict:
+    """The saved user settings ({} when there are none or the file is unreadable)."""
+    try:
+        data = json.loads(settings_file().read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def save_settings(settings: dict) -> None:
+    """Write the user settings (atomic replace)."""
+    target = settings_file()
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temporary = target.with_suffix(".tmp")
+    temporary.write_text(json.dumps(settings, indent=2) + "\n", encoding="utf-8")
+    os.replace(temporary, target)
+
+
+def builtin_data_dir() -> Path:
+    """Default laboratory data folder when nothing else is set: <EffSuite root>\\Data."""
+    return get_effsuite_root() / "Data"
+
+
+def data_dir_source() -> str:
+    """Where the default data folder comes from: "environment", "settings" or "built-in"."""
+    if os.environ.get("EFFSUITE_DATA"):
+        return "environment"
+    if load_settings().get("data_directory"):
+        return "settings"
+    return "built-in"
+
+
+def get_data_dir() -> Path:
+    """The user's laboratory data folder (own Material, Composition, Detector, Sample, Standard).
+
+    Priority: EFFSUITE_DATA environment variable, then the folder saved with
+    set_data_dir() (GUI: Tools → Default Data Folder…; CLI: ``config --data-dir``),
+    then <EffSuite root>\\Data. The folder may not exist yet: it is created
+    (with ensure_data_dir) the first time something is saved in it. Only the
+    original EFFTRAN / MEFFTRAN materials are bundled with the program.
+    """
+    env = os.environ.get("EFFSUITE_DATA")
+    if env:
+        return Path(env).expanduser()
+    saved = load_settings().get("data_directory")
+    if saved:
+        return Path(saved).expanduser()
+    return builtin_data_dir()
+
+
+def ensure_data_dir(folder: Path | str | None = None) -> Path:
+    """Create the data folder (default: get_data_dir()) with its Composition and Material subfolders."""
+    folder = Path(folder).expanduser() if folder else get_data_dir()
+    for sub in ("Composition", "Material"):
+        (folder / sub).mkdir(parents=True, exist_ok=True)
+    return folder
+
+
+def set_data_dir(folder: Path | str | None) -> Path:
+    """Save ``folder`` as the default data folder (None: back to the built-in default).
+
+    The folder and its Composition / Material subfolders are created. Returns
+    the data folder now in effect (EFFSUITE_DATA still wins when set).
+    """
+    settings = load_settings()
+    if folder:
+        folder = ensure_data_dir(Path(folder).expanduser().resolve())
+        settings["data_directory"] = str(folder)
+    else:
+        settings.pop("data_directory", None)
+    save_settings(settings)
+    return get_data_dir()
+
+
+def user_data_dirs(data_directory: Path | str | None = None) -> list[Path]:
+    """Laboratory data folders to search, most specific first.
+
+    The project's own folder (if any), the default data folder, then the
+    legacy Documents\\EffSuite\\Data. The bundled original data come after these.
+    """
+    folders = [Path(data_directory).expanduser()] if data_directory else []
+    for folder in (get_data_dir(), *legacy_data_dirs()):
+        if folder not in folders:
+            folders.append(folder)
+    return folders
 
 
 def get_results_dir() -> Path:

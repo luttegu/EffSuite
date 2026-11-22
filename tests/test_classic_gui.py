@@ -8,7 +8,7 @@ import unittest
 from unittest.mock import patch
 os.environ.setdefault("QT_QPA_PLATFORM","offscreen")
 try:
-    from PySide6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication, QMessageBox
     from PySide6.QtTest import QTest
     from effsuite.gui import MainWindow
 except ImportError:MainWindow=None
@@ -21,7 +21,7 @@ class ClassicGuiTests(unittest.TestCase):
     def setUp(self):
         self.temporary=tempfile.TemporaryDirectory();self.root=Path(self.temporary.name)
         self.disclaimer_patch=patch.object(MainWindow,"check_first_run_disclaimer",lambda window:None);self.disclaimer_patch.start()
-        self.window=MainWindow();self.errors=[];self.window.error=lambda error:self.errors.append(str(error))
+        self.window=MainWindow();self.errors=[];self.window.error=lambda error:self.errors.append(str(error));self.window.material_editor.error=self.window.error
     def tearDown(self):
         self.addCleanup(self.disclaimer_patch.stop)
         if self.window.thread is not None:
@@ -29,7 +29,7 @@ class ClassicGuiTests(unittest.TestCase):
             while self.window.thread is not None and time.monotonic()<deadline:QTest.qWait(10);time.sleep(.002)
         self.window.dirty=False;self.window.close();self.app.processEvents();self.temporary.cleanup()
     def test_original_tab_names_and_model_field_counts(self):
-        self.assertEqual([self.window.tabs.tabText(i) for i in range(self.window.tabs.count())],["Welcome","Detector","Source","Efficiency","Certificate","Library","Material"])
+        self.assertEqual([self.window.tabs.tabText(i) for i in range(self.window.tabs.count())],["Welcome","Detector","Standard && Sample","Efficiency","Certificate","Library"])
         from effsuite.app_cli import example_path
         for mode,count in [("cylinder",19),("marinelli",16),("well",7)]:
             self.window.apply_project(json.loads(example_path(mode).read_text()))
@@ -80,44 +80,108 @@ class ClassicGuiTests(unittest.TestCase):
         self.assertTrue((self.root/'data/Material/GUI_test_water.txt').is_file())
         self.assertEqual(self.window.data_directory,str(self.root/'data'))
         self.assertGreaterEqual(self.window.source_form.inputs['sample',5].findText('GUI_test_water'),0)
-    def test_modify_material_button_and_workflow(self):
-        self.window.load_example()
-        sample_combo = self.window.source_form.inputs['sample', 5]
-        sample_combo.setCurrentText('water_liquid')
-        self.window.source_form.modify_material('sample', 5)
-        # Verify switched to Material Editor
-        self.assertEqual(self.window.tabs.currentWidget(), self.window.material_editor)
-        self.assertEqual(self.window.material_editor.name.text(), 'water_liquid')
-        self.assertAlmostEqual(float(self.window.material_editor.density.text()), 1.0, places=3)
-        self.assertEqual(self.window.material_editor.table.item(0, 0).text(), 'H2O')
-        self.assertFalse(self.window.material_editor.return_button.isHidden())
-        self.assertIn("Source", self.window.material_editor.return_button.text())
-
-        # Modify name and generate new material
-        self.window.material_editor.name.setText('GUI_test_water_mod')
-        self.window.material_editor.density.setText('1.05')
-        self.window.material_editor.library.setText(str(self.root/'data2'))
-        self.window.material_editor.generate()
-        deadline = time.monotonic() + 30
+    def wait_task(self, seconds=30):
+        deadline = time.monotonic() + seconds
         while self.window.thread is not None and time.monotonic() < deadline:
             QTest.qWait(10); time.sleep(.002)
         self.assertIsNone(self.window.thread)
+    def test_material_editor_is_a_separate_non_modal_window(self):
+        from PySide6.QtCore import Qt
+        editor = self.window.material_editor
+        self.assertTrue(editor.isWindow())
+        self.assertEqual(editor.windowModality(), Qt.WindowModality.NonModal)
+        self.assertEqual(self.window.tabs.indexOf(editor), -1)
+        self.window.tabs.setCurrentIndex(1)
+        self.window.open_material_editor_for_input(None)
+        self.assertTrue(editor.isVisible())
+        # The main window stays where it was and usable.
+        self.assertEqual(self.window.tabs.currentIndex(), 1)
+        self.assertTrue(self.window.tabs.isEnabled())
+        self.assertIn("every material list", editor.target_label.text())
+        # A geometry change keeps the window and what was typed in it.
+        editor.name.setText("half_typed")
+        self.window.mode.setCurrentIndex(self.window.mode.findData("marinelli"))
+        self.assertIs(self.window.material_editor, editor)
+        self.assertEqual(editor.name.text(), "half_typed")
+        # Closing the main window also closes the editor.
+        self.window.dirty = False
+        self.window.close()
+        self.assertFalse(editor.isVisible())
+    def test_modify_material_button_and_workflow(self):
+        self.window.load_example()
+        self.window.tabs.setCurrentIndex(2)
+        editor = self.window.material_editor
+        sample_combo = self.window.source_form.inputs['sample', 5]
+        sample_combo.setCurrentText('water')
+        self.window.source_form.modify_material('sample', 5)
+        # The editor window opens with the material; the Source page stays shown.
+        self.assertTrue(editor.isVisible())
+        self.assertEqual(self.window.tabs.currentIndex(), 2)
+        self.assertEqual(editor.name.text(), 'water')
+        self.assertAlmostEqual(float(editor.density.text()), 1.0, places=3)
+        self.assertEqual(editor.table.item(0, 0).text(), 'H2O')
+        self.assertIn("Sample", editor.target_label.text())
+
+        # Modify name and apply: the new material is selected in the sample field.
+        editor.name.setText('GUI_test_water_mod')
+        editor.density.setText('1.05')
+        editor.library.setText(str(self.root/'data2'))
+        editor.apply_button.click()
+        self.wait_task()
         self.assertFalse(self.errors, self.errors)
-        # Verify returned to Source tab and sample combo has the new material selected
+        self.assertTrue(editor.isVisible())
         self.assertEqual(self.window.tabs.currentIndex(), 2)
         self.assertEqual(sample_combo.currentText(), 'GUI_test_water_mod')
+        self.assertAlmostEqual(self.window.source_form.values('sample')[7], 1.05, places=6)
+        detector_combos = [e for e in self.window.detector_form.inputs.values() if hasattr(e, 'findText')]
+        self.assertTrue(all(c.findText('GUI_test_water_mod') >= 0 for c in detector_combos))
 
-        # Test container material modification
+        # Overwriting the same material with a new density updates the density field.
+        with patch("effsuite.material_gui.QMessageBox.question", return_value=QMessageBox.StandardButton.Yes):
+            editor.density.setText('1.10')
+            editor.apply_button.click()
+            self.wait_task()
+        self.assertFalse(self.errors, self.errors)
+        self.assertEqual(sample_combo.currentText(), 'GUI_test_water_mod')
+        self.assertAlmostEqual(self.window.source_form.values('sample')[7], 1.10, places=6)
+
+        # Container material: loaded into the editor, target changes.
         container_combo = self.window.source_form.inputs['sample', 6]
-        container_combo.setCurrentText('polyethylene')
+        container_combo.setCurrentText('polystyrene')
         self.window.source_form.modify_material('sample', 6)
-        self.assertEqual(self.window.tabs.currentWidget(), self.window.material_editor)
-        self.assertEqual(self.window.material_editor.name.text(), 'polyethylene')
-        self.assertAlmostEqual(float(self.window.material_editor.density.text()), 0.92, places=2)
-        # Test clicking return button takes back to Source tab
-        self.window.material_editor.return_button.click()
-        self.assertEqual(self.window.tabs.currentIndex(), 2)
+        self.assertEqual(editor.name.text(), 'polystyrene')
+        self.assertAlmostEqual(float(editor.density.text()), 1.0, places=2)
+        self.assertIn("container", editor.target_label.text().lower())
 
+    def test_standard_column_hidden_for_summing_only(self):
+        w = self.window
+        w.load_example()
+        w.tabs.setCurrentIndex(2)
+        form, preview = w.source_form, w.source_diagram.live_widget
+        standard = form.inputs['standard', 0]
+        # Sample column first, standard second.
+        self.assertLess(form._grid.indexOf(standard), form._grid.indexOf(form.inputs['sample', 0]))
+        self.assertFalse(standard.isHidden())
+        preview.set_kind('Standard')
+        self.assertEqual(preview.source.currentText(), 'Standard')
+        w._workflow_radios["summing"].setChecked(True)
+        self.assertTrue(standard.isHidden())
+        self.assertTrue(form.load_buttons['standard'].isHidden())
+        self.assertTrue(form._col_headers['standard'].isHidden())
+        self.assertFalse(form.inputs['sample', 0].isHidden())
+        self.assertFalse(w.source_hint.isHidden())
+        self.assertEqual(preview.source.currentText(), 'Sample')
+        for live in (preview, w.diagram.live_widget):
+            self.assertFalse(live.source.model().item(live.source.findText('Standard')).isEnabled())
+        self.assertIn("Standard not needed", w._banners["source"][0].text())
+        self.assertEqual(w._nav_next["detector"].text(), "Next: Sample ▶")
+        self.assertFalse([m for m in w.missing_items() if "Standard" in m[1]])
+        # Back to complete analysis: the standard (with its values) returns.
+        w._workflow_radios["both"].setChecked(True)
+        self.assertFalse(standard.isHidden())
+        self.assertTrue(standard.text())
+        self.assertEqual(w._nav_next["detector"].text(), "Next: Standard && Sample ▶")
+        self.assertTrue(w._nav_next["detector"].shortcut().isEmpty())
     def test_guided_workflow_choice_and_summing_source(self):
         w=self.window
         # Default: complete analysis with nuclide library
@@ -243,7 +307,7 @@ class ClassicGuiTests(unittest.TestCase):
         self.assertTrue(has_dark_indicator, "Checked PaintedRadio must draw visible indicator pixels")
 
         # 2. At 1920x1000 (1080p), every visible tab fits with zero vertical scroll and pinned footer inside viewport
-        for idx in (0, 1, 2, 3, 5, 6):
+        for idx in (0, 1, 2, 3, 5):
             self.window.tabs.setCurrentIndex(idx)
             QApplication.processEvents()
             page = self.window.tabs.widget(idx)
@@ -281,8 +345,8 @@ class ClassicGuiTests(unittest.TestCase):
             mat_combo.setCurrentText("soil")
             QApplication.processEvents()
             self.assertAlmostEqual(self.window.source_form.values("sample")[7], 1.4, places=4)
-            # Selecting 'HeavyWater' auto-fills nominal density 2.0 g/cm³
-            mat_combo.setCurrentText("HeavyWater")
+            # Selecting 'heavy' (H2O at 2 g/cm³) auto-fills nominal density 2.0 g/cm³
+            mat_combo.setCurrentText("heavy")
             QApplication.processEvents()
             self.assertAlmostEqual(self.window.source_form.values("sample")[7], 2.0, places=4)
             # Loading a source model with a custom density (e.g., water at 1.35 g/cm³) preserves 1.35
@@ -292,3 +356,27 @@ class ClassicGuiTests(unittest.TestCase):
             self.window.source_form.set_values("sample", custom)
             self.assertEqual(self.window.source_form.values("sample")[5], "water")
             self.assertAlmostEqual(self.window.source_form.values("sample")[7], 1.35, places=4)
+    def test_default_data_folder_menu_saves_setting_and_updates_lists(self):
+        from effsuite import paths
+        chosen=self.root/"Lab data"
+        (chosen/"Composition").mkdir(parents=True)
+        (chosen/"Composition"/"gui_lab_resin.txt").write_text(" 1.18\nC5H8O2\n 1\n")
+        env={k:v for k,v in os.environ.items() if k!="EFFSUITE_DATA"}
+        env["APPDATA"]=str(self.root/"appdata");env["XDG_CONFIG_HOME"]=str(self.root/"config")
+        with patch.dict(os.environ,env,clear=True), \
+             patch("effsuite.gui.QFileDialog.getExistingDirectory",return_value=str(chosen)), \
+             patch("effsuite.gui.QMessageBox.question",return_value=QMessageBox.StandardButton.Yes):
+            self.window.choose_default_data()
+            self.assertFalse(self.errors,self.errors)
+            self.assertEqual(paths.get_data_dir(),chosen.resolve())
+            self.assertEqual(paths.data_dir_source(),"settings")
+            self.assertTrue((chosen/"Material").is_dir())          # created on request
+            self.assertEqual(self.window.data_directory,str(chosen.resolve()))
+            self.assertIn(str(chosen.resolve()),self.window.data_label.text())
+            combo=self.window.source_form.inputs['sample',5]
+            items=[combo.itemText(i) for i in range(combo.count())]
+            self.assertIn("gui_lab_resin",items);self.assertIn("water",items)
+            self.assertEqual(self.window.data_folder("Detector"),chosen.resolve()/"Detector")
+            self.window.reset_default_data()
+            self.assertEqual(paths.data_dir_source(),"built-in")
+            self.assertEqual(self.window.data_directory,str(paths.builtin_data_dir()))

@@ -1,4 +1,4 @@
-# EffSuite Architecture — v0.3.1
+# EffSuite Architecture — v0.3.2
 
 *For developers. The physics is described in
 [CHANGES_FROM_ORIGINALS.md](CHANGES_FROM_ORIGINALS.md), and the well model in
@@ -68,7 +68,7 @@ cancellation, time limits and SHA-256 hashes recorded in `results.json`.
 | `software.py` | chooses the vendor backend per file (`.LIB`/`.EFT` = GammaVision, otherwise Genie; `--software` or `EFFSUITE_SOFTWARE` override) |
 | `genie.py` | Genie 2000 `.CAL` / `.NLB` / `.CTF` through the installed CAM components and the bundled PowerShell bridge (`assets/genie_cam.ps1`); one PowerShell start per read or export, exports verified by reopening |
 | `gammavision.py` | GammaVision `.LIB` / `.EFT` in pure Python (layouts from EFFTRAN `gv.f` and `EFFTRAN.EFT`), exports verified by reopening |
-| `materials.py`, `material_gui.py` | compositions, XCOM generation in an isolated folder, Material tab |
+| `materials.py`, `material_gui.py` | compositions, XCOM generation in an isolated folder, Material Editor window |
 | `lab_comparison.py` | controlled comparison with archived reference outputs (`effsuite-compare-lab`, `Compare_Lab.bat`) |
 | `geometry_view.py` | dimensioned cross-section drawings |
 | `gui.py` | Qt desktop. A QObject worker in a QThread supervises jobs; widgets are updated only in the GUI thread. A recovery snapshot precedes each calculation. |

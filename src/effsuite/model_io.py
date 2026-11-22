@@ -48,18 +48,38 @@ MARINELLI_SOURCE = [("Container diameter", "mm"), ("Container hole diameter", "m
                     ("Container thickness", "mm"), ("Source material", "material"),
                     ("Container material", "material"), ("Source density", "g/cm³")]
 
-# Older location of the laboratory data, still searched so existing files keep working.
-LEGACY_USER_DATA = Path.home() / "Documents/EffSuite/Data"
-
-
 def _user_data_folders(data_directory=None) -> list[Path]:
-    """Laboratory data folders to search, most specific first."""
-    from .paths import get_data_dir
-    folders = [Path(data_directory).expanduser()] if data_directory else []
-    for folder in (get_data_dir(), LEGACY_USER_DATA):
-        if folder is not None and folder not in folders:
-            folders.append(folder)
-    return folders
+    """Laboratory data folders to search, most specific first (see paths.user_data_dirs)."""
+    from .paths import user_data_dirs
+    return user_data_dirs(data_directory)
+
+
+def material_roots(data_directory=None) -> list[Path]:
+    """Folders holding Material/ and Composition/, most specific first.
+
+    The user's folders (project, default, legacy) come first, the bundled
+    original EFFTRAN / MEFFTRAN materials last.
+    """
+    return _user_data_folders(data_directory) + [COMMON_DATA]
+
+
+def material_names(data_directory=None) -> list[str]:
+    """Names of every material with a Composition file (user folders and bundled originals)."""
+    names = set()
+    for root in material_roots(data_directory):
+        folder = root / "Composition"
+        if folder.is_dir():
+            names |= {p.stem for p in folder.glob("*.txt")}
+    return sorted(names, key=str.lower)
+
+
+def find_material_file(name: str, kind: str = "Composition", data_directory=None) -> Path | None:
+    """The Composition (or Material) file of a material, most specific folder first."""
+    for root in material_roots(data_directory):
+        candidate = root / kind / f"{name}.txt"
+        if candidate.is_file():
+            return candidate
+    return None
 
 
 def default_material_density(material_name: str, data_directory: str | Path | None = None) -> float:
@@ -71,7 +91,7 @@ def default_material_density(material_name: str, data_directory: str | Path | No
     name = str(material_name).strip()
     if not name or name.lower() == "vacuum":
         return 0.0
-    roots = [folder / "Composition" for folder in _user_data_folders(data_directory)] + [COMMON_DATA / "Composition"]
+    roots = [folder / "Composition" for folder in material_roots(data_directory)]
     for root in roots:
         if not root.is_dir():
             continue

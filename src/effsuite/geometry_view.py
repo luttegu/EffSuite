@@ -360,9 +360,9 @@ def _partial_source_values(owner, kind):
     except Exception:
         mode = owner.current_mode()
         defaults = {
-            'well':[15.0, 40.0, 1.0, 1.0, 0.0, 'water_liquid', 'polyethylene', 1.0],
-            'marinelli':[130.0, 90.0, 100.0, 70.0, 2.0, 'water_liquid', 'polyethylene', 1.0],
-            'cylindrical':[70.0, 40.0, 1.0, 1.0, 0.0, 'water_liquid', 'polyethylene', 1.0],
+            'well':[15.0, 40.0, 1.0, 1.0, 0.0, 'water', 'polystyrene', 1.0],
+            'marinelli':[130.0, 90.0, 100.0, 70.0, 2.0, 'water', 'polystyrene', 1.0],
+            'cylindrical':[70.0, 40.0, 1.0, 1.0, 0.0, 'water', 'polystyrene', 1.0],
         }[mode]
         out = list(defaults)
         any_typed = False
@@ -423,8 +423,20 @@ class LiveGeometryWidget(QGroupBox):
         layout.addWidget(self.info)
         self.source.currentIndexChanged.connect(self.refresh)
 
+    def set_standard_available(self, available):
+        """Offer the Standard preview only when a standard is used (not for summing only)."""
+        row = self.source.findText('Standard')
+        self.source.view().setRowHidden(row, not available)
+        item = self.source.model().item(row)
+        if item is not None:   # also unreachable with the mouse wheel and arrow keys
+            item.setEnabled(available)
+        if not available and self.source.currentText()=='Standard':
+            self.source.setCurrentText('Sample')
+
     def set_kind(self, kind):
         """Show the sample, the standard or the detector only."""
+        if kind=='Standard' and getattr(self.owner, 'workflow', None)=='summing':
+            return   # the standard is hidden for coincidence summing only
         idx = self.source.findText(kind, Qt.MatchFlag.MatchFixedString)
         if idx>=0 and self.source.currentIndex()!=idx:
             self.source.blockSignals(True)
@@ -459,6 +471,8 @@ class LiveGeometryWidget(QGroupBox):
     def open(self, *unused):
         """Open the large, dimensioned view in its own window."""
         dialog = GeometryDialog(self.owner)
+        if getattr(self.owner, 'workflow', None)=='summing':
+            dialog.source.removeItem(dialog.source.findText('Standard'))
         sel = self.source.currentText()
         if sel in ('Sample', 'Standard'):
             dialog.source.setCurrentText(sel)

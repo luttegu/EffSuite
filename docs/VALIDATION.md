@@ -1,4 +1,4 @@
-# Validation Evidence — EffSuite 0.3.1
+# Validation Evidence — EffSuite 0.3.2
 
 > **This release is not qualified for routine laboratory use.** The evidence
 > below supports evaluation. It does not replace a laboratory's own
@@ -6,8 +6,8 @@
 
 ## Automated tests
 
-`tools/run_tests.py` (or `Run_Tests_Windows.bat`) runs 16 test modules with
-155 tests in parallel. All pass on Windows 11 x86-64 (CPython 3.11+, NumPy,
+`tools/run_tests.py` (or `Run_Tests_Windows.bat`) runs 17 test modules with
+166 tests in parallel. All pass on Windows 11 x86-64 (CPython 3.11+, NumPy,
 Matplotlib, PySide6) and on Linux x86-64. They use the real bundled native
 programs and the real XCOM, and cover:
 
@@ -20,7 +20,7 @@ programs and the real XCOM, and cover:
   - the identity transfer (standard = sample) gives exactly 1;
   - small sum-peak factors stay positive.
 - **Bulk density.** The 8-line source density scaling ρ/ρ₀ in all three
-  geometries: `Water` at ρ = 2.0 g/cm³ equals `HeavyWater` (ρ₀ = 2.0 g/cm³)
+  geometries: `Water` at ρ = 2.0 g/cm³ equals `heavy` (H₂O, ρ₀ = 2.0 g/cm³)
   to 6 decimal places. The point-source `vacuum` (ρ = 0) guard works, and
   7-line models still load.
 - **Laboratory benchmark cases.**

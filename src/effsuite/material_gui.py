@@ -1,14 +1,18 @@
-"""The material editor tab: the original Material workbook as a form.
+"""The material editor window: the original Material workbook as a form.
 
 The user enters a name, a density and up to 10 compounds with relative
-weights. "Create Material" runs XCOM (see materials.py) and saves the
-composition and attenuation files in the chosen data folder.
+weights. "Apply" runs XCOM (see materials.py), saves the composition and
+attenuation files in the chosen data folder and selects the material in
+the field the window was opened from (Detector or Standard & Sample page).
+
+The window is separate and non-modal: the user can keep editing the
+detector, sample and standard forms while it is open.
 """
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QColor, QDesktopServices
-from PySide6.QtWidgets import (QComboBox, QFileDialog, QFormLayout, QGroupBox, QHBoxLayout, QHeaderView, QLabel,
+from PySide6.QtWidgets import (QFileDialog, QFormLayout, QGroupBox, QHBoxLayout, QHeaderView, QLabel,
                                QLineEdit, QMessageBox, QPushButton, QTableWidget, QTableWidgetItem, QVBoxLayout,
                                QWidget)
 
@@ -23,12 +27,19 @@ SUMMARY_ERROR = "background:#fef2f2;border:1px solid #fecaca;border-radius:4px;p
 
 
 class MaterialEditor(QWidget):
-    """Material form. ``owner`` is the main window (for status, tasks and data folder)."""
+    """Material window. ``owner`` is the main window (for tasks, data folder and the forms to update).
+
+    It is a top-level window without parent, so it does not stay in front of
+    the (almost full-screen) main window. Closing it only hides it, so a
+    half-typed material is kept until the next opening.
+    """
 
     def __init__(self, owner):
-        super().__init__()
+        super().__init__(None, Qt.WindowType.Window)
         self.owner = owner
         self.loading = False   # True while we fill the form ourselves (no recalculation)
+        self.setWindowTitle("EffSuite — Material Editor")
+        self.resize(900, 640)
         layout = QVBoxLayout(self)
         layout.setSpacing(8)
         layout.setContentsMargins(12, 8, 12, 8)
@@ -36,6 +47,7 @@ class MaterialEditor(QWidget):
         layout.addWidget(self._name_and_density_box())
         layout.addWidget(self._composition_box(), 1)
         layout.addWidget(self._output_box())
+        layout.addLayout(self._apply_bar())
         self.name.textChanged.connect(self.update_fractions)
         self.density.textChanged.connect(self.update_fractions)
 
@@ -46,13 +58,13 @@ class MaterialEditor(QWidget):
         title.setStyleSheet("font-size:13.5pt;font-weight:700;color:#0f172a;")
         bar.addWidget(title)
         bar.addStretch()
-        # Shown when the user came here from a source form's "Edit" button.
-        self.return_button = QPushButton("◀ Return to Source")
-        self.return_button.setVisible(False)
-        self.return_button.setStyleSheet("font-weight:600;background:#eff6ff;color:#1d4ed8;border:1px solid #93c5fd;"
-                                         "padding:5px 14px;border-radius:5px;")
-        self.return_button.clicked.connect(self.return_to_caller)
-        bar.addWidget(self.return_button)
+        # Which form field "Apply" selects the material in (set by set_target).
+        self.target_label = QLabel()
+        self.target_label.setTextFormat(Qt.TextFormat.RichText)
+        self.target_label.setStyleSheet("color:#1e40af;background:#eff6ff;border:1px solid #bfdbfe;"
+                                        "border-radius:4px;padding:4px 10px;")
+        bar.addWidget(self.target_label)
+        self.set_target(None)
         return bar
 
     def _name_and_density_box(self):
@@ -90,11 +102,14 @@ class MaterialEditor(QWidget):
 
         buttons = QHBoxLayout()
         buttons.setSpacing(8)
+        self._task_buttons = []   # buttons that start a background task (see set_busy)
         for text, action in [("📂 Load Composition / Excel…", self.load), ("💾 Store JSON…", self.save),
                              ("📋 Copy Excel Template…", self.copy_template), ("🧹 Clear", self.clear)]:
             button = QPushButton(text)
             button.clicked.connect(action)
             buttons.addWidget(button)
+            if action == self.load:
+                self._task_buttons.append(button)
         buttons.addStretch()
         column.addLayout(buttons)
 
@@ -129,18 +144,49 @@ class MaterialEditor(QWidget):
         browse = QPushButton("Browse…")
         browse.clicked.connect(self.browse)
         row.addWidget(browse)
-        generate = QPushButton("⚡ Create Material and Attenuation Table")
-        generate.setStyleSheet("font-weight:600;font-size:10pt;background:#16a34a;color:#ffffff;"
-                               "border:1px solid #15803d;padding:7px 18px;border-radius:5px;")
-        generate.clicked.connect(self.generate)
-        row.addWidget(generate)
         return box
 
-    # --- reading and filling the form --------------------------------------
-    def return_to_caller(self):
-        """Go back to the tab the user came from (the source tab by default)."""
-        tab = getattr(self.owner, "_return_tab_index", None)
-        self.owner.tabs.setCurrentIndex(tab if tab is not None else 2)
+    def _apply_bar(self):
+        bar = QHBoxLayout()
+        bar.setSpacing(8)
+        self.status = QLabel("")
+        self.status.setWordWrap(True)
+        self.status.setStyleSheet("color:#334155;font-weight:500;")
+        bar.addWidget(self.status, 1)
+        self.apply_button = QPushButton("✔ Apply (create material + XCOM attenuation table)")
+        self.apply_button.setToolTip("Save the composition, generate the XCOM attenuation table and update the "
+                                     "material lists of the Detector and Standard & Sample pages")
+        self.apply_button.setStyleSheet("font-weight:600;font-size:10pt;background:#16a34a;color:#ffffff;"
+                                        "border:1px solid #15803d;padding:7px 18px;border-radius:5px;")
+        self.apply_button.clicked.connect(self.generate)
+        bar.addWidget(self.apply_button)
+        close = QPushButton("Close")
+        close.clicked.connect(self.close)
+        bar.addWidget(close)
+        return bar
+
+    # --- window state ------------------------------------------------------
+    def set_target(self, description: str | None):
+        """Show which form field "Apply" will select the material in (None: no field)."""
+        if description:
+            self.target_label.setText(f"Apply selects the material in: <b>{description}</b>")
+        else:
+            self.target_label.setText("Apply adds the material to every material list")
+
+    def set_busy(self, busy: bool):
+        """Disable the buttons that start a background task while another one runs."""
+        self.apply_button.setEnabled(not busy)
+        for button in self._task_buttons:
+            button.setEnabled(not busy)
+        text = self.status.text()
+        if busy and not text.startswith("Creating"):
+            self.status.setText("A calculation is running — Apply is available when it has finished.")
+        elif not busy and text.startswith(("A calculation is running", "Creating")):
+            self.status.setText("")   # finished without success message (failed or cancelled)
+
+    def error(self, message):
+        """Show an error in front of this window (not behind it, in the main window)."""
+        QMessageBox.warning(self, "EffSuite — Material Editor", str(message))
 
     def clear(self):
         self.loading = True
@@ -232,7 +278,7 @@ class MaterialEditor(QWidget):
         try:
             definition = self.collect()
         except Exception as exc:
-            self.owner.error(exc)
+            self.error(exc)
             return
         folder = self._start_folder("Composition")
         folder.mkdir(parents=True, exist_ok=True)
@@ -241,9 +287,9 @@ class MaterialEditor(QWidget):
         if filename:
             try:
                 save_definition(filename, definition)
-                self.owner.status.setText("Saved " + filename)
+                self.status.setText("Saved " + filename)
             except Exception as exc:
-                self.owner.error(exc)
+                self.error(exc)
 
     def copy_template(self, *unused):
         folder = self._start_folder()
@@ -257,35 +303,38 @@ class MaterialEditor(QWidget):
                 Path(filename).write_bytes(TEMPLATE.read_bytes())
                 QDesktopServices.openUrl(QUrl.fromLocalFile(filename))
             except OSError as exc:
-                self.owner.error(f"Could not copy the template to {filename}: {exc}")
+                self.error(f"Could not copy the template to {filename}: {exc}")
 
     def browse(self, *unused):
         folder = QFileDialog.getExistingDirectory(self, "Output data folder", self.library.text())
         if folder:
             self.library.setText(folder)
 
-    def _material_exists(self, name: str, library: Path, base: Path) -> bool:
-        """True when creating ``name`` would replace an existing material."""
+    def _material_exists(self, name: str, library: Path) -> bool:
+        """True when creating ``name`` would replace (or shadow) an existing material:
+        one in the output folder or a bundled original material."""
         def has(folder: Path) -> bool:
             return any((folder / sub / (name + ".txt")).exists() for sub in ("Composition", "Material"))
-        # A new library starts as a copy of the base data, so check the base too.
-        return has(library) if library.exists() else has(base)
+        return has(library) or has(COMMON_DATA)
 
     def generate(self, *unused):
         """Run XCOM and save the material (asks before replacing an existing one)."""
+        if self.owner.thread is not None:
+            self.error("A calculation is still running. Apply the material when it has finished.")
+            return
         try:
             definition = self.collect()
         except Exception as exc:
-            self.owner.error(exc)
+            self.error(exc)
             return
         if not self.library.text().strip():
-            self.owner.error("Choose an output data folder")
+            self.error("Choose an output data folder")
             return
         library = Path(self.library.text().strip())
         mode = self.owner.current_mode()
         base = self.owner.data_directory
         overwrite = False
-        if self._material_exists(definition["name"], library, Path(base) if base else COMMON_DATA):
+        if self._material_exists(definition["name"], library):
             answer = QMessageBox.question(
                 self, "Material Already Exists",
                 f"Material '{definition['name']}' already exists.\n\nDo you want to overwrite it with this new composition "
@@ -296,23 +345,12 @@ class MaterialEditor(QWidget):
             overwrite = True
 
         def accepted(result):
-            # Use the library everywhere, select the new material where the user came from.
-            self.owner.data_directory = result["data_directory"]
-            self.owner.data_label.setText("Data library: " + result["data_directory"])
-            self.owner.refresh_materials()
-            self.owner.changed()
-            self.owner.status.setText("Created " + definition["name"] + " — applied to selection.")
-            self.owner.log.appendPlainText("Material saved: " + result["attenuation_file"])
-            target_input = getattr(self.owner, "_target_material_input", None)
-            if isinstance(target_input, QComboBox):
-                try:
-                    target_input.setCurrentText(definition["name"])
-                except RuntimeError:
-                    pass   # the form was rebuilt meanwhile (mode change): nothing to select
-            tab = getattr(self.owner, "_return_tab_index", None)
-            if tab is not None:
-                self.owner.tabs.setCurrentIndex(tab)
+            # Use the library everywhere and select the new material in the target field.
+            self.owner.material_applied(definition, result)
+            self.status.setText(f"✔ '{definition['name']}' created and applied. "
+                                "The window stays open for further materials.")
 
+        self.status.setText(f"Creating '{definition['name']}' (XCOM)…")
         self.owner.start_task(lambda log: create_material(definition, library, geometry=mode, base_directory=base,
                                                           cancel=self.owner.cancel_event, progress=log, overwrite=overwrite),
                               accepted, cancellable=True)

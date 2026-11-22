@@ -105,7 +105,7 @@ class SuiteTests(unittest.TestCase):
 
     def test_source_density_scaling_matches_heavywater_across_all_three_geometries(self):
         # Verify EFFTRAN 4.9 / MEFFTRAN 1.8 / WEFFTRAN 8th-line density scaling:
-        # 'water' (rho0=1.0) with sample[7]=2.0 must match 'HeavyWater' (rho0=2.0) with sample[7]=2.0
+        # 'water' (rho0=1.0) with sample[7]=2.0 must match 'heavy' (rho0=2.0) with sample[7]=2.0
         for name in ["cylinder", "marinelli", "well"]:
             with self.subTest(name=name):
                 cal = [
@@ -121,7 +121,7 @@ class SuiteTests(unittest.TestCase):
                 p_water2["sample"][7] = 2.0
 
                 p_heavy = copy.deepcopy(p_water2)
-                p_heavy["sample"][5] = "HeavyWater"
+                p_heavy["sample"][5] = "heavy"
                 p_heavy["sample"][7] = 2.0
 
                 res_water2 = run_project(p_water2, self.root / f"{name}_water_rho2")
@@ -159,7 +159,7 @@ class SuiteTests(unittest.TestCase):
         vals = read_model("cylindrical", "sample", legacy_txt)
         self.assertEqual(len(vals), 8)
         self.assertAlmostEqual(vals[7], 1.4, places=4)
-        vals_json = validate_model("marinelli", "sample", [100.0, 80.0, 90.0, 2.0, 2.0, "HeavyWater", "plexiglass"])
+        vals_json = validate_model("marinelli", "sample", [100.0, 80.0, 90.0, 2.0, 2.0, "heavy", "plexiglass"])
         self.assertEqual(len(vals_json), 8)
         self.assertAlmostEqual(vals_json[7], 2.0, places=4)
 
