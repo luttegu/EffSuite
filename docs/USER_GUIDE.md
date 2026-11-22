@@ -1,4 +1,4 @@
-# EffSuite User Guide — v0.3.2
+# EffSuite User Guide — v0.3.3
 
 > **Spectrometry software.** EffSuite reads and writes **Canberra / Mirion
 > Genie 2000** files (`.CAL`, `.NLB`, `.CTF`) and **ORTEC GammaVision** files

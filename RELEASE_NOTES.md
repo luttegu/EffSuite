@@ -1,6 +1,6 @@
 # Release Notes
 
-## Unreleased
+## EffSuite 0.3.3 (November 2026)
 
 The engines, their sources and all results are unchanged.
 
