@@ -3,519 +3,489 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>EffSuite — Gamma Spectrometry Efficiency Transfer & Summing Suite</title>
-  <meta name="description" content="EffSuite is a modern, high-performance efficiency transfer and true coincidence summing framework for HPGe gamma-ray spectrometry, unifying EFFTRAN 5.0, MEFFTRAN 1.9, and WEFFTRAN.">
+  <title>EffSuite — efficiency transfer and coincidence summing for HPGe detectors</title>
+  <meta name="description" content="EffSuite transfers HPGe efficiency calibrations to new sample geometries and computes true coincidence summing corrections, built on Tim Vidmar's EFFTRAN 5.0, MEFFTRAN 1.9 and WEFFTRAN.">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="icon" type="image/png" href="icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-dark: #0a0f1d;
-      --bg-card: #111827;
-      --bg-card-hover: #172238;
-      --primary: #3b82f6;
-      --primary-hover: #2563eb;
-      --accent: #06b6d4;
-      --accent-green: #10b981;
-      --accent-amber: #f59e0b;
-      --text-main: #f3f4f6;
-      --text-muted: #9ca3af;
-      --border: #1f2937;
-      --border-highlight: #2e3d56;
+      /* Ink ramp: the counting room after hours */
+      --bg-deep: #07080d;
+      --bg: #0b0d14;
+      --surface: #11141c;
+      --raised: #1a1e28;
+      --hairline: rgba(238, 240, 245, 0.08);
+      --hairline-strong: rgba(238, 240, 245, 0.14);
+      --text: #eef0f5;
+      --text-2: #a3a9b8;
+      --text-3: #7a8296;
+      /* One accent: the MCA cursor */
+      --accent: #e5a54b;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --mono: 'IBM Plex Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background-color: var(--bg-dark);
-      color: var(--text-main);
+      font-family: var(--sans);
+      font-size: 15px;
       line-height: 1.6;
-      overflow-x: hidden;
+      background-color: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
     }
-    a { color: var(--accent); text-decoration: none; transition: all 0.2s; }
-    a:hover { color: #38bdf8; text-decoration: underline; }
-    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
-    
+    a { color: var(--text); text-decoration: underline; text-decoration-color: var(--hairline-strong); text-underline-offset: 3px; transition: color 150ms var(--ease), text-decoration-color 150ms var(--ease); }
+    a:hover { text-decoration-color: var(--text-2); }
+    a:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+    code, .mono { font-family: var(--mono); font-size: 0.9em; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+    /* Signature: files and energies as mono tags */
+    .tag {
+      display: inline-block;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 20px;
+      padding: 0 6px;
+      border-radius: 4px;
+      background: var(--raised);
+      border: 1px solid var(--hairline);
+      color: var(--text);
+      white-space: nowrap;
+    }
+
     /* Navigation */
     header {
-      background: rgba(10, 15, 29, 0.85);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
       position: sticky;
       top: 0;
-      z-index: 100;
+      z-index: 10;
+      background: var(--bg);
+      border-bottom: 1px solid var(--hairline);
     }
-    .nav-inner {
+    .nav-inner { display: flex; justify-content: space-between; align-items: center; height: 64px; }
+    .logo { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 500; color: var(--text); text-decoration: none; }
+    .logo-mark {
+      width: 24px; height: 24px;
+      display: grid; place-items: center;
+      border-radius: 6px;
+      background: var(--raised);
+      border: 1px solid var(--hairline-strong);
+      color: var(--accent);
+      font-family: Cambria, 'Times New Roman', serif;
+      font-size: 17px;
+      line-height: 1;
+      padding-bottom: 3px;
+    }
+    .nav-links { display: flex; gap: 28px; align-items: center; }
+    .nav-links a { color: var(--text-2); font-size: 14px; text-decoration: none; }
+    .nav-links a:hover { color: var(--text); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 44px;
+      padding: 0 20px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background-color 150ms var(--ease), border-color 150ms var(--ease), transform 120ms var(--ease);
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn svg { width: 16px; height: 16px; flex: none; }
+    .btn-primary { background: var(--text); color: var(--bg); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4); }
+    .btn-primary:hover { background: #d9dce4; }
+    .btn-secondary { background: var(--raised); color: var(--text); border: 1px solid var(--hairline-strong); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06); }
+    .btn-secondary:hover { background: #222736; }
+    .btn-sm { height: 32px; padding: 0 12px; font-size: 14px; }
+    .nav-links .btn-secondary { color: var(--text); }
+
+    /* Hero */
+    .hero { padding: 96px 0 112px; }
+    .hero-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 64px; align-items: center; }
+    .release { display: inline-block; font-family: var(--mono); font-size: 12px; color: var(--text-3); text-decoration: none; margin-bottom: 24px; }
+    .release:hover { color: var(--text-2); }
+    h1 {
+      font-size: 52px;
+      font-weight: 500;
+      line-height: 1.06;
+      letter-spacing: -0.02em;
+      margin-bottom: 24px;
+      text-wrap: balance;
+    }
+    .hero-subtitle { font-size: 18px; line-height: 28px; color: var(--text-2); max-width: 30rem; margin-bottom: 40px; }
+    .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; }
+
+    /* Hero moment: example result window */
+    .result {
+      background: var(--surface);
+      border: 1px solid var(--hairline);
+      border-radius: 16px;
+      box-shadow: 0 24px 48px -16px rgba(0, 0, 0, 0.6);
+      overflow: hidden;
+    }
+    .result-head {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      height: 72px;
-    }
-    .logo {
-      display: flex;
-      align-items: center;
       gap: 12px;
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: #fff;
+      height: 44px;
+      padding: 0 20px;
+      border-bottom: 1px solid var(--hairline);
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-3);
     }
-    .logo img { width: 36px; height: 36px; border-radius: 8px; }
-    .nav-links { display: flex; gap: 24px; align-items: center; }
-    .nav-links a { color: var(--text-muted); font-size: 0.95rem; font-weight: 500; }
-    .nav-links a:hover { color: #fff; text-decoration: none; }
-    .btn-github {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-highlight);
-      border-radius: 8px;
-      color: #fff !important;
-      font-weight: 500;
-      font-size: 0.9rem;
-    }
-    .btn-github:hover { background: var(--bg-card-hover); text-decoration: none; border-color: var(--primary); }
+    .result-head strong { font-weight: 500; color: var(--text); }
+    .result-body { padding: 20px 20px 24px; }
+    .plot { position: relative; height: 240px; margin: 4px 0 44px 32px; }
+    .plot svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+    .plot .grid line { stroke: var(--hairline); stroke-width: 1; vector-effect: non-scaling-stroke; }
+    .plot .trace { fill: none; stroke: var(--text-2); stroke-width: 1.25; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+    .plot .sum-line { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 3 3; vector-effect: non-scaling-stroke; }
+    .plot .lbl { position: absolute; font-family: var(--mono); font-size: 11px; line-height: 16px; color: var(--text-3); white-space: nowrap; }
+    .plot .ylbl { left: -32px; width: 24px; text-align: right; transform: translateY(-50%); }
+    .plot .xlbl { top: calc(100% + 8px); transform: translateX(-50%); }
+    .plot .peak { color: var(--text-2); }
+    .plot .peak-sum { color: var(--accent); }
+    .result table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 14px; }
+    .result th { font-weight: 400; font-size: 12px; color: var(--text-3); text-align: right; padding: 0 0 8px; border-bottom: 1px solid var(--hairline); }
+    .result td { text-align: right; padding: 10px 0; border-bottom: 1px solid var(--hairline); font-family: var(--mono); font-size: 13px; color: var(--text-2); }
+    .result th:first-child, .result td:first-child { text-align: left; }
+    .result td.c { color: var(--text); font-weight: 500; }
+    .result-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 16px; font-size: 13px; color: var(--text-3); }
 
-    /* Hero Section */
-    .hero {
-      padding: 90px 0 60px;
-      text-align: center;
-      background: radial-gradient(circle at 50% 20%, rgba(59, 130, 246, 0.15), transparent 70%);
-    }
-    .badge-version {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 14px;
-      background: rgba(59, 130, 246, 0.12);
-      border: 1px solid rgba(59, 130, 246, 0.3);
-      border-radius: 999px;
-      font-size: 0.85rem;
-      color: #60a5fa;
-      font-weight: 600;
-      margin-bottom: 24px;
-    }
-    .badge-pulse {
-      width: 8px;
-      height: 8px;
-      background: #3b82f6;
-      border-radius: 50%;
-      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
-      70% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
-    }
-    h1 {
-      font-size: 3.2rem;
-      font-weight: 800;
-      letter-spacing: -0.03em;
-      line-height: 1.15;
-      margin-bottom: 20px;
-      background: linear-gradient(135deg, #ffffff 30%, #93c5fd 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .hero-subtitle {
-      font-size: 1.25rem;
-      color: var(--text-muted);
-      max-width: 800px;
-      margin: 0 auto 36px;
-      font-weight: 400;
-    }
-    .hero-cta {
-      display: flex;
-      justify-content: center;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-    .btn-primary {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      padding: 14px 28px;
-      background: var(--primary);
-      border-radius: 10px;
-      color: #fff !important;
-      font-weight: 600;
-      font-size: 1.05rem;
-      box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.4);
-      transition: all 0.2s;
-    }
-    .btn-primary:hover {
-      background: var(--primary-hover);
-      transform: translateY(-2px);
-      text-decoration: none;
-      box-shadow: 0 14px 30px -5px rgba(59, 130, 246, 0.5);
-    }
-    .btn-secondary {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      padding: 14px 28px;
-      background: var(--bg-card);
-      border: 1px solid var(--border-highlight);
-      border-radius: 10px;
-      color: #fff !important;
-      font-weight: 600;
-      font-size: 1.05rem;
-      transition: all 0.2s;
-    }
-    .btn-secondary:hover {
-      background: var(--bg-card-hover);
-      text-decoration: none;
-      border-color: var(--text-muted);
-    }
-    
-    /* Notice Banners */
-    .notice-box {
-      margin: 40px auto 0;
-      max-width: 900px;
-      background: rgba(245, 158, 11, 0.08);
-      border: 1px solid rgba(245, 158, 11, 0.3);
-      border-left: 4px solid var(--accent-amber);
-      border-radius: 8px;
-      padding: 16px 20px;
-      text-align: left;
-      font-size: 0.95rem;
-      color: #fde68a;
-    }
-    .notice-box strong { color: #fbbf24; }
+    /* Sections */
+    .section { padding: 96px 0; border-top: 1px solid var(--hairline); }
+    .section-head { max-width: 40rem; margin-bottom: 48px; }
+    h2 { font-size: 32px; font-weight: 500; line-height: 1.2; letter-spacing: -0.01em; margin-bottom: 12px; }
+    .section-desc { font-size: 17px; line-height: 26px; color: var(--text-2); }
 
-    /* Features Grid */
-    .section { padding: 80px 0; border-bottom: 1px solid var(--border); }
-    .section-title {
-      text-align: center;
-      font-size: 2.2rem;
-      font-weight: 700;
-      margin-bottom: 16px;
-      letter-spacing: -0.02em;
-    }
-    .section-desc {
-      text-align: center;
-      color: var(--text-muted);
-      max-width: 650px;
-      margin: 0 auto 50px;
-      font-size: 1.1rem;
-    }
-    .grid-3 {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 24px;
-    }
-    .card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 30px;
-      transition: all 0.25s;
-    }
-    .card:hover {
-      border-color: var(--border-highlight);
-      transform: translateY(-4px);
-      box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.5);
-    }
-    .card-icon {
-      font-size: 2rem;
-      margin-bottom: 18px;
-      display: inline-block;
-    }
-    .card h3 {
-      font-size: 1.3rem;
-      margin-bottom: 12px;
-      font-weight: 600;
-      color: #fff;
-    }
-    .card p {
-      color: var(--text-muted);
-      font-size: 0.95rem;
-      line-height: 1.55;
-    }
+    /* Capabilities */
+    .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px 48px; }
+    .feature { padding-top: 20px; border-top: 1px solid var(--hairline-strong); }
+    .feature h3 { font-size: 16px; font-weight: 500; line-height: 24px; margin-bottom: 8px; }
+    .feature p { font-size: 14px; line-height: 22px; color: var(--text-2); }
 
-    /* Systems Supported */
-    .systems-container {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 30px;
-      margin-top: 30px;
-    }
-    @media(max-width: 800px) { .systems-container { grid-template-columns: 1fr; } }
-    .system-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
+    /* Vendor systems */
+    .systems { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .system {
+      background: var(--surface);
+      border: 1px solid var(--hairline);
+      border-radius: 16px;
       padding: 32px;
-      position: relative;
+      display: flex;
+      flex-direction: column;
     }
-    .system-badge {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-size: 0.8rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 16px;
+    .system-vendor { font-size: 13px; color: var(--text-3); margin-bottom: 4px; }
+    .system h3 { font-size: 20px; font-weight: 500; line-height: 28px; margin-bottom: 12px; }
+    .system > p { font-size: 14px; line-height: 22px; color: var(--text-2); }
+    .files { list-style: none; margin: 24px 0 0; border-top: 1px solid var(--hairline); }
+    .files li { display: grid; grid-template-columns: 96px 1fr; gap: 16px; align-items: baseline; padding: 12px 0; border-bottom: 1px solid var(--hairline); font-size: 14px; line-height: 22px; color: var(--text-2); }
+    .files li .tag { justify-self: start; }
+    .system-notes { list-style: none; margin-top: 20px; }
+    .system-notes li { position: relative; padding-left: 16px; font-size: 14px; line-height: 22px; color: var(--text-2); margin-bottom: 8px; }
+    .system-notes li::before { content: ""; position: absolute; left: 0; top: 10px; width: 6px; height: 1px; background: var(--text-3); }
+    .testers {
+      margin-top: auto;
+      padding: 16px;
+      border-radius: 8px;
+      background: var(--raised);
+      border: 1px solid var(--hairline);
+      font-size: 14px;
+      line-height: 22px;
+      color: var(--text-2);
     }
-    .badge-genie { background: rgba(139, 92, 246, 0.2); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.4); }
-    .badge-gv { background: rgba(6, 182, 212, 0.2); color: #67e8f9; border: 1px solid rgba(6, 182, 212, 0.4); }
-    .system-card h3 { font-size: 1.4rem; margin-bottom: 14px; }
-    .file-pill-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
-    .file-pill {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
-      background: #1f2937;
-      padding: 4px 10px;
-      border-radius: 6px;
-      border: 1px solid #374151;
-      color: #38bdf8;
-    }
-    .system-card ul { padding-left: 20px; color: var(--text-muted); font-size: 0.95rem; margin-top: 14px; }
-    .system-card li { margin-bottom: 8px; }
+    .system-notes + .testers { margin-top: 24px; }
+    .testers strong { font-weight: 500; color: var(--text); }
+    .testers .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-right: 8px; vertical-align: 2px; }
 
-    /* Code Block */
+    /* CLI */
+    .cli-grid { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 7fr); gap: 64px; align-items: start; }
+    .cli-grid .section-head { margin-bottom: 0; }
+    .cli-grid .section-desc + .section-desc { margin-top: 16px; }
     .code-box {
-      background: #0d1322;
-      border: 1px solid var(--border-highlight);
-      border-radius: 10px;
-      padding: 20px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.9rem;
-      color: #e2e8f0;
+      background: var(--bg-deep);
+      border: 1px solid var(--hairline);
+      border-radius: 12px;
+      padding: 20px 24px;
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 22px;
+      color: var(--text);
       overflow-x: auto;
-      margin: 20px 0;
+      white-space: pre;
     }
-    .code-keyword { color: #f43f5e; }
-    .code-arg { color: #38bdf8; }
-    .code-val { color: #a5f3fc; }
+    .code-box .arg { color: var(--text-3); }
+    .code-box .val { color: var(--text-2); }
 
-    /* Attribution & Footer */
-    footer {
-      background: #070a14;
-      border-top: 1px solid var(--border);
-      padding: 60px 0 30px;
-      font-size: 0.9rem;
-      color: var(--text-muted);
-    }
-    .footer-grid {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr;
-      gap: 40px;
-      margin-bottom: 40px;
-    }
-    @media(max-width: 768px) { .footer-grid { grid-template-columns: 1fr; } }
-    .footer-col h4 { color: #fff; margin-bottom: 16px; font-size: 1rem; }
+    /* Footer */
+    footer { background: var(--bg-deep); border-top: 1px solid var(--hairline); padding: 64px 0 32px; font-size: 14px; line-height: 22px; color: var(--text-2); }
+    .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 48px; margin-bottom: 48px; }
+    .footer-col h4 { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 12px; }
     .footer-col ul { list-style: none; }
-    .footer-col li { margin-bottom: 10px; }
-    .footer-col a { color: var(--text-muted); }
-    .footer-col a:hover { color: #fff; }
-    .footer-bottom {
-      border-top: 1px solid #1a2234;
-      padding-top: 24px;
-      text-align: center;
-      font-size: 0.85rem;
+    .footer-col li { margin-bottom: 8px; }
+    .footer-col a { color: var(--text-2); text-decoration: none; }
+    .footer-col a:hover { color: var(--text); }
+    .footer-col p + p { margin-top: 12px; font-size: 13px; color: var(--text-3); }
+    .footer-bottom { border-top: 1px solid var(--hairline); padding-top: 24px; font-size: 13px; line-height: 20px; color: var(--text-3); max-width: 56rem; }
+    .footer-bottom a { color: var(--text-2); }
+
+    /* One entrance */
+    @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .hero-copy, .result { animation: rise 420ms var(--ease) both; }
+    .result { animation-delay: 60ms; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .hero-copy, .result { animation: none; }
+      .btn { transition: none; }
+    }
+
+    @media (max-width: 1024px) {
+      .hero-grid, .cli-grid { grid-template-columns: minmax(0, 1fr); gap: 48px; }
+      .features { grid-template-columns: 1fr 1fr; }
+      .systems { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+      .container { padding: 0 16px; }
+      .nav-links a:not(.btn) { display: none; }
+      .hero { padding: 48px 0 64px; }
+      h1 { font-size: 36px; }
+      .hero-subtitle { font-size: 17px; line-height: 26px; }
+      .section { padding: 64px 0; }
+      h2 { font-size: 26px; }
+      .features { grid-template-columns: 1fr; gap: 32px; }
+      .system { padding: 24px 20px; }
+      .files li { grid-template-columns: 1fr; gap: 4px; }
+      .result-body { padding: 16px 16px 20px; }
+      .plot { height: 180px; }
+      .plot .xlbl.minor { display: none; }
+      .footer-grid { grid-template-columns: 1fr; gap: 32px; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Navigation -->
   <header>
     <div class="container nav-inner">
-      <div class="logo">
-        <img src="icon.png" alt="EffSuite Logo">
+      <a class="logo" href="#top" aria-label="EffSuite home">
+        <span class="logo-mark" aria-hidden="true">γ</span>
         <span>EffSuite</span>
-      </div>
-      <nav class="nav-links">
+      </a>
+      <nav class="nav-links" aria-label="Main">
         <a href="#overview">Overview</a>
-        <a href="#spectrometry">Supported Formats</a>
-        <a href="#cli">CLI & Automation</a>
-        <a href="#download">Downloads</a>
-        <a href="https://github.com/luttegu/EffSuite" target="_blank" class="btn-github">
-          <svg height="18" width="18" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
-          </svg>
-          GitHub Repository
+        <a href="#spectrometry">Formats</a>
+        <a href="#cli">Command line</a>
+        <a href="#download">Download</a>
+        <a href="https://github.com/luttegu/EffSuite" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">
+          <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          GitHub
         </a>
       </nav>
     </div>
   </header>
 
-  <!-- Hero -->
-  <section class="hero">
-    <div class="container">
-      <div class="badge-version">
-        <span class="badge-pulse"></span>
-        Latest Release: v0.3.3 (November 2026)
-      </div>
-      <h1>Modern Efficiency Transfer &<br>Coincidence Summing for HPGe</h1>
-      <p class="hero-subtitle">
-        An open-source scientific framework modernizing Dr. Tim Vidmar's <strong>EFFTRAN 5.0</strong>, <strong>MEFFTRAN 1.9</strong>, and <strong>WEFFTRAN</strong> for high-resolution gamma-ray spectrometry laboratories.
-      </p>
-      <div class="hero-cta" id="download">
-        <a href="https://github.com/luttegu/EffSuite/releases/download/v0.3.3/EffSuite_0.3.3_Setup.exe" class="btn-primary">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download Windows Installer (v0.3.3)
-        </a>
-        <a href="https://github.com/luttegu/EffSuite" target="_blank" class="btn-secondary">
-          View on GitHub
-        </a>
-      </div>
-
-      <div class="notice-box">
-        <strong>⚠️ ORTEC GammaVision Notice & Call for Testers:</strong><br>
-        v0.1.4 introduces native GammaVision <code>.LIB</code> and <code>.EFT</code> file support implemented according to EFFTRAN specifications. Because the author does not have GammaVision software installed, live laboratory testing is requested. <strong>Volunteers are welcome to test and provide feedback!</strong>
-      </div>
-    </div>
-  </section>
-
-  <!-- Overview Features -->
-  <section class="section" id="overview">
-    <div class="container">
-      <h2 class="section-title">Core Computational Capabilities</h2>
-      <p class="section-desc">Engineered to eliminate Excel/VBA limitations while preserving verified Fortran physics precision and strict metrological traceability.</p>
-
-      <div class="grid-3">
-        <div class="card">
-          <span class="card-icon">⚡</span>
-          <h3>Parallel Summing Calculations</h3>
-          <p>Full cascade coincidence summing calculations executed across all CPU cores in one pass for every nuclide in the library, replacing serial workbook loops. New in v0.3.1: a relative standard uncertainty u(C) for every summing factor.</p>
-        </div>
-        <div class="card">
-          <span class="card-icon">🧪</span>
-          <h3>Dynamic NIST XCOM Engine</h3>
-          <p>Integrated XCOM 3.1 photon cross-section calculation. Supports custom chemical matrices and instant sample bulk density scaling ($\rho / \rho_0$) on the fly.</p>
-        </div>
-        <div class="card">
-          <span class="card-icon">📐</span>
-          <h3>Live 2D CAD Cross-Sections</h3>
-          <p>Dynamic axial cross-section view with collision-free dimension and quote callouts for cylindrical, Marinelli beaker, and well geometries.</p>
-        </div>
-        <div class="card">
-          <span class="card-icon">🛡️</span>
-          <h3>Non-Destructive File Export</h3>
-          <p>Original vendor templates are never overwritten in place. Exported calibration and library files are verified through immediate round-trip readback.</p>
-        </div>
-        <div class="card">
-          <span class="card-icon">💻</span>
-          <h3>Headless Automation CLI</h3>
-          <p>Automate LIMS workflows, batch-process CSV matrices, and replay GUI project files headlessly via <code>EffSuite_CLI.exe</code> or Python.</p>
-        </div>
-        <div class="card">
-          <span class="card-icon">🔬</span>
-          <h3>Audited Fortran Physics</h3>
-          <p>Audited Fortran physics engines with density scaling, full-precision transfer factors, and tall-sample well boundary handling with double-precision token safety.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Spectrometry Ecosystems -->
-  <section class="section" id="spectrometry">
-    <div class="container">
-      <h2 class="section-title">Dual Vendor Spectrometry Support</h2>
-      <p class="section-desc">Seamlessly import reference curves and export summing-corrected libraries for the industry's two primary gamma spectrometry ecosystems.</p>
-
-      <div class="systems-container">
-        <!-- Genie 2000 -->
-        <div class="system-card">
-          <span class="system-badge badge-genie">Canberra / Mirion</span>
-          <h3>Genie 2000 Integration</h3>
-          <p>Automated CAM environment bridge with support for registered 32-bit and 64-bit vendor type libraries.</p>
-          <div class="file-pill-list">
-            <span class="file-pill">.CAL (Efficiency)</span>
-            <span class="file-pill">.NLB (Nuclide Library)</span>
-            <span class="file-pill">.CTF (Certificate)</span>
+  <main id="top">
+    <section class="hero" id="download">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <a class="release" href="https://github.com/luttegu/EffSuite/releases" target="_blank" rel="noopener">Release 0.3.3 · November 2026</a>
+          <h1>Efficiency transfer and coincidence summing for HPGe detectors</h1>
+          <p class="hero-subtitle">
+            An open-source desktop app and command line around Tim Vidmar's EFFTRAN 5.0, MEFFTRAN 1.9 and WEFFTRAN, for gamma spectrometry laboratories working with cylindrical, Marinelli and well geometries.
+          </p>
+          <div class="hero-cta">
+            <a href="https://github.com/luttegu/EffSuite/releases/download/v0.3.3/EffSuite_0.3.3_Setup.exe" class="btn btn-primary">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+              Download for Windows
+            </a>
+            <a href="https://github.com/luttegu/EffSuite" target="_blank" rel="noopener" class="btn btn-secondary">View source</a>
           </div>
-          <ul>
-            <li>Transfers efficiency to sample geometry: <code>*_sample.CAL</code>.</li>
-            <li>Divides gamma line abundance by summing factor $C$: <code>*_corrected.NLB</code>.</li>
-            <li>Updates certificate emission rates: <code>*_corrected.CTF</code>.</li>
-            <li>Automated COM verification on reopened copies before publication.</li>
-          </ul>
         </div>
 
-        <!-- GammaVision -->
-        <div class="system-card">
-          <span class="system-badge badge-gv">ORTEC (Untested — Call for Testers)</span>
-          <h3>GammaVision Integration</h3>
-          <p>Pure-Python non-destructive implementation matching Tim Vidmar's original <code>gv.f</code> and <code>EFFTRAN.EFT</code> format routines.</p>
-          <div class="file-pill-list">
-            <span class="file-pill">.EFT (Efficiency)</span>
-            <span class="file-pill">.LIB (Nuclide Library)</span>
-            <span class="file-pill">_gv.txt (Audit Table)</span>
+        <figure class="result" aria-label="Example result: Co-60 spectrum with summing factors">
+          <div class="result-head">
+            <span><strong>Co-60</strong> · water, 55 mm, ρ 1.000 g/cm³</span>
+            <span>Example</span>
           </div>
-          <ul>
-            <li>Reads & writes 128-byte binary direct-access records (<code>EFFTRAN.Lib</code> layout).</li>
-            <li>Parses both 11-token (EFFTRAN) and 5-token (MEFFTRAN) <code>.EFT</code> layouts.</li>
-            <li>Exports matching `<name>_gv.txt` reports with energy, old/new yields, and factors.</li>
-            <li>Zero external dependencies — runs out-of-the-box on any Windows machine.</li>
-          </ul>
+          <div class="result-body">
+            <div class="plot">
+              <svg viewBox="0 0 560 220" preserveAspectRatio="none" aria-hidden="true">
+                <g class="grid">
+                  <line x1="0" x2="560" y1="10.5" y2="10.5"/>
+                  <line x1="0" x2="560" y1="62.9" y2="62.9"/>
+                  <line x1="0" x2="560" y1="115.2" y2="115.2"/>
+                  <line x1="0" x2="560" y1="167.6" y2="167.6"/>
+                  <line x1="0" x2="560" y1="220" y2="220"/>
+                </g>
+                <line class="sum-line" x1="519.1" x2="519.1" y1="64" y2="122"/>
+                <path class="trace" d="M4.1,47.5 L5.0,48.4 L5.8,49.5 L6.6,50.4 L7.5,51.5 L8.3,52.3 L9.1,53.0 L10.0,54.0 L10.8,54.8 L11.6,55.8 L12.4,56.6 L13.3,57.2 L14.1,56.0 L14.9,50.6 L15.8,49.2 L16.6,54.8 L17.4,60.6 L18.3,62.4 L19.1,63.0 L19.9,63.6 L20.7,64.1 L21.6,64.9 L22.4,65.4 L23.2,66.2 L24.1,66.6 L24.9,67.1 L25.7,67.9 L26.5,67.8 L27.4,68.5 L28.2,68.8 L29.0,69.5 L29.9,69.8 L30.7,69.9 L31.5,69.9 L32.4,69.6 L33.2,69.5 L34.0,69.4 L34.8,69.1 L35.7,68.5 L36.5,67.4 L37.3,67.3 L38.2,66.4 L39.0,65.7 L39.8,65.6 L40.7,64.7 L41.5,64.1 L42.3,64.6 L43.1,64.2 L44.0,64.3 L44.8,64.8 L45.6,65.0 L46.5,65.8 L47.3,66.9 L48.1,67.3 L48.9,68.4 L49.8,69.4 L50.6,70.4 L51.4,71.8 L52.3,72.9 L53.1,74.3 L53.9,74.7 L54.8,75.9 L55.6,76.5 L56.4,77.4 L57.2,77.8 L58.1,78.0 L58.9,77.8 L59.7,79.1 L60.6,79.1 L61.4,78.7 L62.2,78.5 L63.1,78.9 L63.9,79.7 L64.7,80.0 L65.5,79.2 L66.4,79.6 L67.2,79.8 L68.0,79.2 L68.9,79.2 L69.7,79.5 L70.5,79.5 L71.3,79.5 L72.2,79.2 L73.0,79.5 L73.8,79.6 L74.7,79.6 L75.5,80.3 L76.3,79.4 L77.2,79.6 L78.0,79.7 L78.8,80.6 L79.6,80.1 L80.5,79.7 L81.3,80.6 L82.1,80.1 L83.0,79.7 L83.8,80.5 L84.6,79.6 L85.5,79.9 L86.3,80.1 L87.1,80.0 L87.9,79.9 L88.8,80.1 L89.6,79.8 L90.4,80.4 L91.3,80.3 L92.1,79.9 L92.9,80.2 L93.7,80.5 L94.6,79.9 L95.4,79.8 L96.2,80.4 L97.1,80.7 L97.9,80.3 L98.7,80.3 L99.6,80.3 L100.4,79.8 L101.2,80.6 L102.0,79.9 L102.9,80.7 L103.7,80.5 L104.5,80.1 L105.4,79.9 L106.2,80.0 L107.0,80.2 L107.9,80.3 L108.7,80.3 L109.5,80.1 L110.3,80.4 L111.2,80.2 L112.0,80.1 L112.8,80.3 L113.7,80.1 L114.5,80.1 L115.3,79.7 L116.1,80.2 L117.0,80.5 L117.8,80.4 L118.6,80.3 L119.5,80.0 L120.3,80.4 L121.1,80.2 L122.0,79.8 L122.8,81.2 L123.6,80.7 L124.4,80.3 L125.3,80.2 L126.1,80.3 L126.9,80.5 L127.8,80.1 L128.6,80.3 L129.4,80.5 L130.3,79.6 L131.1,80.2 L131.9,80.5 L132.7,80.4 L133.6,80.4 L134.4,80.4 L135.2,81.2 L136.1,80.5 L136.9,80.0 L137.7,80.7 L138.5,80.4 L139.4,80.1 L140.2,80.1 L141.0,79.9 L141.9,80.9 L142.7,80.5 L143.5,80.5 L144.4,80.2 L145.2,80.0 L146.0,81.2 L146.8,80.0 L147.7,80.8 L148.5,80.1 L149.3,80.8 L150.2,80.3 L151.0,80.0 L151.8,80.4 L152.7,80.3 L153.5,80.1 L154.3,80.3 L155.1,80.4 L156.0,79.9 L156.8,80.0 L157.6,80.5 L158.5,79.5 L159.3,80.7 L160.1,80.1 L160.9,80.5 L161.8,80.3 L162.6,80.1 L163.4,80.3 L164.3,80.2 L165.1,80.9 L165.9,80.9 L166.8,80.2 L167.6,80.7 L168.4,80.7 L169.2,80.8 L170.1,80.0 L170.9,80.1 L171.7,79.9 L172.6,80.7 L173.4,80.4 L174.2,80.7 L175.1,80.1 L175.9,79.9 L176.7,80.7 L177.5,79.9 L178.4,80.1 L179.2,80.5 L180.0,81.0 L180.9,80.0 L181.7,80.4 L182.5,80.6 L183.3,80.3 L184.2,80.3 L185.0,80.0 L185.8,80.8 L186.7,80.2 L187.5,80.1 L188.3,80.2 L189.2,80.7 L190.0,81.0 L190.8,80.6 L191.6,81.0 L192.5,81.2 L193.3,81.1 L194.1,82.0 L195.0,83.1 L195.8,83.0 L196.6,84.1 L197.5,84.0 L198.3,85.0 L199.1,86.3 L199.9,87.2 L200.8,88.0 L201.6,89.4 L202.4,89.9 L203.3,91.4 L204.1,91.9 L204.9,92.4 L205.7,93.0 L206.6,94.5 L207.4,94.3 L208.2,95.8 L209.1,95.7 L209.9,96.3 L210.7,95.1 L211.6,96.3 L212.4,95.8 L213.2,96.0 L214.0,96.0 L214.9,96.3 L215.7,96.0 L216.5,95.4 L217.4,96.2 L218.2,96.0 L219.0,95.9 L219.9,96.5 L220.7,97.1 L221.5,96.9 L222.3,96.4 L223.2,97.9 L224.0,97.7 L224.8,97.4 L225.7,98.0 L226.5,99.1 L227.3,99.6 L228.1,101.1 L229.0,103.1 L229.8,105.1 L230.6,106.6 L231.5,108.1 L232.3,111.7 L233.1,115.0 L234.0,118.2 L234.8,122.3 L235.6,124.6 L236.4,129.1 L237.3,131.0 L238.1,137.1 L238.9,136.5 L239.8,131.6 L240.6,98.8 L241.4,59.9 L242.3,34.3 L243.1,22.9 L243.9,25.6 L244.7,42.9 L245.6,74.4 L246.4,115.4 L247.2,144.5 L248.1,149.5 L248.9,150.5 L249.7,149.2 L250.5,150.4 L251.4,150.8 L252.2,155.0 L253.0,150.4 L253.9,149.9 L254.7,152.4 L255.5,152.8 L256.4,149.3 L257.2,155.1 L258.0,151.6 L258.8,148.9 L259.7,153.9 L260.5,151.5 L261.3,149.9 L262.2,152.9 L263.0,151.9 L263.8,151.5 L264.7,154.4 L265.5,153.1 L266.3,152.6 L267.1,151.9 L268.0,153.3 L268.8,153.7 L269.6,155.1 L270.5,154.1 L271.3,152.2 L272.1,152.1 L272.9,136.3 L273.8,94.7 L274.6,57.0 L275.4,33.9 L276.3,24.9 L277.1,30.7 L277.9,50.2 L278.8,83.9 L279.6,125.0 L280.4,150.8 L281.2,154.8 L282.1,154.0 L282.9,158.4 L283.7,153.4 L284.6,154.6 L285.4,156.5 L286.2,153.3 L287.1,152.7 L287.9,158.1 L288.7,156.9 L289.5,155.4 L290.4,155.6 L291.2,156.7 L292.0,157.9 L292.9,153.0 L293.7,154.7 L294.5,158.7 L295.3,159.1 L296.2,154.1 L297.0,155.3 L297.8,154.1 L298.7,155.8 L299.5,158.8 L300.3,157.0 L301.2,161.6 L302.0,159.0 L302.8,157.9 L303.6,157.0 L304.5,159.4 L305.3,158.4 L306.1,157.5 L307.0,157.8 L307.8,157.5 L308.6,158.4 L309.5,159.5 L310.3,157.7 L311.1,159.1 L311.9,160.8 L312.8,160.6 L313.6,159.6 L314.4,159.9 L315.3,159.6 L316.1,160.0 L316.9,159.9 L317.7,160.6 L318.6,162.9 L319.4,159.9 L320.2,158.9 L321.1,160.1 L321.9,161.4 L322.7,160.4 L323.6,163.3 L324.4,165.4 L325.2,161.6 L326.0,163.7 L326.9,160.6 L327.7,164.3 L328.5,168.0 L329.4,164.5 L330.2,159.7 L331.0,163.5 L331.9,165.8 L332.7,164.6 L333.5,162.2 L334.3,162.4 L335.2,163.2 L336.0,160.9 L336.8,162.5 L337.7,164.1 L338.5,163.0 L339.3,161.2 L340.1,162.6 L341.0,162.7 L341.8,167.1 L342.6,165.3 L343.5,163.7 L344.3,165.9 L345.1,163.3 L346.0,164.4 L346.8,164.0 L347.6,166.4 L348.4,161.3 L349.3,163.8 L350.1,166.8 L350.9,166.4 L351.8,161.8 L352.6,167.6 L353.4,165.2 L354.3,165.2 L355.1,167.3 L355.9,170.1 L356.7,167.2 L357.6,167.0 L358.4,165.6 L359.2,166.4 L360.1,168.2 L360.9,166.6 L361.7,167.4 L362.5,168.2 L363.4,168.7 L364.2,169.5 L365.0,167.7 L365.9,171.8 L366.7,170.9 L367.5,169.6 L368.4,173.3 L369.2,170.9 L370.0,175.1 L370.8,171.8 L371.7,169.0 L372.5,169.2 L373.3,170.7 L374.2,171.3 L375.0,174.4 L375.8,167.1 L376.7,169.9 L377.5,168.8 L378.3,173.6 L379.1,172.0 L380.0,176.4 L380.8,170.0 L381.6,169.8 L382.5,177.1 L383.3,172.3 L384.1,170.8 L384.9,177.1 L385.8,177.4 L386.6,175.4 L387.4,174.4 L388.3,176.6 L389.1,173.0 L389.9,172.5 L390.8,171.8 L391.6,171.7 L392.4,170.1 L393.2,170.9 L394.1,177.2 L394.9,175.1 L395.7,176.7 L396.6,176.9 L397.4,174.4 L398.2,174.3 L399.1,173.2 L399.9,178.9 L400.7,177.9 L401.5,174.7 L402.4,175.3 L403.2,175.7 L404.0,175.2 L404.9,177.1 L405.7,173.5 L406.5,174.4 L407.3,175.6 L408.2,177.3 L409.0,176.0 L409.8,184.0 L410.7,178.4 L411.5,175.7 L412.3,180.2 L413.2,175.5 L414.0,175.7 L414.8,180.1 L415.6,176.9 L416.5,177.2 L417.3,175.2 L418.1,175.0 L419.0,176.7 L419.8,179.0 L420.6,177.1 L421.5,177.0 L422.3,175.0 L423.1,176.2 L423.9,179.0 L424.8,181.0 L425.6,178.2 L426.4,179.3 L427.3,180.5 L428.1,177.7 L428.9,178.8 L429.7,177.2 L430.6,176.2 L431.4,178.8 L432.2,172.2 L433.1,178.7 L433.9,175.0 L434.7,177.6 L435.6,175.1 L436.4,185.6 L437.2,180.2 L438.0,177.5 L438.9,176.6 L439.7,172.6 L440.5,177.5 L441.4,175.1 L442.2,176.4 L443.0,176.0 L443.9,177.2 L444.7,179.1 L445.5,177.3 L446.3,181.9 L447.2,175.8 L448.0,181.9 L448.8,178.3 L449.7,173.8 L450.5,179.7 L451.3,179.1 L452.1,176.2 L453.0,179.3 L453.8,181.8 L454.6,178.8 L455.5,178.1 L456.3,177.9 L457.1,182.2 L458.0,175.5 L458.8,175.9 L459.6,180.3 L460.4,179.8 L461.3,182.0 L462.1,177.2 L462.9,183.3 L463.8,179.6 L464.6,183.2 L465.4,184.2 L466.3,180.3 L467.1,179.1 L467.9,183.2 L468.7,185.8 L469.6,181.7 L470.4,184.7 L471.2,184.2 L472.1,181.3 L472.9,182.9 L473.7,188.7 L474.5,181.0 L475.4,188.3 L476.2,186.4 L477.0,192.1 L477.9,190.6 L478.7,198.6 L479.5,186.1 L480.4,188.0 L481.2,198.4 L482.0,200.7 L482.8,202.0 L483.7,191.0 L484.5,197.8 L485.3,196.6 L486.2,198.3 L487.0,197.9 L487.8,203.0 L488.7,198.2 L489.5,205.9 L490.3,199.4 L491.1,198.1 L492.0,197.7 L492.8,201.0 L493.6,204.6 L494.5,199.8 L495.3,202.9 L496.1,194.8 L496.9,197.8 L497.8,201.7 L498.6,203.6 L499.4,204.9 L500.3,206.3 L501.1,203.4 L501.9,200.5 L502.8,199.7 L503.6,199.5 L504.4,194.0 L505.2,205.6 L506.1,202.2 L506.9,192.0 L507.7,210.8 L508.6,204.9 L509.4,201.7 L510.2,201.8 L511.1,200.7 L511.9,203.7 L512.7,201.0 L513.5,202.4 L514.4,199.4 L515.2,210.8 L516.0,206.0 L516.9,191.3 L517.7,167.1 L518.5,141.4 L519.3,126.8 L520.2,129.0 L521.0,142.4 L521.8,167.7 L522.7,193.0 L523.5,200.0 L524.3,203.5 L525.2,210.8 L526.0,203.2 L526.8,201.1 L527.6,205.8 L528.5,203.6 L529.3,199.9 L530.1,207.8 L531.0,200.4 L531.8,195.8 L532.6,206.1 L533.5,202.6 L534.3,204.0 L535.1,197.0 L535.9,201.9 L536.8,199.5 L537.6,206.9 L538.4,203.5 L539.3,203.5 L540.1,210.8 L540.9,197.5 L541.7,199.5 L542.6,210.8 L543.4,200.2 L544.2,204.1 L545.1,201.5 L545.9,201.9 L546.7,210.8 L547.6,204.6 L548.4,197.4 L549.2,206.5 L550.0,209.1 L550.9,210.8 L551.7,210.3 L552.5,202.1 L553.4,196.7 L554.2,201.7 L555.0,202.5 L555.9,194.9 L556.7,206.3 L557.5,207.2 L558.3,201.3 L559.2,201.2 L560.0,209.2"/>
+              </svg>
+              <span class="lbl ylbl" style="top:4.8%">10⁴</span>
+              <span class="lbl ylbl" style="top:28.6%">10³</span>
+              <span class="lbl ylbl" style="top:52.4%">10²</span>
+              <span class="lbl ylbl" style="top:76.2%">10</span>
+              <span class="lbl xlbl" style="left:0%">0</span>
+              <span class="lbl xlbl minor" style="left:18.5%">500</span>
+              <span class="lbl xlbl" style="left:37%">1000</span>
+              <span class="lbl xlbl minor" style="left:55.6%">1500</span>
+              <span class="lbl xlbl" style="left:74.1%">2000</span>
+              <span class="lbl xlbl minor" style="left:92.6%">2500 keV</span>
+              <span class="lbl peak" style="top:2%; right:calc(56.6% + 6px)">1173.2</span>
+              <span class="lbl peak" style="top:2%; left:calc(49.3% + 6px)">1332.5</span>
+              <span class="lbl peak-sum" style="top:20%; right:calc(7.3% + 6px)">sum 2505.7</span>
+            </div>
+            <table>
+              <thead>
+                <tr><th scope="col">Line</th><th scope="col">ε sample</th><th scope="col">C</th><th scope="col">u(C)</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>1173.2 keV</td><td>0.01214</td><td class="c">0.9312</td><td>0.8 %</td></tr>
+                <tr><td>1332.5 keV</td><td>0.01098</td><td class="c">0.9287</td><td>0.8 %</td></tr>
+              </tbody>
+            </table>
+            <div class="result-foot">
+              <span>Abundances divided by C</span>
+              <span><span class="tag">Sample.CAL</span> <span class="tag">Corrected.NLB</span></span>
+            </div>
+          </div>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" id="overview">
+      <div class="container">
+        <div class="section-head">
+          <h2>What EffSuite computes</h2>
+          <p class="section-desc">It replaces Excel and VBA workbooks, keeps the verified Fortran physics, and records every input behind a result so it stays traceable.</p>
+        </div>
+
+        <div class="features">
+          <div class="feature">
+            <h3>Summing factors on every core</h3>
+            <p>Cascade coincidence summing factors for every nuclide in the library, computed in one pass across all CPU cores instead of a serial workbook loop. Since 0.3.1 each factor carries its relative standard uncertainty u(C).</p>
+          </div>
+          <div class="feature">
+            <h3>NIST XCOM cross-sections</h3>
+            <p>XCOM 3.1 photon cross-sections built in. Define your own sample matrices and scale bulk density by ρ/ρ₀ for each sample.</p>
+          </div>
+          <div class="feature">
+            <h3>2D cross-section drawings</h3>
+            <p>An axial section of detector and sample, with dimension callouts placed so they never overlap, for cylindrical, Marinelli and well geometries.</p>
+          </div>
+          <div class="feature">
+            <h3>Vendor files left intact</h3>
+            <p>Original templates are never overwritten. Every exported calibration and library file is read back and checked right after it is written.</p>
+          </div>
+          <div class="feature">
+            <h3>Command line for LIMS</h3>
+            <p>Batch-process CSV matrices and replay GUI project files without a window, through <code>EffSuite_CLI.exe</code> or from Python.</p>
+          </div>
+          <div class="feature">
+            <h3>Audited Fortran physics</h3>
+            <p>Density scaling, full-precision transfer factors and the boundary of tall samples in well detectors, with every value passed to the engines in double precision. Departures from the originals are <a href="https://github.com/luttegu/EffSuite/blob/main/docs/CHANGES_FROM_ORIGINALS.md" target="_blank" rel="noopener">documented</a>.</p>
+          </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- CLI Example -->
-  <section class="section" id="cli">
-    <div class="container">
-      <h2 class="section-title">Command-Line & Scripting Integration</h2>
-      <p class="section-desc">EffSuite is built for automation. Call it directly from Python, C#, PowerShell, or batch scripts.</p>
+    <section class="section" id="spectrometry">
+      <div class="container">
+        <div class="section-head">
+          <h2>Genie 2000 and GammaVision</h2>
+          <p class="section-desc">Read reference efficiency curves and write summing-corrected libraries for the two gamma spectrometry systems most laboratories run.</p>
+        </div>
 
-      <div class="code-box">
-<span class="code-keyword">EffSuite_CLI.exe</span> cylinder \
-  <span class="code-arg">--detector</span> <span class="code-val">"High-energy"</span> \
-  <span class="code-arg">--standard</span> <span class="code-val">"Solution"</span> \
-  <span class="code-arg">--sample</span> <span class="code-val">"Water"</span> \
-  <span class="code-arg">--sample-height</span> <span class="code-val">55.0</span> \
-  <span class="code-arg">--sample-density</span> <span class="code-val">1.000</span> \
-  <span class="code-arg">--calibration</span> <span class="code-val">"C:\Data\Standard.CAL"</span> \
-  <span class="code-arg">--library</span> <span class="code-val">"C:\Data\LIBRARY.NLB"</span> \
-  <span class="code-arg">--output-cal</span> <span class="code-val">"C:\Output\Sample.CAL"</span> \
-  <span class="code-arg">--output-nlb</span> <span class="code-val">"C:\Output\Corrected.NLB"</span> \
-  <span class="code-arg">--workers</span> <span class="code-val">4</span>
+        <div class="systems">
+          <article class="system">
+            <p class="system-vendor">Canberra / Mirion</p>
+            <h3>Genie 2000</h3>
+            <p>Works through the CAM interface, with registered 32-bit and 64-bit type libraries.</p>
+            <ul class="files">
+              <li><span class="tag">.CAL</span><span>Efficiency transferred to the sample geometry, written as <code>*_sample.CAL</code></span></li>
+              <li><span class="tag">.NLB</span><span>Each line's abundance divided by its summing factor C, written as <code>*_corrected.NLB</code></span></li>
+              <li><span class="tag">.CTF</span><span>Certificate emission rates updated, written as <code>*_corrected.CTF</code></span></li>
+            </ul>
+            <ul class="system-notes">
+              <li>Each copy is reopened through COM and checked before it is released</li>
+            </ul>
+          </article>
+
+          <article class="system">
+            <p class="system-vendor">ORTEC</p>
+            <h3>GammaVision</h3>
+            <p>Pure Python, following Tim Vidmar's original <code>gv.f</code> routines and the <code>EFFTRAN.EFT</code> format. Nothing else to install on Windows.</p>
+            <ul class="files">
+              <li><span class="tag">.EFT</span><span>Reads both the 11-token EFFTRAN and the 5-token MEFFTRAN layout</span></li>
+              <li><span class="tag">.LIB</span><span>Reads and writes the 128-byte direct-access records of the <code>EFFTRAN.Lib</code> layout</span></li>
+              <li><span class="tag">_gv.txt</span><span>A <code>&lt;name&gt;_gv.txt</code> report with energy, old and new yields, and factors</span></li>
+            </ul>
+            <div class="testers">
+              <strong><span class="dot" aria-hidden="true"></span>Testers wanted.</strong>
+              GammaVision support was written from the EFFTRAN specification without access to GammaVision, so it has not been tested in a laboratory yet. If you run GammaVision, please <a href="https://github.com/luttegu/EffSuite/issues" target="_blank" rel="noopener">report your results</a>.
+            </div>
+          </article>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- Footer -->
+    <section class="section" id="cli">
+      <div class="container cli-grid">
+        <div class="section-head">
+          <h2>Command line and scripting</h2>
+          <p class="section-desc">Call EffSuite from Python, C#, PowerShell or batch scripts.</p>
+          <p class="section-desc">This run transfers a calibration to a 55 mm water sample and writes the summing-corrected library on four workers. Every option is in the <a href="https://github.com/luttegu/EffSuite/blob/main/docs/CLI_INTEGRATION_GUIDE.md" target="_blank" rel="noopener">CLI integration guide</a>.</p>
+        </div>
+        <div class="code-box">EffSuite_CLI.exe cylinder \
+  <span class="arg">--detector</span>       <span class="val">"High-energy"</span> \
+  <span class="arg">--standard</span>       <span class="val">"Solution"</span> \
+  <span class="arg">--sample</span>         <span class="val">"Water"</span> \
+  <span class="arg">--sample-height</span>  <span class="val">55.0</span> \
+  <span class="arg">--sample-density</span> <span class="val">1.000</span> \
+  <span class="arg">--calibration</span>    <span class="val">"C:\Data\Standard.CAL"</span> \
+  <span class="arg">--library</span>        <span class="val">"C:\Data\LIBRARY.NLB"</span> \
+  <span class="arg">--output-cal</span>     <span class="val">"C:\Output\Sample.CAL"</span> \
+  <span class="arg">--output-nlb</span>     <span class="val">"C:\Output\Corrected.NLB"</span> \
+  <span class="arg">--workers</span>        <span class="val">4</span></div>
+      </div>
+    </section>
+  </main>
+
   <footer>
     <div class="container">
       <div class="footer-grid">
         <div class="footer-col">
-          <h4>EffSuite Project</h4>
-          <p style="margin-bottom: 12px; line-height: 1.5;">
-            An open-source modernized suite unifying EFFTRAN 5.0, MEFFTRAN 1.9, and WEFFTRAN. Designed for gamma spectrometry laboratories performing efficiency transfer and true coincidence summing corrections.
-          </p>
-          <p style="font-size: 0.85rem; color: #6b7280;">
-            Supervised by G. Lutter. Physics engines: EFFTRAN and MEFFTRAN copyright &copy; 2005–2026 Tim Vidmar; WEFFTRAN copyright &copy; 1995–2016 Tim Vidmar.
-          </p>
+          <h4>EffSuite</h4>
+          <p>An open-source suite bringing EFFTRAN 5.0, MEFFTRAN 1.9 and WEFFTRAN together for gamma spectrometry laboratories that need efficiency transfer and true coincidence summing corrections.</p>
+          <p>Supervised by G. Lutter. Physics engines: EFFTRAN and MEFFTRAN copyright © 2005–2026 Tim Vidmar; WEFFTRAN copyright © 1995–2016 Tim Vidmar.</p>
         </div>
         <div class="footer-col">
           <h4>Documentation</h4>
           <ul>
-            <li><a href="https://github.com/luttegu/EffSuite/blob/main/docs/USER_GUIDE.md" target="_blank">User Guide</a></li>
-            <li><a href="https://github.com/luttegu/EffSuite/blob/main/docs/CLI_INTEGRATION_GUIDE.md" target="_blank">CLI Integration Guide</a></li>
-            <li><a href="https://github.com/luttegu/EffSuite/blob/main/docs/MATERIALS.md" target="_blank">Materials & XCOM</a></li>
-            <li><a href="https://github.com/luttegu/EffSuite/blob/main/docs/CHANGES_FROM_ORIGINALS.md" target="_blank">Changes from the Originals</a></li>
+            <li><a href="https://github.com/luttegu/EffSuite/blob/main/docs/USER_GUIDE.md" target="_blank" rel="noopener">User guide</a></li>
+            <li><a href="https://github.com/luttegu/EffSuite/blob/main/docs/CLI_INTEGRATION_GUIDE.md" target="_blank" rel="noopener">CLI integration guide</a></li>
+            <li><a href="https://github.com/luttegu/EffSuite/blob/main/docs/MATERIALS.md" target="_blank" rel="noopener">Materials and XCOM</a></li>
+            <li><a href="https://github.com/luttegu/EffSuite/blob/main/docs/CHANGES_FROM_ORIGINALS.md" target="_blank" rel="noopener">Changes from the originals</a></li>
           </ul>
         </div>
         <div class="footer-col">
           <h4>Links</h4>
           <ul>
-            <li><a href="https://github.com/luttegu/EffSuite" target="_blank">GitHub Repository</a></li>
-            <li><a href="https://github.com/luttegu/EffSuite/releases" target="_blank">Releases & Changelog</a></li>
-            <li><a href="https://github.com/luttegu/EffSuite/issues" target="_blank">Report an Issue</a></li>
-            <li><a href="https://efftran.github.io/" target="_blank">Upstream EFFTRAN Site</a></li>
+            <li><a href="https://github.com/luttegu/EffSuite" target="_blank" rel="noopener">GitHub repository</a></li>
+            <li><a href="https://github.com/luttegu/EffSuite/releases" target="_blank" rel="noopener">Releases and changelog</a></li>
+            <li><a href="https://github.com/luttegu/EffSuite/issues" target="_blank" rel="noopener">Report an issue</a></li>
+            <li><a href="https://efftran.github.io/" target="_blank" rel="noopener">Upstream EFFTRAN site</a></li>
           </ul>
         </div>
       </div>
       <div class="footer-bottom">
-        <p>EffSuite's own code is released under the GNU General Public License, version 3 or any later version (GPL-3.0-or-later). The EFFTRAN, MEFFTRAN and WEFFTRAN engines are used under Tim Vidmar's permission notice; NIST XCOM (non-commercial use only) and the Numerical Recipes routines keep their own terms (see <a href="https://github.com/luttegu/EffSuite/blob/main/THIRD_PARTY_NOTICES.md" target="_blank">Third-Party Notices</a>). Provided strictly on an AS-IS basis.</p>
+        <p>EffSuite's own code is released under the GNU General Public License, version 3 or any later version (GPL-3.0-or-later). The EFFTRAN, MEFFTRAN and WEFFTRAN engines are used under Tim Vidmar's permission notice; NIST XCOM (non-commercial use only) and the Numerical Recipes routines keep their own terms (see <a href="https://github.com/luttegu/EffSuite/blob/main/THIRD_PARTY_NOTICES.md" target="_blank" rel="noopener">Third-Party Notices</a>). Provided strictly on an AS-IS basis.</p>
       </div>
     </div>
   </footer>
