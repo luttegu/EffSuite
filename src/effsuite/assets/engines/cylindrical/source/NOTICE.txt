@@ -1,0 +1,37 @@
+NOTICE for the Fortran source files in this folder
+===================================================
+
+The following notice is quoted from the EFFTRAN 5.0 README (../README.txt):
+
+EFFTRAN (version 5.0 2026)
+Copyright (c) 2005-2026
+Tim Vidmar
+
+Permission to use, copy, modify, distribute and sell this software and its
+documentation for any purpose is hereby granted without fee, provided that
+the above copyright notice appears in all copies and that both that copyright
+notice and this permission notice appear in all supporting documentation.
+Tim Vidmar makes no representations about the suitability of this software
+for any purpose. It is provided 'as is' without express or implied warranty.
+
+The .f files in this folder are based on the EFFTRAN 5.0 sources distributed
+by the EFFTRAN project (https://efftran.github.io/), with the EffSuite changes
+listed in docs/CHANGES_FROM_ORIGINALS.md (section 1). The source files do not
+carry the notice themselves, so it is given here and in ../README.txt.
+
+
+Third-party routines contained in these files
+---------------------------------------------
+
+The following routines are from "Numerical Recipes in Fortran 77"
+(W. H. Press, S. A. Teukolsky, W. T. Vetterling, B. P. Flannery):
+
+    SUBROUTINE sobseq   in eta.f, scatter.f, total.f
+    FUNCTION   rtbis    in mine.f
+
+    (C) Copr. 1986-92 Numerical Recipes Software
+
+These routines are proprietary to Numerical Recipes Software. They are not
+covered by Tim Vidmar's permission notice above or by the GNU General Public
+License of EffSuite, and EffSuite grants no rights in them. See
+THIRD_PARTY_NOTICES.md.

@@ -272,8 +272,10 @@ Build_Installer.bat
 
 ## 📄 License & Third-Party Notices
 
-* **EffSuite Codebase**: Licensed under the GNU General Public License v3.0 (see [GPL-3.0](third_party/GPL-3.txt)).
-* **EFFTRAN, MEFFTRAN, WEFFTRAN Engines**: Copyright (c) 2005–2026 Tim Vidmar. Provided with permission for use, copy, modification, and distribution with attribution (see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and [third_party](third_party/)).
-* **NIST XCOM**: Photon cross-sections database developed by M.J. Berger and J.H. Hubbell, National Institute of Standards and Technology (NIST).
+* **EffSuite Codebase**: Licensed under the GNU General Public License, version 3 or (at your option) any later version (SPDX: `GPL-3.0-or-later`; see [LICENSE](LICENSE)). This covers EffSuite's own code only.
+* **EFFTRAN, MEFFTRAN, WEFFTRAN Engines**: EFFTRAN and MEFFTRAN Copyright (c) 2005–2026 Tim Vidmar; WEFFTRAN Copyright (c) 1995–2016 Tim Vidmar. Provided with permission for use, copy, modification, and distribution with attribution (see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and [third_party](third_party/)).
+* **Numerical Recipes routines** (`sobseq`, `rtbis`) in the engine sources: (C) Copr. 1986-92 Numerical Recipes Software. Proprietary; not covered by the licences above.
+* **NIST XCOM**: Photon cross-sections database developed by M.J. Berger and J.H. Hubbell, National Institute of Standards and Technology (NIST). Its program notice grants permission for **non-commercial use only**.
+* **Qt / PySide6** (LGPL-3.0), **libquadmath** (LGPL-2.1) and the Python packages: see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 *EffSuite built by ChatGPT & Gemini & Claude (no jealousy!) under the supervision of G. Lutter.*

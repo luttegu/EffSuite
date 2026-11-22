@@ -1,0 +1,37 @@
+NOTICE for the Fortran source files under native/
+==================================================
+
+The files in wefftran_original/ are WEFFTRAN sources. eta.f, scatter.f and
+total.f in wefftran_geometry/ are modified WEFFTRAN sources; path_fixed.f is
+an EffSuite replacement of the WEFFTRAN `path` routine. The WEFFTRAN sources
+carry this notice in their headers:
+
+    Copyright (c) 1995-2016
+    Tim Vidmar
+
+    Permission to use, copy, modify, distribute and sell this software and
+    its documentation for any purpose is hereby granted without fee, provided
+    that the above copyright notice appears in all copies and that both that
+    copyright notice and this permission notice appear in all supporting
+    documentation. Tim Vidmar makes no representations about the suitability
+    of this software for any purpose. It is provided 'as is' without express
+    or implied warranty.
+
+
+Third-party routines contained in these files
+---------------------------------------------
+
+The following routine is from "Numerical Recipes in Fortran 77"
+(W. H. Press, S. A. Teukolsky, W. T. Vetterling, B. P. Flannery):
+
+    SUBROUTINE sobseq   in wefftran_geometry/eta.f, wefftran_geometry/scatter.f,
+                        wefftran_geometry/total.f, wefftran_original/total_org.f
+
+    (C) Copr. 1986-92 Numerical Recipes Software
+
+In wefftran_geometry/total.f the notice line that follows sobseq in the
+original (wefftran_original/total_org.f) is missing; this file supplies it.
+
+This routine is proprietary to Numerical Recipes Software. It is not covered
+by Tim Vidmar's permission notice above or by the GNU General Public License
+of EffSuite, and EffSuite grants no rights in it. See THIRD_PARTY_NOTICES.md.

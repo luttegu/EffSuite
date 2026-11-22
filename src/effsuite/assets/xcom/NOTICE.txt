@@ -1,0 +1,23 @@
+NOTICE for NIST XCOM 3.1 (this folder)
+======================================
+
+XCOM: Photon Cross Sections Database, NIST Standard Reference Database 8,
+program version 3.1 (June 1999), M. J. Berger, J. H. Hubbell, S. M. Seltzer.
+
+XCOM.FOR states:
+
+    Copyright 1999, Martin J. Berger. Permission is given to use the program
+    for non-commercial purposes.
+
+RESTRICTION: this permission covers non-commercial use only. It is narrower
+than the GNU General Public License of EffSuite and than Tim Vidmar's notice
+for EFFTRAN, MEFFTRAN and WEFFTRAN. XCOM is not licensed under either of them,
+and EffSuite grants no rights in it. NIST also asserts copyright in its
+Standard Reference Data on behalf of the United States (15 U.S.C. 290e).
+
+The source (XCOM.FOR), the data files (*.DAT, MDATX3.*) and the original
+Readme.txt are those supplied with EFFTRAN. The programs in bin/ were compiled
+from that source; temporary build copies only remove DOS end-of-file
+characters (see bin/*/build_manifest.json).
+
+Online version: https://physics.nist.gov/PhysRefData/Xcom/

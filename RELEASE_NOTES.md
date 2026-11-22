@@ -1,5 +1,16 @@
 # Release Notes
 
+## Unreleased
+
+The engines, their sources and all results are unchanged.
+
+- **Licence and copyright notices completed.**
+  - New root `LICENSE` (GPL-3.0 text, identical to `third_party/GPL-3.txt`). EffSuite is licensed as **GPL-3.0-or-later**, declared in `pyproject.toml` (`license = "GPL-3.0-or-later"`; build requirement raised to setuptools 77). The installer installs it as `LICENSE.txt` with a Start-menu shortcut.
+  - New `NOTICE.txt` in each engine `source/` folder, in `native/` and in `assets/xcom/`. They give Tim Vidmar's permission notice for the EFFTRAN 5.0 and MEFFTRAN 1.9 sources, which do not carry it in each file, and identify the Numerical Recipes routines (`sobseq`, `rtbis`), including the two WEFFTRAN `total.f` files whose Numerical Recipes notice line is missing. The Fortran files themselves are not modified.
+  - `THIRD_PARTY_NOTICES.md` corrected and extended: copyright years per engine, where each notice is kept, the Numerical Recipes routines, the non-commercial restriction on NIST XCOM, libquadmath (LGPL-2.1, statically linked), Qt/PySide6 (LGPL-3.0), the Python runtime and packages, and trademarks.
+  - New `third_party/LGPL-2.1.txt` and `third_party/LGPL-3.txt` (official texts from gnu.org).
+  - The frozen Windows build now includes the licence files of the Python runtime and of every bundled package in `_internal/licenses/` (with the LGPL-3.0 and GPL-3.0 texts added for PySide6 and Shiboken6, whose wheels carry only the Qt commercial licence file).
+
 ## EffSuite 0.3.2 (November 2026)
 
 The engines and the results for the same inputs are unchanged from 0.3.1.

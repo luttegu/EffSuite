@@ -93,6 +93,7 @@ Source: "..\README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\docs\*.md"; DestDir: "{app}\docs"; Flags: ignoreversion
 Source: "..\RELEASE_NOTES.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\THIRD_PARTY_NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreversion
 Source: "..\src\effsuite\assets\templates\Material_Composition.xlsx"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
@@ -112,6 +113,7 @@ Name: "{group}\Documentation\Materials Reference"; Filename: "{app}\docs\MATERIA
 Name: "{group}\Documentation\Summing Factor Uncertainty"; Filename: "{app}\docs\TCS_UNCERTAINTY.md"
 Name: "{group}\Documentation\Validation Report (DET952, DET007)"; Filename: "{app}\docs\VALIDATION.md"
 Name: "{group}\Documentation\Third-Party Notices"; Filename: "{app}\THIRD_PARTY_NOTICES.md"
+Name: "{group}\Documentation\Licence (GPL-3.0-or-later)"; Filename: "{app}\LICENSE.txt"
 Name: "{group}\Documentation\Material Composition Template (Excel)"; Filename: "{app}\Material_Composition.xlsx"
 
 ; Uninstaller Shortcut

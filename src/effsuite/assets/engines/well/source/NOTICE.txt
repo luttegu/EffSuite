@@ -1,0 +1,44 @@
+NOTICE for the Fortran source files in this folder
+===================================================
+
+The WEFFTRAN .f files carry Tim Vidmar's notice in their headers, for
+example (total.f):
+
+EFFTRAN (version 4.4.4 2016) - Fixed for Tall Samples
+Copyright (c) 1995-2016
+Tim Vidmar
+
+and the WEFFTRAN README (../README.txt) reads "WEFFTRAN (version 0.8 2018),
+Copyright (c) 2018, Tim Vidmar". The permission notice is the same:
+
+Permission to use, copy, modify, distribute and sell this software and its
+documentation for any purpose is hereby granted without fee, provided that
+the above copyright notice appears in all copies and that both that copyright
+notice and this permission notice appear in all supporting documentation.
+Tim Vidmar makes no representations about the suitability of this software
+for any purpose. It is provided 'as is' without express or implied warranty.
+
+EffSuite's changes to these files are listed in
+docs/CHANGES_FROM_ORIGINALS.md (section 2). raytrace.f90 is EffSuite code
+(see section 1.8 of that document).
+
+
+Third-party routines contained in these files
+---------------------------------------------
+
+The following routines are from "Numerical Recipes in Fortran 77"
+(W. H. Press, S. A. Teukolsky, W. T. Vetterling, B. P. Flannery):
+
+    SUBROUTINE sobseq   in eta.f, scatter.f, total.f
+    FUNCTION   rtbis    in mine.f
+
+    (C) Copr. 1986-92 Numerical Recipes Software
+
+In total.f the notice line that follows sobseq in the original WEFFTRAN
+source (see native/wefftran_original/total_org.f) is missing; this file
+supplies it.
+
+These routines are proprietary to Numerical Recipes Software. They are not
+covered by Tim Vidmar's permission notice above or by the GNU General Public
+License of EffSuite, and EffSuite grants no rights in them. See
+THIRD_PARTY_NOTICES.md.
