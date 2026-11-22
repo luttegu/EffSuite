@@ -1,12 +1,12 @@
 # EffSuite CLI Integration Guide
 
-A complete guide for integrating and invoking the **EffSuite Command-Line Interface (CLI)** from external applications (such as C#, Python, C++, Java, MATLAB, shell scripts, or laboratory LIMS).
+How to call the **EffSuite Command-Line Interface (CLI)** from other programs (such as C#, Python, C++, Java, MATLAB, shell scripts, or laboratory LIMS).
 
 ---
 
 ## 1. Overview & Executable Location
 
-EffSuite provides a standalone, high-performance console executable (`EffSuite_CLI.exe`) that executes efficiency transfer and true coincidence summing calculations headlessly without requiring GUI interaction.
+`EffSuite_CLI.exe` is a standalone console program that runs the efficiency transfer and true coincidence summing calculations without the GUI.
 
 ### Typical Executable Paths
 - **Installed via Inno Setup (Default User Install)**:
@@ -188,7 +188,7 @@ Run any command with `--help` for its full option list.
 | `--sample-gap` | Float (mm) | **Dynamic override**: Endcap/crystal-to-container face distance in mm. |
 | `--out` | String (directory) | Destination directory for audit manifests, tables, and logs. Default: `<user folder>\Results\<timestamp>`, where the user folder is `C:\GENIE2K\EffSuite`, or `Documents\EffSuite` when that cannot be written (`EFFSUITE_ROOT` overrides both). |
 | `--workers` | Integer | Number of worker processes: `0` = automatic (number of CPUs minus 2, at least 1), `1` = serial single-process. |
-| `--plot-geometry`| Flag or file path | Generates a CAD axial cross-section diagram with all quotes as PNG/PDF. |
+| `--plot-geometry`| Flag or file path | Generates a CAD axial cross-section diagram with all dimensions as PNG/PDF. |
 | `--verify-serial`| Flag | Cross-verifies parallel outputs against a serial reference run for audit validation. |
 | `--tcs-u-peak` | Float (%) | Relative standard uncertainty of the computed peak efficiency, used for u(C). Default 5. Also accepted by `run`. |
 | `--tcs-u-total` | Float (%) | Relative standard uncertainty of the computed total efficiency, used for u(C). Default 10. Also accepted by `run`. |
@@ -204,12 +204,12 @@ override the project values. See [TCS_UNCERTAINTY.md](TCS_UNCERTAINTY.md).
 
 ## 5. Output Files & Formats
 
-Every exported spectrometry file explicitly identifies whether it is for **Genie 2000** (`.CAL`, `.NLB`, `.CTF`) or **GammaVision** (`.EFT`, `.LIB`, plus `<name>_gv.txt`) both by its file extension and inside `results.json` (`"software": "Genie"` or `"GammaVision"`) and `report.html`.
+Every exported spectrometry file identifies whether it is for **Genie 2000** (`.CAL`, `.NLB`, `.CTF`) or **GammaVision** (`.EFT`, `.LIB`, plus `<name>_gv.txt`) both by its file extension and inside `results.json` (`"software": "Genie"` or `"GammaVision"`) and `report.html`.
 
 In addition to the destination files specified by `--output-cal` and `--output-nlb`, the directory given to `--out` contains structured outputs for programmatic ingestion:
 
 1. **`results.json`**:
-   Comprehensive calculation manifest containing:
+   Calculation manifest containing:
    - Numerical efficiency transfer values for all calibration points.
    - The summing factor $C$ of every line, with its status.
    - The relative standard uncertainty of each factor, `tcs_u_rel_percent`, with its components and sensitivity coefficients, plus a `tcs_uncertainty` section recording the settings and method.
@@ -396,6 +396,6 @@ if ($LASTEXITCODE -eq 0 -or ($LASTEXITCODE -eq 1 -and (Test-Path $outCal))) {
 2. **Matrix density and new materials**:
    `--sample-density` needs no new attenuation table: the engines scale the material's table by $\rho / \rho_0$. A new *composition* needs a material: when a material named in a model has a `Composition/<name>.txt` but no `Material/<name>.txt`, EffSuite runs the bundled XCOM automatically and saves the table in the data folder. Use the `material` command to create one in advance.
 3. **Parallel Worker Allocation**:
-   For maximum efficiency on multi-core lab workstations, specify `--workers 4` or `--workers 0` (automatic). If executing multiple independent sample calculations in parallel from an external scheduler, use `--workers 1` per instance to prevent CPU oversubscription.
+   On multi-core lab workstations, use `--workers 4` or `--workers 0` (automatic). If executing multiple independent sample calculations in parallel from an external scheduler, use `--workers 1` per instance to prevent CPU oversubscription.
 4. **CAM File Locks**:
    Ensure that the target `.CAL` and `.NLB` destination files are not opened with exclusive write locks in Genie 2000 Gamma Acquisition & Analysis while EffSuite is writing to them.

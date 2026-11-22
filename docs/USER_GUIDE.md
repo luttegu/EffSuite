@@ -188,6 +188,11 @@ overrides both.
 | Folder | Contents |
 |---|---|
 | Data | your data folder, default location for all inputs: Calibration, Composition, Detector, Material, Sample, Standard, NuclideLibrary |
+| Projects | default Save/Open project location |
+| Results | one new folder per calculation |
+| Export | default CSV/Genie export location |
+| Recovery | `last_project.json`, saved before each calculation |
+| Logs | GUI start-up error log |
 
 **Your data folder.** Only the original EFFTRAN / MEFFTRAN materials are
 bundled; your own materials (`Composition`, `Material`) and models
@@ -196,11 +201,6 @@ session with **Tools → 📁 Default Data Folder…** (or `CLI.bat config --dat
 <folder>`); **📁 Data Folder…** in the top bar changes it for the current
 project only. The top bar shows the folder in use. See
 [MATERIALS.md](MATERIALS.md#where-materials-are-stored).
-| Projects | default Save/Open project location |
-| Results | one new folder per calculation |
-| Export | default CSV/Genie export location |
-| Recovery | `last_project.json`, saved before each calculation |
-| Logs | GUI start-up error log |
 
 **Recovery.** After a crash, open `Recovery\last_project.json` with
 **Open Project**. It holds the inputs of the last calculation; it is not a

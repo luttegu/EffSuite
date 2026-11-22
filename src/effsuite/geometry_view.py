@@ -1,4 +1,4 @@
-"""Dimensioned axial cross-sections using the native total.f coordinates (mm) with live CAD-style quotes."""
+"""Dimensioned axial cross-sections using the native total.f coordinates (mm) with live CAD-style dimensions."""
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QComboBox, QLabel, QPushButton, QGroupBox, QSizePolicy)
 from matplotlib.figure import Figure
@@ -290,7 +290,7 @@ def draw_geometry(ax, mode, d, s=None, kind='Sample', compact=False):
                 f'Positioning gap: {gap:g} mm | Active Ø: {2*inner:g} mm',
             ]
     else:
-        src_quotes = [f'Load or complete the {kind.lower()} fields to display source quotes.']
+        src_quotes = [f'Load or complete the {kind.lower()} fields to display source dimensions.']
 
     ax.axvline(0, color='#64748b', linestyle='-.', linewidth=0.7, zorder=1)
     ax.set_aspect('equal', adjustable='box')
@@ -309,7 +309,7 @@ def draw_geometry(ax, mode, d, s=None, kind='Sample', compact=False):
     if not compact:
         ax.set_title(f'{kind} & Detector — Axial Cross-Section (mm)', fontsize=fs+1.8, fontweight='bold', color='#0f172a', pad=8)
         ax.legend(loc='upper left', bbox_to_anchor=(1.01, 1.0), fontsize=8.5, frameon=True, facecolor='#f8fafc', edgecolor='#cbd5e1', title='Regions', title_fontsize=8.5)
-        quotes_card = "ALL QUOTES & MATERIALS\n"+"\n".join("• "+q for q in det_quotes+src_quotes)
+        quotes_card = "ALL DIMENSIONS & MATERIALS\n"+"\n".join("• "+q for q in det_quotes+src_quotes)
         if warnings:
             quotes_card += "\n\n"+"\n".join(warnings)
         ax.text(1.01, 0.48, quotes_card, transform=ax.transAxes, va='top', ha='left', fontsize=8.0, color='#0f172a',
@@ -387,7 +387,7 @@ def _partial_source_values(owner, kind):
 
 
 class LiveGeometryWidget(QGroupBox):
-    """Embedded live axial cross-section preview with readable CAD quotes."""
+    """Embedded live axial cross-section preview with readable CAD dimensions."""
     def __init__(self, owner, default_kind='Sample'):
         """Geometry preview shown inside a tab, with a Sample / Standard / Detector choice."""
         super().__init__('Live Axial Cross-Section && Quotes (mm)')

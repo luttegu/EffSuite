@@ -78,7 +78,7 @@ def _add_common_calc_args(c):
     c.add_argument("--output-cal", type=Path, metavar="FILE.CAL", help="Copy the exported Sample .CAL directly to this file path")
     c.add_argument("--output-nlb", type=Path, metavar="FILE.NLB", help="Copy the exported corrected .NLB directly to this file path")
     c.add_argument("--output-ctf", type=Path, metavar="FILE.CTF", help="Copy the exported corrected .CTF directly to this file path")
-    c.add_argument("--plot-geometry", nargs="?", const="geometry.png", metavar="PNG_OR_PDF", help="Save CAD axial cross-section diagram with all quotes (default: geometry.png in result folder)")
+    c.add_argument("--plot-geometry", nargs="?", const="geometry.png", metavar="PNG_OR_PDF", help="Save CAD axial cross-section diagram with all dimensions (default: geometry.png in result folder)")
     c.add_argument("--out", type=Path, help="Result folder (default: <EffSuite user folder>/Results/<timestamp>)")
     c.add_argument("--save-project", type=Path, help="Save the resolved project JSON for one-command repeat")
     c.add_argument("--workers", type=int, default=0, help="Worker processes: 0 = automatic, 1 = serial")
@@ -121,7 +121,7 @@ def parser():
     models.add_argument("geometry", choices=("cylinder", "marinelli", "well"))
     models.add_argument("--data-dir", type=Path, help="Data directory to inspect (default: your data folder, see 'config')")
 
-    plot_cmd = sub.add_parser("plot-geometry", help="Render dimensioned axial cross-section diagram with all quotes to PNG/PDF/SVG")
+    plot_cmd = sub.add_parser("plot-geometry", help="Render dimensioned axial cross-section diagram with all dimensions to PNG/PDF/SVG")
     plot_cmd.add_argument("--geometry", choices=("cylinder", "marinelli", "well", "cylindrical", "efftran", "mefftran", "wefftran"), default="cylinder")
     plot_cmd.add_argument("--detector", required=True, help="Detector model file or name")
     plot_cmd.add_argument("--sample", help="Sample model file or name")
@@ -138,7 +138,7 @@ def parser():
     batch_cmd.add_argument("--out", type=Path, help="Master output folder for all batch jobs and batch_summary.csv/.json")
     batch_cmd.add_argument("--workers", type=int, default=0, help="Worker processes per job (0 = automatic)")
     batch_cmd.add_argument("--data-dir", type=Path, help="Default data directory for the batch")
-    batch_cmd.add_argument("--plot-geometry", action="store_true", help="Also save geometry.png with all quotes for every sample in the batch")
+    batch_cmd.add_argument("--plot-geometry", action="store_true", help="Also save geometry.png with all dimensions for every sample in the batch")
 
     run = sub.add_parser("run", help="Execute a saved GUI/CLI project JSON (with optional CLI overrides)")
     run.add_argument("project", type=Path)

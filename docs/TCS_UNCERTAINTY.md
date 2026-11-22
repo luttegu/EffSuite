@@ -204,7 +204,7 @@ relative components:
 
   u<sub>r</sub>(*A*<sub>corrected</sub>)² = u<sub>r</sub>(*A*)² + u<sub>r</sub>(*C*)² + …
 
-Note that u(C) is not independent of the efficiency calibration when the
+u(C) is not independent of the efficiency calibration when the
 calibration geometry itself needed a summing correction, or when the same
 detector-model error affects the efficiency transfer. In those cases, treat
 the correlation in your own budget.

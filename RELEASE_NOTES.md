@@ -86,19 +86,19 @@ The EFFTRAN and MEFFTRAN Fortran engines are unchanged. Cylindrical and Marinell
 
 ## EffSuite 0.2.0 (November 2026)
 
-- **EFFTRAN 5.0 & MEFFTRAN 1.9 Alignment & Physics Harmonization**:
-  - Fully audited all source routines, data libraries, and macro workflows against Tim Vidmar's updated upstream distributions (`EFFTRAN 5.0` and `MEFFTRAN 1.9`).
-  - **Dynamic Marinelli Monte Carlo Transfer Uncertainty**: Extended dynamic Monte Carlo uncertainty propagation from Cylindrical (EFFTRAN 5.0) to Marinelli beaker geometries (MEFFTRAN 1.9). Evaluated via 4-column output in `total.f` ($E, t, \sqrt{t_2}, s$) and propagated in `transfer.f` through $u = \sqrt{u_{\text{ref}}^2 + (100\,s_{\text{std}})^2 + (100\,s_{\text{sample}})^2}$, reaching full metrological parity while preserving double-precision floating-point arithmetic.
-  - **Toolchain Modernization & GCC 15.2 Hardening**: Recompiled all 34 native Fortran 77 binaries using GCC 15.2.0 (`w64devkit`). Resolved Windows NT memory relocation issues (`WinError 623` DLL relocation error) observed with obsolete MinGW GCC 7.3.0 toolchains. Enhanced build flags with `-finit-local-zero` and `-fno-strict-aliasing` for robust stack and memory determinism.
-  - **Upstream MEFFTRAN 1.9 Model Compatibility Shield**: Handled upstream detector format divergence (where MEFFTRAN 1.9 macro writes 19-line detector models read by `ptt.f`/`eta.f`, while `mine.f`/`total.f` read 16 lines), ensuring seamless execution for both 16-line and 19-line detector configurations.
+- **Aligned with EFFTRAN 5.0 & MEFFTRAN 1.9**:
+  - Audited all source routines, data libraries, and macro workflows against Tim Vidmar's updated upstream distributions (`EFFTRAN 5.0` and `MEFFTRAN 1.9`).
+  - **Dynamic Marinelli Monte Carlo Transfer Uncertainty**: The dynamic Monte Carlo uncertainty propagation of Cylindrical (EFFTRAN 5.0) now also covers Marinelli beaker geometries (MEFFTRAN 1.9). `total.f` writes a 4-column output ($E, t, \sqrt{t_2}, s$) and `transfer.f` propagates it through $u = \sqrt{u_{\text{ref}}^2 + (100\,s_{\text{std}})^2 + (100\,s_{\text{sample}})^2}$, as in MEFFTRAN 1.9, in double-precision floating-point arithmetic.
+  - **GCC 15.2 toolchain**: Recompiled all 34 native Fortran 77 binaries using GCC 15.2.0 (`w64devkit`). This fixes the Windows NT memory relocation failures (`WinError 623` DLL relocation error) seen with the old MinGW GCC 7.3.0 toolchains. The build flags `-finit-local-zero` and `-fno-strict-aliasing` were added to make stack and memory behaviour deterministic.
+  - **MEFFTRAN 1.9 detector format**: The MEFFTRAN 1.9 macro writes 19-line detector models, read by `ptt.f`/`eta.f`, while `mine.f`/`total.f` read 16 lines. EffSuite now runs with both 16-line and 19-line detector configurations.
   - **Material Library**: Added `heavy.txt` ($\text{H}_2\text{O}$, $\rho_0 = 2.0\text{ g/cm}^3$) to standard composition matrices for 100% interoperability with upstream project definitions.
-  - **Installer & Packaging Optimizations**: Multi-threaded compression tuning in InnoSetup installer configuration.
+  - **Installer**: Multi-threaded compression tuning in the InnoSetup installer configuration.
 
 ## EffSuite 0.1.5 (November 2026)
 
-- **EFFTRAN 4.9 & MEFFTRAN 1.8 Full Alignment & Verification**:
-  - Re-audited and fully harmonized native engines with the updated official releases in `C:\PGM\EFFTRAN`.
-  - **Cylindrical Efficiency Transfer Uncertainty**: Incorporated EFFTRAN 4.9's 4th-column Monte Carlo statistical uncertainty from `total.txt` into the cylindrical efficiency transfer formula ($u = \sqrt{u_{ref}^2 + (100\,s_{std})^2 + (100\,s_{sample})^2}$), preserving full precision `format(3e15.5)`.
+- **Aligned with EFFTRAN 4.9 & MEFFTRAN 1.8**:
+  - Re-audited the native engines against the updated official releases in `C:\PGM\EFFTRAN` and brought them in line.
+  - **Cylindrical Efficiency Transfer Uncertainty**: Added EFFTRAN 4.9's 4th-column Monte Carlo statistical uncertainty from `total.txt` to the cylindrical efficiency transfer formula ($u = \sqrt{u_{ref}^2 + (100\,s_{std})^2 + (100\,s_{sample})^2}$). The full-precision `format(3e15.5)` is kept.
   - **Decay Library & Scheme Alignment**: Retained upstream decay schemes in `kordaten.txt` (including $^{234}\text{Pa}$ with transition `41 43`) and verified inclusion of $^{94}\text{Nb}$ and $^{187}\text{W}$.
   - Documentation and audit reports updated for public release.
 
@@ -107,7 +107,7 @@ The EFFTRAN and MEFFTRAN Fortran engines are unchanged. Cylindrical and Marinell
 - **GammaVision support (implemented as in EFFTRAN/MEFFTRAN, untested)**: EffSuite now reads and writes ORTEC GammaVision files exactly the way EFFTRAN (`gv.f`, `EFFTRAN.EFT`) and MEFFTRAN (`MEFFTRAN.EFT`) do, in pure Python without requiring vendor COM components.
   - **Nuclide library (`.LIB`)**: 128-byte direct-access binary records (`EFFTRAN.Lib` layout from `gv.f`) are read and written non-destructively; gamma yields are divided by the coincidence-summing factors $C$, round-trip verified by reopening, and accompanied by a `<name>_gv.txt` audit report matching EFFTRAN's `gv.txt`.
   - **Efficiency (`.EFT`)**: Both EFFTRAN 11-token (`EFFTRAN.EFT`) and MEFFTRAN 5-token (`MEFFTRAN.EFT`) text layouts are read and exported non-destructively with round-trip verification, preserving source metadata and `FitType` trailer lines.
-  - **Unambiguous Genie 2000 vs. GammaVision Identification**: Every GUI dialog, button, status message, `results.json` export entry (`"software": "Genie"` or `"GammaVision"`), and `report.html` table explicitly states whether an exported file is for **Genie 2000** (`.CAL`, `.NLB`, `.CTF`) or **GammaVision** (`.EFT`, `.LIB`).
+  - **Genie 2000 vs. GammaVision labels**: Every GUI dialog, button, status message, `results.json` export entry (`"software": "Genie"` or `"GammaVision"`), and `report.html` table states whether an exported file is for **Genie 2000** (`.CAL`, `.NLB`, `.CTF`) or **GammaVision** (`.EFT`, `.LIB`).
   - **Selection**: Auto-detected from file extension (`.LIB` / `.EFT` = GammaVision; `.CAL` / `.NLB` / `.CTF` = Genie 2000), with manual override via `--software genie|gammavision`, the GUI **Software** selector, or `EFFSUITE_SOFTWARE`.
   - **Scope**: Genie `.CAL`/`.NLB`/`.CTF` support is unchanged (`genie.py`). GammaVision support is in `gammavision.py`, dispatched by `software.py`. Certificates (`.CTF`) and `.CAL` binary files remain Genie-only.
 - **Bug fix (`--output-cal`, `--output-nlb`, `--output-ctf`)**: Fixed a result-key mismatch in `app_cli.py` where direct output flags and batch summary columns looked up `cal_output`/`nlb_output`/`ctf_output` instead of resolving the exported file from `genie_exports` in the published output directory.
@@ -116,7 +116,7 @@ The EFFTRAN and MEFFTRAN Fortran engines are unchanged. Cylindrical and Marinell
 ## EffSuite 0.1.3 (November 2026)
 
 - **Integration of EFFTRAN 4.9 & MEFFTRAN 1.8 (with Upstream Bug Fixes)**:
-  - Integrated the new 8-line source model format introducing explicit **Source density `[g/cm³]` (`rho`)** as the 8th line of `Sample/*.txt` and `Standard/*.txt`, scaling the nominal reference attenuation table (`Composition/<material>.txt`, density `rho0`) by $\rho / \rho_0$.
+  - Integrated the new 8-line source model format: the 8th line of `Sample/*.txt` and `Standard/*.txt` holds the **Source density `[g/cm³]` (`rho`)**, which scales the nominal reference attenuation table (`Composition/<material>.txt`, density `rho0`) by $\rho / \rho_0$.
   - **Fixed upstream `do j=1,ne` loop-bound bug in `mine.f` and `scatter.f`**: Upstream `EFFTRAN 4.9` and `MEFFTRAN 1.8` looped `do j=1,ne` instead of `do j=1,ns` when scaling `smu(j)` and `smuc(j)`, leaving `mine.f` completely unscaled (`ne=0`) and `scatter.f` unscaled above $\sim 30\text{ keV}$ (`ne=25` out of $ns \approx 80\text{–}105$ XCOM rows). Fixed in EffSuite to `do j=1,ns` across all engines so `Water` at $\rho = 2.0\text{ g/cm}^3$ matches `HeavyWater` ($\rho_0 = 2.0\text{ g/cm}^3$) to 100% precision.
   - **Fixed upstream `Point.txt` (`vacuum`, `rho = 0.00`) `log(0)` singularity**: Added `if (rho.le.0.) rho=rho0` guard in `mine.f`, `total.f`, `scatter.f`, and `eta.f` to prevent `log(0.0) = -Infinity` / `NaN` when calculating point sources.
   - **Preserved full gamma energy precision in `transfer.f`**: Kept scientific format `format(3e15.5)` instead of upstream's `f12.1` truncation, and preserved EffSuite's Monte Carlo variance floor (`max(0., ...)`) and $10^{-15}$ efficiency floor.
@@ -125,13 +125,13 @@ The EFFTRAN and MEFFTRAN Fortran engines are unchanged. Cylindrical and Marinell
 - **Extended 8-Line Source Density Scaling to WEFFTRAN (`well`), GUI, and CLI**:
   - Extended 8th-line sample density scaling ($\rho / \rho_0$) to WEFFTRAN (`spatial_summing.py` and native `well` Fortran sources).
   - **GUI (`Source` Tab & CAD View)**: Added `Source density [g/cm³]` spinbox directly below `Source material` in both Standard and Sample forms across Cylindrical, Marinelli, and Well modes. Selecting a material automatically populates its nominal density from `Composition/<material>.txt`, while preserving custom densities on file/project load. Live 2D CAD view now displays `ρ=<val> g/cm³`.
-  - **Backward Compatibility**: Existing 7-line `.txt` source files and 7-element `.effsuite.json` project files load seamlessly and auto-populate `Source density` from `Composition/<material>.txt`.
+  - **Backward Compatibility**: Existing 7-line `.txt` source files and 7-element `.effsuite.json` project files still load and auto-populate `Source density` from `Composition/<material>.txt`.
   - **CLI**: `--sample-density` now sets the 8th source parameter (`source[7]`) directly without mutating global `Composition/*.txt` files.
 - **Standardized Model Library & Generic WEFFTRAN Example**:
   - Cleaned bundled `Standard/` model directories in Cylindrical (`EFFTRAN`) and Marinelli (`MEFFTRAN`) to retain only official distribution models (`Point.txt`, `Solution.txt`, `Standard.txt`).
   - Standardized `WEFFTRAN` (`well`) bundled models to generic names (`Detector/well.txt`, `Sample/Sample.txt`, `Standard/Standard.txt`) using generic `Plastic_vial` container material.
 - **Multithreaded WEFFTRAN 3D Spatial Ray-Tracing & Parallel Test Runner**:
-  - Multithreaded spatial quadrature ray-tracing (`spatial_summing.py`) and nuclide cascade evaluation (`well_spatial.py`), reducing 3D well calculation times by ~3x while preserving exact serial equivalence (`--verify-serial`).
+  - Multithreaded spatial quadrature ray-tracing (`spatial_summing.py`) and nuclide cascade evaluation (`well_spatial.py`). 3D well calculation times drop by ~3x, and results stay identical to a serial run (`--verify-serial`).
   - Added `tools/run_tests.py` (invoked by `Run_Tests_Windows.bat`) to execute all 14 test suites concurrently across CPU cores.
 - **Fortran Uninitialized Array Fix (`coincidence.f`)**:
   - Explicitly zeroed `s(3000)` and `s1(3000)` prior to nuclide loop label `123 continue` in `cylindrical` and `marinelli` `coincidence.f` to prevent uninitialized memory carry-over.
@@ -152,16 +152,16 @@ The EFFTRAN and MEFFTRAN Fortran engines are unchanged. Cylindrical and Marinell
   - Clamped non-positive peak and total efficiency outputs to $10^{-15}$ in `efficiency.f` and `parallel_coincidence.py` to prevent $\log(0)$ crashes during cascade coincidence interpolation.
   - Recompiled all native Fortran calculation engines (cylindrical, Marinelli, well) for Windows x64.
 - **Responsive GUI & High-DPI Display Support**:
-  - Reorganized Welcome tab with side-by-side calculation workflow and coincidence target selection, eliminating vertical scrollbars at standard $1920 \times 1080$ resolution.
+  - Reorganized Welcome tab with side-by-side calculation workflow and coincidence target selection, with no vertical scrollbars at standard $1920 \times 1080$ resolution.
   - Pinned `#PageFooter` navigation bar outside scroll areas across all tabs so action buttons (`Start Guided Setup`, `Next`, `Run`) are always visible.
   - Custom-painted antialiased radio buttons (`PaintedRadio`) to ensure solid check indicators on Windows 11 under all display scaling settings (100% to 200%).
   - Fixed editable dropdown popups with explicit contrast styling to avoid dark-on-dark render defects.
-  - Responsive CAD-style cross-section rendering dynamically scaling from 720p to 4K.
+  - CAD-style cross-section drawing that scales from 720p to 4K.
 - **GenTran / EffSuite CLI Integration**:
   - Exit code 1 recognized as valid completion with uncorrected low-energy transitions marked (`*`), with fatal crashes isolated to exit code 2.
   - Asynchronous standard stream capture to avoid subprocess buffer deadlocks.
   - Cleaned calibration model name parsing to avoid file extension index mismatches.
-- **Per-User Installer & Licensing Flexibility**:
+- **Per-User Installer & Licensing**:
   - Inno Setup installer configured with `PrivilegesRequired=lowest` for non-admin installation.
   - Added visible live licence status and unactivated community edition operation.
 

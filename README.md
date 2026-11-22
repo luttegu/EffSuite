@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/License-GPL--3.0%20%2F%20Vidmar%20Attribution-orange.svg" alt="License" />
 </p>
 
-*EffSuite (v0.3.3) built by ChatGPT & Gemini under the supervision of G. Lutter.*
+*EffSuite (v0.3.3) built by ChatGPT, Gemini and Claude under the supervision of G. Lutter.*
 
 ---
 
@@ -20,13 +20,13 @@
 
 > [!IMPORTANT]
 > ### 📌 File Format & Spectrometry System Compatibility (Genie 2000 & GammaVision)
-> EffSuite clearly distinguishes **Canberra / Mirion Genie 2000** files from **ORTEC GammaVision** files by extension and explicit software labels in the GUI, CLI, and exported reports:
+> EffSuite tells **Canberra / Mirion Genie 2000** files from **ORTEC GammaVision** files by their extension, and labels the software in the GUI, CLI, and exported reports:
 > - **Canberra / Mirion Genie 2000**:
 >   - **`.CAL`**: Efficiency Calibration Files (imported & exported as `*_sample.CAL` / `*_corrected.CAL`)
 >   - **`.NLB`**: Nuclide Library Files (binary, exported as `*_corrected.NLB`)
 >   - **`.CTF`**: Certificate / Source Files (exported as `*_corrected.CTF`)
 >   - **`.CNF`**: CAM Spectral Files
-> - **ORTEC GammaVision** *(implemented as in EFFTRAN/MEFFTRAN — **untested**, volunteers welcome)*:
+> - **ORTEC GammaVision** *(implemented as in EFFTRAN/MEFFTRAN; **untested**, volunteers welcome)*:
 >   - **`.EFT`**: Efficiency Calibration Files (EFFTRAN 11-token & MEFFTRAN 5-token layouts; imported & exported as `*_sample.EFT` / `*_corrected.EFT`)
 >   - **`.LIB`**: Nuclide Library Files (128-byte direct-access binary records as in `gv.f`; exported as `*_corrected.LIB` alongside a `<name>_gv.txt` audit table)
 >
@@ -37,17 +37,17 @@
 > [!CAUTION]
 > ### ⚠️ WEFFTRAN Qualification Notice (Untested / Experimental)
 > **The WEFFTRAN module (Well-type HPGe detector geometry) is NOT fully laboratory tested or physically qualified yet.**
-> While the Fortran ray-tracing boundary bug and 3D spatial summing engine have been mathematically implemented, this geometry has not completed empirical laboratory validation against reference standards. Users must treat all WEFFTRAN calculation results as experimental and independently verify them before analytical use.
+> The Fortran ray-tracing boundary fix and the 3D spatial summing model are implemented, but this geometry has not yet been validated in the laboratory against reference standards. Users must treat all WEFFTRAN calculation results as experimental and independently verify them before analytical use.
 
 ---
 
 ## 📖 Historical Heritage & Attribution
 
-EffSuite is a unified modernization and scientific extension of the classic efficiency transfer and true coincidence summing codes developed by **Dr. Tim Vidmar**:
+EffSuite combines and extends the efficiency transfer and true coincidence summing codes written by **Dr. Tim Vidmar**:
 
-- **EFFTRAN** (version 5.0 2026) — Cylindrical geometry
-- **MEFFTRAN** (version 1.9) — Marinelli beaker geometry
-- **WEFFTRAN** — Well-type detector geometry
+- **EFFTRAN** (version 5.0 2026): cylindrical geometry
+- **MEFFTRAN** (version 1.9): Marinelli beaker geometry
+- **WEFFTRAN**: well-type detector geometry
 
 Official EFFTRAN Project Website: **https://efftran.github.io/**
 
@@ -73,7 +73,7 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
 ## 🚀 Overview
 
-**EffSuite** unites EFFTRAN, MEFFTRAN, and WEFFTRAN under a single high-performance framework designed for high-resolution gamma-ray spectrometry (HPGe) laboratories:
+**EffSuite** runs EFFTRAN, MEFFTRAN, and WEFFTRAN from one program, for high-resolution gamma-ray spectrometry (HPGe) laboratories:
 
 1. **Original Fortran physics**: the EFFTRAN 5.0 and MEFFTRAN 1.9 engines run unchanged apart from small numerical safeguards and a higher-precision output format. Wells use a new spatial summing model that fixes the original's tall-sample failure.
 2. **Desktop GUI (Qt)**: the original workbook tabs as forms, with automatic 1080p/4K scaling, a live dimensioned cross-section, efficiency charts and a calculation log.
@@ -117,7 +117,7 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
 ## 🖥️ Graphical User Interface (GUI)
 
-The GUI follows the intuitive workflow of analytical gamma spectrometry:
+The GUI tabs follow the order of a gamma spectrometry analysis:
 
 ```
 [ Welcome ] ➔ [ Detector ] ➔ [ Standard & Sample ] ➔ [ Efficiency ] ➔ [ Library / Certificate ]      (+ Material Editor window)
