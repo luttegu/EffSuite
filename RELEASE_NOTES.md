@@ -4,9 +4,16 @@
 
 The engines and all results are unchanged.
 
-- **Plainer GUI text.** Buttons, menus, tabs and group titles use sentence case without emoji; buttons that have a standard Qt icon (open, save, folder, run, stop, back/next, refresh, apply, help) show it. Some labels changed:
+- **Plainer GUI text.** Buttons, menus, tabs and group titles use sentence case without emoji; buttons for open, save, folder, run, stop, next, refresh, apply and clear show an icon. Some labels changed:
   - The first tab is **Start** (was Welcome). **Check Transfer Only** / **Check Summing Only** are now **Calculate transfer only** / **Calculate summing only**. The geometry preview's **Full-Screen / All Quotes…** is now **Large view…**, and its "Detector Only" choice is **Detector only**.
   - Help menu: **Workflow guide**, **Materials and density guide**, **Command line and batch guide**, **Disclaimer…**, **About EffSuite**.
+- **New GUI look.** Light grey window with white cards and one blue accent. Green is kept for the final run button and the Material Editor's **Apply**.
+  - The step tabs are drawn as a segmented control. Group titles sit above their card, and the step line at the top of each page is no longer boxed.
+  - Buttons have five roles: default, primary, tinted, success and danger. Their line icons are drawn in the button's text colour, replacing the Windows stock icons.
+  - Fields have rounded corners and a blue focus ring. Check boxes and radio buttons fill with the accent colour when selected. The log is a dark console.
+  - The top bar labels are now **Geometry**, **Software** and **Workers**, without colon or bold.
+  - Page margins and spacing are slightly larger. The exports dialog after a complete analysis is wider (720 px), so its labels and buttons are no longer cut off, and the disclaimer and exports dialogs fit their content height.
+  - Colours, radii and the stylesheet are defined once, in `src/effsuite/gui_theme.py`. Behaviour and calculations are unchanged.
 - **Built-in help corrected.** It now names the bundled engines as EFFTRAN 5.0 and MEFFTRAN 1.9 (it said 4.9 and 1.8). The two different GammaVision notices are merged into one. The credit line matches the README. The CLI start-up banner also showed EFFTRAN 4.8 / MEFFTRAN 1.7; it now shows 5.0 / 1.9.
 - **CLI help.** Shorter option descriptions, `FILE` / `DIR` / `N` metavars, and `--calibration` now lists `.EFT`.
 - **Documentation.** Plainer prose across the user and technical documents, with GUI label references updated.

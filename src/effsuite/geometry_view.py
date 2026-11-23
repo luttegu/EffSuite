@@ -3,6 +3,8 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QComboBox, QLabel, QPushButton, QGroupBox, QSizePolicy)
 from matplotlib.figure import Figure
 from .qt_icons import with_icon, RELOAD
+from . import gui_theme as theme
+from .gui_theme import set_role, set_size
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg, NavigationToolbar2QT
 from matplotlib.patches import Rectangle
 
@@ -295,8 +297,8 @@ def draw_geometry(ax, mode, d, s=None, kind='Sample', compact=False):
 
     ax.axvline(0, color='#64748b', linestyle='-.', linewidth=0.7, zorder=1)
     ax.set_aspect('equal', adjustable='box')
-    ax.set_xlabel('Radial coordinate r [mm]', fontsize=fs+0.5, fontweight='bold', color='#1e293b')
-    ax.set_ylabel('Axial coordinate z [mm]', fontsize=fs+0.5, fontweight='bold', color='#1e293b')
+    ax.set_xlabel('Radial coordinate r [mm]', fontsize=fs+0.5, fontweight='bold', color=theme.TEXT_SECONDARY)
+    ax.set_ylabel('Axial coordinate z [mm]', fontsize=fs+0.5, fontweight='bold', color=theme.TEXT_SECONDARY)
     ax.tick_params(labelsize=fs)
     ax.grid(alpha=0.2, linestyle='--')
 
@@ -308,16 +310,16 @@ def draw_geometry(ax, mode, d, s=None, kind='Sample', compact=False):
     ax.set_ylim(min(ys)-pad_y, max(ys)+pad_y)
 
     if not compact:
-        ax.set_title(('Detector' if kind=='Detector' else f'{kind} and detector')+': axial cross-section [mm]', fontsize=fs+1.8, fontweight='bold', color='#0f172a', pad=8)
-        ax.legend(loc='upper left', bbox_to_anchor=(1.01, 1.0), fontsize=8.5, frameon=True, facecolor='#f8fafc', edgecolor='#cbd5e1', title='Regions', title_fontsize=8.5)
+        ax.set_title(('Detector' if kind=='Detector' else f'{kind} and detector')+': axial cross-section [mm]', fontsize=fs+1.8, fontweight='bold', color=theme.TEXT, pad=8)
+        ax.legend(loc='upper left', bbox_to_anchor=(1.01, 1.0), fontsize=8.5, frameon=True, facecolor=theme.SURFACE_ALT, edgecolor=theme.SEPARATOR, title='Regions', title_fontsize=8.5)
         quotes_card = "Dimensions and materials\n"+"\n".join("• "+q for q in det_quotes+src_quotes)
         if warnings:
             quotes_card += "\n\n"+"\n".join(warnings)
-        ax.text(1.01, 0.48, quotes_card, transform=ax.transAxes, va='top', ha='left', fontsize=8.0, color='#0f172a',
-                bbox={'boxstyle':'round,pad=0.5', 'facecolor':'#f8fafc', 'edgecolor':'#cbd5e1', 'lw':0.9})
+        ax.text(1.01, 0.48, quotes_card, transform=ax.transAxes, va='top', ha='left', fontsize=8.0, color=theme.TEXT,
+                bbox={'boxstyle':'round,pad=0.5', 'facecolor':theme.SURFACE_ALT, 'edgecolor':theme.SEPARATOR, 'lw':0.9})
         return '\n'.join(det_quotes+src_quotes+(['']+warnings if warnings else []))
     else:
-        ax.legend(loc='lower center', bbox_to_anchor=(0.5, 1.01), ncol=4, fontsize=7.2, frameon=True, facecolor='#f8fafc', edgecolor='#cbd5e1', handlelength=1.2, columnspacing=0.9)
+        ax.legend(loc='lower center', bbox_to_anchor=(0.5, 1.01), ncol=4, fontsize=7.2, frameon=True, facecolor=theme.SURFACE_ALT, edgecolor=theme.SEPARATOR, handlelength=1.2, columnspacing=0.9)
         short = f"{det_quotes[0]}  |  {src_quotes[0]}"
         if warnings:
             short += "\n"+"  ".join(warnings)
@@ -399,7 +401,7 @@ class LiveGeometryWidget(QGroupBox):
         bar = QHBoxLayout()
         bar.setSpacing(8)
         lbl = QLabel('Preview:')
-        lbl.setStyleSheet('font-weight:600;color:#334155;background:transparent;')
+        set_role(lbl, 'secondary')
         bar.addWidget(lbl)
         self.source = QComboBox()
         self.source.addItems(['Sample', 'Standard', 'Detector only'])
@@ -407,7 +409,7 @@ class LiveGeometryWidget(QGroupBox):
         bar.addWidget(self.source)
         bar.addStretch()
         enlarge = QPushButton('Large view…')
-        enlarge.setStyleSheet('background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:3px 10px;font-weight:600;font-size:9pt;')
+        set_size(set_role(enlarge, 'tinted'), 'small')
         enlarge.clicked.connect(self.open)
         bar.addWidget(enlarge)
         layout.addLayout(bar)
@@ -420,7 +422,7 @@ class LiveGeometryWidget(QGroupBox):
 
         self.info = QLabel()
         self.info.setWordWrap(True)
-        self.info.setStyleSheet('background:#f8fafc;border:1px solid #cbd5e1;border-radius:4px;padding:4px 8px;color:#1e293b;font-size:8.5pt;')
+        set_role(self.info, 'caption')
         layout.addWidget(self.info)
         self.source.currentIndexChanged.connect(self.refresh)
 
@@ -494,7 +496,7 @@ class GeometryDialog(QDialog):
         row = QHBoxLayout()
         row.setSpacing(10)
         lbl = QLabel('Show:')
-        lbl.setStyleSheet("font-weight:600;color:#1e293b;")
+        set_role(lbl, "secondary")
         row.addWidget(lbl)
         self.source = QComboBox()
         self.source.addItems(['Sample', 'Standard', 'Detector only'])
@@ -509,7 +511,7 @@ class GeometryDialog(QDialog):
         layout.addWidget(self.canvas, 1)
         self.info = QLabel()
         self.info.setWordWrap(True)
-        self.info.setStyleSheet("background:#f8fafc;border:1px solid #cbd5e1;border-radius:6px;padding:8px 12px;color:#1e293b;font-size:9pt;")
+        self.info.setProperty("notice", "neutral")
         layout.addWidget(self.info)
         self.source.currentIndexChanged.connect(self.refresh)
         refresh.clicked.connect(self.refresh)

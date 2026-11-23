@@ -12,7 +12,7 @@ import time
 from PySide6.QtCore import QObject, QThread, Signal, Slot, Qt, QTimer, QRect, QSize, QPointF
 from PySide6.QtGui import QAction, QFont, QPainter, QPen, QColor, QIcon
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget,
-                               QVBoxLayout, QHBoxLayout, QGridLayout, QFormLayout, QGroupBox, QLabel, QLineEdit, QComboBox, QPushButton, QTabWidget, QTableWidget, QTableWidgetItem, QHeaderView, QFileDialog, QMessageBox, QPlainTextEdit, QSpinBox, QDoubleSpinBox, QCheckBox, QSplitter, QScrollArea, QStyledItemDelegate, QFrame, QRadioButton, QButtonGroup, QDialog, QListView)
+                               QVBoxLayout, QHBoxLayout, QGridLayout, QFormLayout, QGroupBox, QLabel, QLineEdit, QComboBox, QPushButton, QTabWidget, QTableWidget, QTableWidgetItem, QHeaderView, QFileDialog, QMessageBox, QPlainTextEdit, QSpinBox, QDoubleSpinBox, QCheckBox, QSplitter, QScrollArea, QStyledItemDelegate, QFrame, QRadioButton, QButtonGroup, QDialog, QListView, QSizePolicy)
 
 from .model_io import (COMMON_DATA, MODES, fields, read_model, model_bytes, calibration_rows, normalize_nuclides, default_material_density,
                        find_material_file, material_names)
@@ -20,304 +20,9 @@ from .suite import VERSION, run_project, validate_project
 from .parallel_coincidence import CalculationCancelled, CoincidenceError
 from . import tcs_uncertainty
 from .qt_icons import icon, with_icon, OPEN, SAVE, FOLDER, RUN, STOP, NEXT, CLEAR, INFO, WARNING
+from . import gui_theme as theme
+from .gui_theme import app_stylesheet, set_role, set_size
 
-APP_STYLESHEET = """
-QWidget {
-    color: #172b4d;
-    selection-background-color: #245c96;
-    selection-color: #ffffff;
-    font-family: "Segoe UI", -apple-system, system-ui, sans-serif;
-    font-size: 10pt;
-}
-QWidget:disabled {
-    color: #59677a;
-}
-QMainWindow, QDialog {
-    background: #eef0f3;
-    color: #172b4d;
-}
-QLabel, QCheckBox, QRadioButton, QGroupBox {
-    color: #172b4d;
-}
-QMenuBar {
-    background: #eef0f3;
-    color: #172b4d;
-}
-QMenuBar::item:selected {
-    background: #d8e8fc;
-    color: #123a63;
-}
-QMenu {
-    background: #ffffff;
-    color: #172b4d;
-    border: 1px solid #bac4d0;
-    padding: 2px 0;
-    min-width: 160px;
-}
-QMenu::item {
-    padding: 3px 20px 3px 10px;
-}
-QMenu::separator {
-    height: 1px;
-    background: #e2e8f0;
-    margin: 2px 6px;
-}
-QMenu::item:selected {
-    background: #d8e8fc;
-    color: #123a63;
-}
-QMenu::item:disabled {
-    color: #59677a;
-}
-QToolBar {
-    background: #f2f3f5;
-    color: #172b4d;
-    spacing: 7px;
-    padding: 6px;
-    border-bottom: 1px solid #bec5cf;
-}
-QToolButton {
-    background: transparent;
-    color: #172b4d;
-    padding: 4px;
-}
-QToolButton:hover, QToolButton:pressed {
-    background: #d8e8fc;
-    color: #123a63;
-}
-QToolButton:disabled {
-    color: #59677a;
-}
-QTabWidget::pane {
-    border: 1px solid #b9c1cc;
-    background: #ffffff;
-    color: #172b4d;
-}
-QTabBar::tab {
-    padding: 7px 18px;
-    background: #e5e8ed;
-    color: #172b4d;
-    border: 1px solid #bbc3cd;
-    border-top-left-radius: 4px;
-    border-top-right-radius: 4px;
-    font-weight: 500;
-}
-QTabBar::tab:hover {
-    background: #edf4fc;
-    color: #163e6b;
-}
-QTabBar::tab:selected {
-    background: #ffffff;
-    color: #163e6b;
-    border-bottom: 2px solid #245c96;
-    font-weight: 600;
-}
-QTabBar::tab:disabled {
-    color: #59677a;
-}
-QHeaderView::section {
-    background: #e9edf2;
-    color: #172b4d;
-    padding: 6px;
-    border: 1px solid #c9cfd7;
-    font-weight: 600;
-}
-QAbstractItemView {
-    background: #ffffff;
-    color: #172b4d;
-    alternate-background-color: #f4f7fb;
-}
-QAbstractItemView::item:selected {
-    background: #245c96;
-    color: #ffffff;
-}
-QTableWidget {
-    background: #ffffff;
-    color: #172b4d;
-    alternate-background-color: #f4f7fb;
-    gridline-color: #dbe1e8;
-}
-QScrollArea, QScrollArea > QWidget > QWidget {
-    background: #ffffff;
-    border: none;
-}
-QScrollBar:vertical {
-    background: #f1f3f6;
-    width: 10px;
-    margin: 0px;
-    border: none;
-}
-QScrollBar::handle:vertical {
-    background: #b8c2cf;
-    border-radius: 5px;
-    min-height: 28px;
-    margin: 2px;
-}
-QScrollBar::handle:vertical:hover {
-    background: #8fa0b5;
-}
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-    height: 0px;
-}
-QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-    background: transparent;
-}
-QScrollBar:horizontal {
-    background: #f1f3f6;
-    height: 10px;
-    margin: 0px;
-    border: none;
-}
-QScrollBar::handle:horizontal {
-    background: #b8c2cf;
-    border-radius: 5px;
-    min-width: 28px;
-    margin: 2px;
-}
-QScrollBar::handle:horizontal:hover {
-    background: #8fa0b5;
-}
-QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
-    width: 0px;
-}
-QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
-    background: transparent;
-}
-QGroupBox {
-    background-color: #ffffff;
-    font-weight: 600;
-    font-size: 10pt;
-    color: #172b4d;
-    border: 1px solid #c0c8d4;
-    border-radius: 4px;
-    margin-top: 10px;
-    padding: 12px 12px 8px 12px;
-}
-QGroupBox::title {
-    subcontrol-origin: margin;
-    left: 10px;
-    padding: 0 5px;
-    background-color: #ffffff;
-    color: #172b4d;
-}
-QLineEdit, QComboBox, QSpinBox {
-    background-color: #ffffff;
-    color: #172b4d;
-    border: 1px solid #aeb9c7;
-    border-radius: 3px;
-    padding: 3px 6px;
-    selection-background-color: #245c96;
-    selection-color: #ffffff;
-}
-QLineEdit:hover, QComboBox:hover, QSpinBox:hover {
-    border-color: #7fa4cf;
-}
-QLineEdit:focus, QComboBox:focus, QSpinBox:focus {
-    border: 1.5px solid #245c96;
-}
-QLineEdit:disabled, QComboBox:disabled, QSpinBox:disabled {
-    background-color: #e7ecf2;
-    color: #59677a;
-}
-QComboBox QAbstractItemView, QListView {
-    background-color: #ffffff;
-    color: #172b4d;
-    selection-background-color: #245c96;
-    selection-color: #ffffff;
-}
-QListView::item {
-    padding: 3px 6px;
-    background-color: #ffffff;
-    color: #172b4d;
-}
-QListView::item:hover {
-    background-color: #dbeafe;
-    color: #1e40af;
-}
-QListView::item:selected {
-    background-color: #245c96;
-    color: #ffffff;
-}
-QPushButton {
-    background-color: #e9edf2;
-    color: #172b4d;
-    border: 1px solid #aeb9c7;
-    border-radius: 3px;
-    padding: 5px 12px;
-    font-weight: 500;
-}
-QPushButton:hover {
-    background-color: #d8e8fc;
-    color: #123a63;
-    border-color: #7fa4cf;
-}
-QPushButton:pressed {
-    background-color: #c5d9f0;
-    color: #123a63;
-}
-QPushButton:disabled {
-    background-color: #e7ecf2;
-    color: #59677a;
-}
-QPlainTextEdit {
-    background-color: #0f172a;
-    color: #38bdf8;
-    border: 1px solid #334155;
-    border-radius: 3px;
-    padding: 6px;
-    font-family: "Cascadia Mono", "Consolas", monospace;
-    font-size: 9.5pt;
-}
-QSplitter::handle:vertical {
-    background-color: #c0c8d4;
-    height: 5px;
-    margin: 1px 0;
-}
-QSplitter::handle:vertical:hover {
-    background-color: #245c96;
-}
-QStatusBar {
-    background: #eef0f3;
-    color: #172b4d;
-}
-QRadioButton {
-    spacing: 10px;
-    font-size: 9.75pt;
-    font-weight: 600;
-    background: transparent;
-    color: #172b4d;
-    min-height: 22px;
-}
-QRadioButton::indicator {
-    width: 16px;
-    height: 16px;
-    border-radius: 9px;
-    border: 1.5px solid #8c9ba5;
-    background: #ffffff;
-}
-QRadioButton::indicator:hover {
-    border-color: #245c96;
-}
-QRadioButton::indicator:checked {
-    border: 2px solid #245c96;
-    background: qradialgradient(cx:0.5, cy:0.5, radius:0.5, fx:0.5, fy:0.5, stop:0 #245c96, stop:0.55 #245c96, stop:0.6 #ffffff, stop:1 #ffffff);
-}
-QCheckBox {
-    spacing: 8px;
-    background: transparent;
-    color: #172b4d;
-}
-QCheckBox::indicator {
-    width: 16px;
-    height: 16px;
-    border-radius: 3px;
-    border: 1.5px solid #8c9ba5;
-    background: #ffffff;
-}
-QCheckBox::indicator:hover {
-    border-color: #245c96;
-}
-"""
 
 
 class PaintedRadio(QRadioButton):
@@ -328,7 +33,7 @@ class PaintedRadio(QRadioButton):
         """Radio button drawn by hand, so it looks the same on every Windows theme."""
         super().__init__(text, parent)
         f = self.font()
-        f.setBold(True)
+        f.setWeight(QFont.Weight.DemiBold)
         self.setFont(f)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
 
@@ -350,23 +55,39 @@ class PaintedRadio(QRadioButton):
         d = self.INDICATOR_D
         center = QPointF(2 + d / 2.0, h / 2.0)
         enabled = self.isEnabled()
-        blue = QColor("#245c96") if enabled else QColor("#94a3b8")
-        ring = blue if (self.isChecked() or (self.underMouse() and enabled)) else (QColor("#8c9ba5") if enabled else QColor("#cbd5e1"))
-        p.setPen(QPen(ring, 1.6))
-        p.setBrush(QColor("#ffffff") if enabled else QColor("#f1f5f9"))
-        p.drawEllipse(center, d / 2.0 - 1.0, d / 2.0 - 1.0)
+        blue = QColor(theme.ACCENT) if enabled else QColor(theme.TEXT_TERTIARY)
+        ring = blue if (self.isChecked() or (self.underMouse() and enabled)) else (QColor("#a9a9b2") if enabled else QColor(theme.SEPARATOR))
         if self.isChecked():
+            # Filled accent disc with a white centre, as on macOS.
             p.setPen(Qt.PenStyle.NoPen)
             p.setBrush(blue)
-            p.drawEllipse(center, 4.2, 4.2)
+            p.drawEllipse(center, d / 2.0 - 0.5, d / 2.0 - 0.5)
+            p.setBrush(QColor("#ffffff"))
+            p.drawEllipse(center, 3.0, 3.0)
+        else:
+            p.setPen(QPen(ring, 1.2))
+            p.setBrush(QColor(theme.SURFACE) if enabled else QColor(theme.FILL))
+            p.drawEllipse(center, d / 2.0 - 1.0, d / 2.0 - 1.0)
         if self.hasFocus():
-            p.setPen(QPen(QColor("#7fa4cf"), 1, Qt.PenStyle.DotLine))
+            p.setPen(QPen(QColor(theme.ACCENT), 2.0))
             p.setBrush(Qt.BrushStyle.NoBrush)
-            p.drawRect(QRect(d + 8, 1, max(10, self.width() - d - 10), h - 2))
-        p.setPen(QColor("#172b4d") if enabled else QColor("#94a3b8"))
+            p.drawEllipse(center, d / 2.0 + 1.5, d / 2.0 + 1.5)
+        p.setPen(QColor(theme.TEXT) if enabled else QColor(theme.TEXT_TERTIARY))
         p.setFont(self.font())
         p.drawText(QRect(d + 10, 0, max(10, self.width() - d - 10),
                          h), Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft, self.text())
+
+
+def _fit_dialog(dialog):
+    """Size a dialog to its content at its actual width.
+
+    The default size is computed from the word-wrapped labels at a narrower
+    width, which leaves the dialog too tall and the spare height inside the labels.
+    """
+    width = max(dialog.minimumWidth(), dialog.sizeHint().width())
+    height = dialog.heightForWidth(width)
+    if height > 0:
+        dialog.resize(width, height)
 
 
 def documents(folder=""):
@@ -415,11 +136,11 @@ def _field_label(label, unit):
     """Short label with its unit for a form field."""
     short = SHORT_LABELS.get(label, label)
     if unit in ("mm", "g/cm³"):
-        lbl = QLabel(f"{short} <span style='color:#64748b;font-size:9pt;'>[{unit}]</span>")
+        lbl = QLabel(f"{short} <span style='color:{theme.TEXT_SECONDARY};font-size:9pt;'>[{unit}]</span>")
     else:
         lbl = QLabel(short)
     lbl.setToolTip(f"{label} ({unit})")
-    lbl.setStyleSheet("background:transparent;color:#334155;")
+    set_role(lbl, "fieldLabel")
     return lbl
 
 
@@ -477,10 +198,6 @@ class ModelForm(QWidget):
                     edit.setMinimumWidth(95)
                     edit.setMaximumWidth(145)
                     edit_view = QListView(edit)
-                    edit_view.setStyleSheet("QListView{background-color:#ffffff;color:#172b4d;border:1px solid #cbd5e1;"
-                                            "outline:none;} QListView::item{padding:4px 8px;color:#172b4d;"
-                                            "background:#ffffff;} QListView::item:hover{background-color:#dbeafe;"
-                                            "color:#1e40af;} QListView::item:selected{background-color:#245c96;color:#ffffff;}")
                     edit.setView(edit_view)
                     edit.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
                     edit.addItem("")
@@ -490,11 +207,10 @@ class ModelForm(QWidget):
                         edit.setCurrentText("copper")
                     btn = QPushButton("Edit")
                     btn.setFixedWidth(58)
-                    btn.setStyleSheet("background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd;padding:2px 4px;font-size:8.5pt;")
+                    set_size(btn, "small")
                     btn.setToolTip(f"Edit the composition or density of {label.lower()} in the Material Editor")
                     btn.clicked.connect(partial(self.modify_material, index))
                     cell = QWidget()
-                    cell.setStyleSheet("background:transparent;")
                     cl = QHBoxLayout(cell)
                     cl.setContentsMargins(0, 0, 0, 0)
                     cl.setSpacing(4)
@@ -597,15 +313,15 @@ class SourceForm(QWidget):
         g.setHorizontalSpacing(20)
         g.setVerticalSpacing(8)
         hdr_param = QLabel("Parameter")
-        hdr_param.setStyleSheet("font-weight:600;color:#475569;padding:6px 4px;background:transparent;")
+        set_role(hdr_param, "columnHeader")
         g.addWidget(hdr_param, 0, 0)
         self._col_headers = {}
         self._standard_widgets = []   # everything in the standard column (hidden for summing only)
         self._grid = g
         for column, (kind, subtitle) in enumerate([("standard", "Standard (reference)"), ("sample", "Sample (measured)")], 1):
-            hdr = QLabel(f"<b>{subtitle}</b>")
-            hdr.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            hdr.setStyleSheet("background:#f1f5f9;color:#0f172a;border:1px solid #cbd5e1;border-radius:4px;padding:5px 8px;")
+            hdr = QLabel(subtitle)
+            hdr.setAlignment(Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignVCenter)
+            set_role(hdr, "columnHeader")
             g.addWidget(hdr, 0, column)
             self._col_headers[kind] = hdr
             if kind=="standard":
@@ -621,10 +337,6 @@ class SourceForm(QWidget):
                     edit.setEditable(True)
                     edit.setMinimumContentsLength(10)
                     edit_view = QListView(edit)
-                    edit_view.setStyleSheet("QListView{background-color:#ffffff;color:#172b4d;border:1px solid #cbd5e1;"
-                                            "outline:none;} QListView::item{padding:4px 8px;color:#172b4d;"
-                                            "background:#ffffff;} QListView::item:hover{background-color:#dbeafe;"
-                                            "color:#1e40af;} QListView::item:selected{background-color:#245c96;color:#ffffff;}")
                     edit.setView(edit_view)
                     edit.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
                     edit.addItem("")
@@ -635,11 +347,10 @@ class SourceForm(QWidget):
                         edit.currentTextChanged.connect(lambda _t, k=kind:(self.kind_edited.emit(k.title()), self.changed.emit()))
                     btn = QPushButton("Edit")
                     btn.setFixedWidth(58)
-                    btn.setStyleSheet("background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd;padding:2px 4px;font-size:8.5pt;")
+                    set_size(btn, "small")
                     btn.setToolTip(f"Edit the composition or nominal density [g/cm³] of the {kind} {label.lower()}")
                     btn.clicked.connect(partial(self.modify_material, kind, index))
                     cell = QWidget()
-                    cell.setStyleSheet("background:transparent;")
                     cl = QHBoxLayout(cell)
                     cl.setContentsMargins(0, 0, 0, 0)
                     cl.setSpacing(4)
@@ -663,8 +374,7 @@ class SourceForm(QWidget):
         for column, kind in enumerate(("standard", "sample"), 1):
             bar = QHBoxLayout()
             bar.setSpacing(6)
-            load = with_icon(QPushButton(f"Load {kind}…"), OPEN)
-            load.setStyleSheet("font-weight:600;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;")
+            load = with_icon(set_role(QPushButton(f"Load {kind}…"), "tinted"), OPEN)
             save = with_icon(QPushButton(f"Store {kind}…"), SAVE)
             bar.addWidget(load)
             bar.addWidget(save)
@@ -901,12 +611,12 @@ class MainWindow(QMainWindow):
         # so a material being typed survives a geometry change.
         from .material_gui import MaterialEditor
         self.material_editor = MaterialEditor(self)
-        self.material_editor.setStyleSheet(APP_STYLESHEET)
+        self.material_editor.setStyleSheet(app_stylesheet())
         self.material_editor.setWindowIcon(get_app_icon())
         self._build_tabs_and_log(outer)
         self._build_menus()
         self.workers.valueChanged.connect(self.changed)
-        self.setStyleSheet(APP_STYLESHEET)
+        self.setStyleSheet(app_stylesheet())
         self.append_log(f"EffSuite v{VERSION} started")
         self.append_log("EffSuite built by ChatGPT, Gemini and Claude under the supervision of G. Lutter")
         self.append_log(f"Data directory: {self.data_directory or 'bundled assets'}")
@@ -918,20 +628,20 @@ class MainWindow(QMainWindow):
     def _build_top_bar(self, outer):
         """Top bar: geometry, software, workers, data folder and help buttons."""
         top_frame = QFrame()
-        top_frame.setStyleSheet("QFrame{background:#ffffff;border:1px solid #cbd5e1;border-radius:4px;padding:3px 6px;}")
+        top_frame.setObjectName("TopBar")
         top = QHBoxLayout(top_frame)
-        top.setContentsMargins(8, 3, 8, 3)
+        top.setContentsMargins(12, 7, 10, 7)
         top.setSpacing(8)
-        app_lbl = QLabel("<b>Geometry:</b>")
-        app_lbl.setStyleSheet("border:none;background:transparent;")
+        app_lbl = QLabel("Geometry")
+        set_role(app_lbl, "secondary")
         top.addWidget(app_lbl)
         self.mode = QComboBox()
         self.mode.setMinimumWidth(185)
         for key, name in MODES.items():
             self.mode.addItem(name+{"cylindrical":" — Cylindrical", "marinelli":" — Marinelli", "well":" — Well"}[key], key)
         top.addWidget(self.mode)
-        sw_lbl = QLabel("<b>Software:</b>")
-        sw_lbl.setStyleSheet("border:none;background:transparent;")
+        sw_lbl = QLabel("Software")
+        set_role(sw_lbl, "secondary")
         top.addWidget(sw_lbl)
         self.software = QComboBox()
         self.software.setToolTip("Auto: GammaVision for .EFT / .LIB files, Genie 2000 for .CAL / .NLB / .CTF files")
@@ -945,9 +655,7 @@ class MainWindow(QMainWindow):
         self.software.setCurrentIndex(max(0, self.software.findData(forced)))
         self.software.currentIndexChanged.connect(lambda *_:os.environ.__setitem__("EFFSUITE_SOFTWARE", self.software.currentData()))
         top.addWidget(self.software)
-        sep_v = QFrame()
-        sep_v.setFrameShape(QFrame.Shape.VLine)
-        sep_v.setStyleSheet("color:#cbd5e1;")
+        sep_v = set_role(QFrame(), "vseparator")
         top.addWidget(sep_v)
         self.data_button = with_icon(QPushButton("Data folder…"), FOLDER)
         self.data_button.setToolTip("Data folder of this project: your own Composition, Material, Detector, Sample and Standard files.\n"
@@ -957,14 +665,12 @@ class MainWindow(QMainWindow):
         top.addWidget(self.data_button)
         self.data_label = QLabel()
         self._show_data_directory()
-        self.data_label.setStyleSheet("color:#59677a;font-size:9pt;border:none;background:transparent;")
+        set_role(self.data_label, "caption")
         top.addWidget(self.data_label, 1)
-        sep_v2 = QFrame()
-        sep_v2.setFrameShape(QFrame.Shape.VLine)
-        sep_v2.setStyleSheet("color:#cbd5e1;")
+        sep_v2 = set_role(QFrame(), "vseparator")
         top.addWidget(sep_v2)
-        wrk_lbl = QLabel("Workers:")
-        wrk_lbl.setStyleSheet("border:none;background:transparent;")
+        wrk_lbl = QLabel("Workers")
+        set_role(wrk_lbl, "secondary")
         top.addWidget(wrk_lbl)
         self.workers = QSpinBox()
         self.workers.setRange(0, 64)
@@ -972,12 +678,9 @@ class MainWindow(QMainWindow):
         self.workers.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.workers.setMinimumWidth(96)
         top.addWidget(self.workers)
-        sep_v3 = QFrame()
-        sep_v3.setFrameShape(QFrame.Shape.VLine)
-        sep_v3.setStyleSheet("color:#cbd5e1;")
+        sep_v3 = set_role(QFrame(), "vseparator")
         top.addWidget(sep_v3)
         help_btn = QPushButton("Help")
-        help_btn.setStyleSheet("background:#e9edf2;color:#172b4d;border:1px solid #aeb9c7;padding:4px 10px;")
         help_btn.clicked.connect(lambda:self.show_help_dialog("workflow"))
         top.addWidget(help_btn)
         outer.addWidget(top_frame)
@@ -998,31 +701,26 @@ class MainWindow(QMainWindow):
         self.splitter.addWidget(self.tabs)
         self._build_tabs()
         log_panel = QWidget()
-        log_panel.setStyleSheet("background:transparent;")
         log_panel.setMinimumHeight(65)
         log_layout = QVBoxLayout(log_panel)
         log_layout.setContentsMargins(0, 2, 0, 0)
-        log_layout.setSpacing(4)
+        log_layout.setSpacing(6)
         footer = QHBoxLayout()
         footer.setContentsMargins(2, 0, 2, 0)
         footer.setSpacing(8)
         self.status = QLabel("Ready: choose a step above or load the built-in example")
-        self.status.setStyleSheet("font-weight:600;color:#172b4d;background:transparent;")
+        set_role(self.status, "status")
         footer.addWidget(self.status, 1)
         self.copy_btn = QPushButton("Copy log")
         self.copy_btn.setToolTip("Copy the whole log to the clipboard")
-        self.copy_btn.setStyleSheet("background:#e9edf2;color:#172b4d;border:1px solid #aeb9c7;"
-                                    "font-weight:500;padding:3px 10px;font-size:9pt;")
+        set_size(self.copy_btn, "small")
         self.copy_btn.clicked.connect(self.copy_log)
         footer.addWidget(self.copy_btn)
-        self.clear_btn = with_icon(QPushButton("Clear"), CLEAR)
+        self.clear_btn = with_icon(set_size(QPushButton("Clear"), "small"), CLEAR)
         self.clear_btn.setToolTip("Clear the log")
-        self.clear_btn.setStyleSheet("background:#e9edf2;color:#172b4d;border:1px solid #aeb9c7;"
-                                     "font-weight:500;padding:3px 10px;font-size:9pt;")
         self.clear_btn.clicked.connect(self.clear_log)
         footer.addWidget(self.clear_btn)
-        self.cancel_button = with_icon(QPushButton("Cancel calculation"), STOP)
-        self.cancel_button.setStyleSheet("background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;font-weight:600;padding:3px 12px;")
+        self.cancel_button = with_icon(set_size(set_role(QPushButton("Cancel calculation"), "danger"), "small"), STOP)
         self.cancel_button.setEnabled(False)
         self.cancel_button.clicked.connect(lambda:self.cancel_event.set())
         footer.addWidget(self.cancel_button)
@@ -1031,8 +729,6 @@ class MainWindow(QMainWindow):
         self.log.setReadOnly(True)
         self.log.setMinimumHeight(45)
         self.log.setMaximumBlockCount(10000)
-        self.log.setStyleSheet("background-color:#0f172a;color:#38bdf8;border:1px solid #334155;border-radius:3px;"
-                               "padding:6px;font-family:'Cascadia Mono','Consolas',monospace;font-size:9.5pt;")
         self.log.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.log.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.log.setPlaceholderText("Calculation log")
@@ -1103,41 +799,40 @@ class MainWindow(QMainWindow):
         vl.setSpacing(12)
 
         banner = QFrame()
-        banner.setStyleSheet("QFrame{background:#fef2f2;border:1px solid #fecaca;"
-                             "border-left:5px solid #dc2626;border-radius:6px;padding:12px;}")
+        banner.setProperty("notice", "danger")
         bl = QVBoxLayout(banner)
+        bl.setContentsMargins(16, 14, 16, 14)
         bl.setSpacing(6)
         t = QLabel("<b>Disclaimer</b>")
-        t.setStyleSheet("font-size:11.5pt;color:#991b1b;border:none;background:transparent;")
+        t.setStyleSheet(f"font-size:12pt;color:{theme.DANGER_TEXT};")
         bl.addWidget(t)
 
         msg = QLabel(
-            "<p style='color:#7f1d1d;font-size:10pt;line-height:1.45;margin:0;'>"
+            f"<p style='color:{theme.TEXT};font-size:10pt;line-height:1.45;margin:0;'>"
             "Provided strictly on an <b>AS-IS</b> basis. <b>G. Lutter accepts NO responsibility or liability</b> "
             "under any circumstances for incorrect calculations, inaccurate analytical results, or damages resulting from software use. "
             "Users must independently verify all results."
             "</p>"
         )
         msg.setWordWrap(True)
-        msg.setStyleSheet("border:none;background:transparent;")
         bl.addWidget(msg)
         vl.addWidget(banner)
 
         note = QLabel(
-            f"<p style='font-size:9.5pt;color:#475569;margin:0;line-height:1.4;'>"
+            f"<p style='font-size:9.5pt;color:{theme.TEXT_SECONDARY};margin:0;line-height:1.4;'>"
             f"<b>EffSuite v{VERSION}</b>, built by ChatGPT, Gemini and Claude under the supervision of G. Lutter.<br>"
             f"Physics engines based on EFFTRAN / MEFFTRAN / WEFFTRAN by Tim Vidmar and NIST XCOM."
             f"</p>"
         )
         note.setWordWrap(True)
-        note.setStyleSheet("background:#f8fafc;border:1px solid #cbd5e1;border-radius:4px;padding:8px;")
+        note.setProperty("notice", "neutral")
+        note.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
         vl.addWidget(note)
 
         btn_row = QHBoxLayout()
         btn_row.addStretch()
-        btn_ok = QPushButton("I understand and accept" if is_first_run else "Close")
-        btn_ok.setStyleSheet("font-weight:600;background:#2563eb;color:#ffffff;"
-                             "padding:7px 22px;border-radius:4px;border:1px solid #1d4ed8;")
+        btn_ok = set_role(QPushButton("I understand and accept" if is_first_run else "Close"), "primary")
+        btn_ok.setDefault(True)
         def on_accept():
             try:
                 marker = get_effsuite_root() / ".disclaimer_accepted"
@@ -1149,7 +844,7 @@ class MainWindow(QMainWindow):
         btn_ok.clicked.connect(on_accept)
         btn_row.addWidget(btn_ok)
         vl.addLayout(btn_row)
-
+        _fit_dialog(dialog)
         dialog.exec()
 
     def current_mode(self):
@@ -1158,23 +853,26 @@ class MainWindow(QMainWindow):
     def _page(self, title, scrollable=True):
         """An empty tab page (optionally scrollable) with a title."""
         outer = QWidget()
-        outer.setStyleSheet("background:#ffffff;")
+        outer.setObjectName("Page")
         outer_layout = QVBoxLayout(outer)
         outer_layout.setContentsMargins(0, 0, 0, 0)
         outer_layout.setSpacing(0)
         body = QWidget()
-        body.setStyleSheet("background:#ffffff;")
+        body.setObjectName("PageBody")
         layout = QVBoxLayout(body)
-        layout.setContentsMargins(14, 8, 14, 8)
-        layout.setSpacing(6)
+        layout.setContentsMargins(16, 6, 16, 10)
+        layout.setSpacing(8)
         heading = QLabel(title)
-        heading.setStyleSheet("font-size:13pt;font-weight:600;color:#172b4d;background:transparent;padding-bottom:1px;")
+        set_role(heading, "pageTitle")
+        # Large text reads better slightly tightened (Qt style sheets cannot set tracking).
+        hfont = heading.font()
+        hfont.setLetterSpacing(QFont.SpacingType.PercentageSpacing, 98.5)
+        heading.setFont(hfont)
         layout.addWidget(heading)
         if scrollable:
             scroll = QScrollArea()
             scroll.setWidgetResizable(True)
             scroll.setFrameShape(QFrame.Shape.NoFrame)
-            scroll.setStyleSheet("QScrollArea { background: #ffffff; border: none; }")
             scroll.setWidget(body)
             outer_layout.addWidget(scroll, 1)
         else:
@@ -1184,9 +882,8 @@ class MainWindow(QMainWindow):
         """Add the Back / Next navigation bar at the bottom of a page."""
         foot = QFrame()
         foot.setObjectName("PageFooter")
-        foot.setStyleSheet("QFrame#PageFooter{background:#f4f6f9;border-top:1px solid #cbd5e1;}")
         fl = QHBoxLayout(foot)
-        fl.setContentsMargins(14, 7, 14, 7)
+        fl.setContentsMargins(16, 9, 16, 9)
         fl.setSpacing(8)
         fl.addLayout(row_layout)
         page.layout().addWidget(foot, 0)
@@ -1207,20 +904,19 @@ class MainWindow(QMainWindow):
             keys.append(self.summing_source)
         return keys
     def _step_banner(self, key, title_text, description="", input_req=None, extra_widgets=None):
-        """Blue information banner at the top of a step page."""
+        """Step line at the top of a page: step number and title, expected input, page buttons."""
         frame = QFrame()
-        frame.setStyleSheet("QFrame{background:#f8fafc;border:1px solid #cbd5e1;"
-                            "border-left:4px solid #2563eb;border-radius:5px;padding:3px 10px;}")
+        frame.setObjectName("StepBanner")
         fl = QHBoxLayout(frame)
-        fl.setContentsMargins(6, 2, 6, 2)
-        fl.setSpacing(10)
+        fl.setContentsMargins(0, 0, 0, 0)
+        fl.setSpacing(8)
         h = QLabel(f"<b>{title_text}</b>")
-        h.setStyleSheet("color:#0f172a;font-size:10.5pt;border:none;background:transparent;")
+        set_role(h, "stepTitle")
         fl.addWidget(h)
         self._banners[key] = (h, title_text)
         if input_req:
-            req = QLabel(f"Input: <b>{input_req}</b>")
-            req.setStyleSheet("color:#1e40af;font-size:9pt;background:#eff6ff;border:1px solid #bfdbfe;border-radius:4px;padding:2px 8px;")
+            req = QLabel(f"Input: <span style='color:{theme.TEXT}'>{input_req}</span>")
+            set_role(req, "chip")
             fl.addWidget(req)
         fl.addStretch()
         if extra_widgets:
@@ -1289,16 +985,12 @@ class MainWindow(QMainWindow):
             pos = keys.index(key)
             if pos==len(keys)-1:
                 button.setText(self.RUN_LABELS[self.workflow])
-                button.setIcon(icon(RUN))
-                button.setStyleSheet("font-weight:600;background:#16a34a;color:#ffffff;"
-                                     "border:1px solid #15803d;padding:7px 18px;border-radius:5px;")
+                with_icon(set_role(button, "success"), RUN)
             else:
                 following = keys[pos+1]
                 title = "Sample" if following=="source" and summing_only else self.STEP_TITLES[following]
                 button.setText(f"Next: {title.replace('&', '&&')}")   # "&&" shows a single "&"
-                button.setIcon(icon(NEXT))
-                button.setStyleSheet("font-weight:600;background:#2563eb;color:#ffffff;"
-                                     "border:1px solid #1d4ed8;padding:7px 16px;border-radius:5px;")
+                with_icon(set_role(button, "primary"), NEXT)
         for value, radio in self._workflow_radios.items():
             radio.blockSignals(True)
             radio.setChecked(value==self.workflow)
@@ -1333,6 +1025,8 @@ class MainWindow(QMainWindow):
             items.append("<b>Genie certificate (.CTF)</b> → exports the corrected .CTF"
                          if self.summing_source=="ctf" else
                          "<b>Nuclide library (Genie .NLB / GammaVision .LIB)</b> from <code>Data/NuclideLibrary</code> → exports the corrected .NLB or .LIB")
+        code = f"<span style='font-family:Cascadia Mono,Consolas,monospace;font-size:9pt;color:{theme.TEXT_SECONDARY};'>"
+        items = [i.replace("<code>", code).replace("</code>", "</span>") for i in items]
         return "<ol style='margin:0px;line-height:1.35;'>"+"".join(f"<li>{i}</li>" for i in items)+"</ol>"
     def missing_items(self):
         """What must still be entered before running: [(step, message), ...]."""
@@ -1420,7 +1114,8 @@ class MainWindow(QMainWindow):
             radio.toggled.connect(lambda checked, v=value:checked and self.set_workflow(workflow=v))
             note = QLabel(desc)
             note.setWordWrap(True)
-            note.setStyleSheet("color:#59677a;font-size:9pt;background:transparent;margin-left:26px;margin-bottom:5px;")
+            set_role(note, "caption")
+            note.setContentsMargins(26, 0, 0, 6)
             bl.addWidget(note)
         bl.addStretch(1)
         self._source_box = QGroupBox("B. Coincidence summing file")
@@ -1439,7 +1134,8 @@ class MainWindow(QMainWindow):
             radio.toggled.connect(lambda checked, v=value:checked and self.set_workflow(summing_source=v))
             note = QLabel(desc)
             note.setWordWrap(True)
-            note.setStyleSheet("color:#59677a;font-size:9pt;background:transparent;margin-left:26px;margin-bottom:5px;")
+            set_role(note, "caption")
+            note.setContentsMargins(26, 0, 0, 6)
             sl.addWidget(note)
         sl.addStretch(1)
         ab_row = QHBoxLayout()
@@ -1452,15 +1148,13 @@ class MainWindow(QMainWindow):
         nl.setContentsMargins(12, 10, 12, 8)
         self.needs_label = QLabel()
         self.needs_label.setWordWrap(True)
-        self.needs_label.setStyleSheet("color:#172b4d;font-size:9.5pt;background:transparent;")
         nl.addWidget(self.needs_label)
         layout.addWidget(need)
         layout.addStretch(1)
         row = QHBoxLayout()
         row.setContentsMargins(0, 0, 0, 0)
-        start = with_icon(QPushButton("Start guided setup"), NEXT)
+        start = with_icon(set_role(QPushButton("Start guided setup"), "primary"), NEXT)
         start.setLayoutDirection(Qt.LayoutDirection.RightToLeft)   # icon after the text
-        start.setStyleSheet("font-weight:600;background:#245c96;color:#ffffff;border:1px solid #1a4470;padding:7px 18px;border-radius:4px;")
         start.clicked.connect(lambda:self.go_step(1))
         example = QPushButton("Load built-in example")
         example.clicked.connect(self.load_example)
@@ -1477,24 +1171,20 @@ class MainWindow(QMainWindow):
         page, layout = self._page("Detector geometry and materials")
         if mode=="well":
             untested_banner = QFrame()
-            untested_banner.setStyleSheet("QFrame{background:#fffbeb;border:1px solid #fde68a;"
-                                          "border-left:5px solid #d97706;border-radius:5px;padding:8px 12px;}")
+            untested_banner.setProperty("notice", "warning")
             ub_l = QHBoxLayout(untested_banner)
-            ub_l.setContentsMargins(4, 2, 4, 2)
-            ub_l.setSpacing(8)
+            ub_l.setContentsMargins(12, 8, 12, 8)
+            ub_l.setSpacing(10)
             ub_icon = QLabel()
-            ub_icon.setPixmap(icon(WARNING).pixmap(24, 24))
-            ub_icon.setStyleSheet("border:none;background:transparent;")
+            ub_icon.setPixmap(icon(WARNING).pixmap(20, 20))
             ub_l.addWidget(ub_icon)
             ub_text = QLabel("<b>WEFFTRAN is not yet qualified in the laboratory.</b> The well engine has the 3D spatial summing model and the ray boundary patch, but has not been fully tested. Verify well results independently.")
             ub_text.setWordWrap(True)
-            ub_text.setStyleSheet("color:#92400e;font-size:9.5pt;border:none;background:transparent;")
+            ub_text.setStyleSheet(f"color:{theme.WARNING_TEXT};")
             ub_l.addWidget(ub_text, 1)
             layout.addWidget(untested_banner)
-        load = with_icon(QPushButton("Load detector…"), OPEN)
-        load.setStyleSheet("font-weight:600;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:4px 10px;")
+        load = with_icon(set_role(QPushButton("Load detector…"), "tinted"), OPEN)
         save = with_icon(QPushButton("Store detector…"), SAVE)
-        save.setStyleSheet("padding:4px 10px;")
         load.clicked.connect(partial(self.load_model, "detector"))
         save.clicked.connect(partial(self.store_model, "detector"))
         layout.addWidget(self._step_banner("detector", "Detector geometry and materials",
@@ -1515,7 +1205,6 @@ class MainWindow(QMainWindow):
         button = QPushButton("Materials…")
         button.setToolTip("Open the Material Editor in its own window, to create or edit a material "
                           "while this page stays open")
-        button.setStyleSheet("font-weight:600;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;padding:4px 10px;")
         button.clicked.connect(lambda:self.open_material_editor_for_input(None))
         return button
     def _build_source_tab(self, mode):
@@ -1525,7 +1214,8 @@ class MainWindow(QMainWindow):
                                            extra_widgets=[self._materials_button()]))
         self.source_hint = QLabel("Coincidence summing only needs the Sample. The Standard (reference "
                                   "calibration source) is used only for efficiency transfer, so it is hidden.")
-        self.source_hint.setStyleSheet("color:#1e40af;background:#eff6ff;border:1px solid #bfdbfe;border-radius:4px;padding:4px 8px;")
+        self.source_hint.setProperty("notice", "info")
+        self.source_hint.setWordWrap(True)
         layout.addWidget(self.source_hint)
         src_split = QHBoxLayout()
         src_split.setSpacing(12)
@@ -1547,16 +1237,13 @@ class MainWindow(QMainWindow):
         layout.addWidget(self._step_banner("efficiency", "Reference efficiency calibration (.CAL / .EFT)",
                                            input_req="Data\\Calibration\\*.CAL, *.EFT, *.txt, *.csv (0 &lt; ε &le; 1)"))
         controls = QHBoxLayout()
-        load = with_icon(QPushButton("Import standard efficiency (.CAL / .EFT / CSV)…"), OPEN)
-        load.setStyleSheet("font-weight:600;background:#2563eb;color:#ffffff;border:1px solid #1d4ed8;padding:6px 14px;")
+        load = with_icon(set_role(QPushButton("Import standard efficiency (.CAL / .EFT / CSV)…"), "primary"), OPEN)
         load.clicked.connect(self.import_calibration)
         transfer = with_icon(QPushButton("Calculate transfer only"), RUN)
         transfer.clicked.connect(partial(self.calculate, "transfer"))
-        export = with_icon(QPushButton("Export sample efficiency (.CAL / .EFT)…"), SAVE)
-        export.setStyleSheet("font-weight:600;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;")
+        export = with_icon(set_role(QPushButton("Export sample efficiency (.CAL / .EFT)…"), "tinted"), SAVE)
         export.clicked.connect(self.export_calibration)
-        self.btn_export_sum_on_eff = with_icon(QPushButton("Export corrected library (.NLB / .LIB)…"), SAVE)
-        self.btn_export_sum_on_eff.setStyleSheet("font-weight:600;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;")
+        self.btn_export_sum_on_eff = with_icon(set_role(QPushButton("Export corrected library (.NLB / .LIB)…"), "tinted"), SAVE)
         self.btn_export_sum_on_eff.clicked.connect(lambda:self.export_genie(self.summing_source))
         for b in (load, transfer, export, self.btn_export_sum_on_eff):
             controls.addWidget(b)
@@ -1595,16 +1282,13 @@ class MainWindow(QMainWindow):
             need = "Data\\Certificates\\*.CTF (Genie)" if kind=="ctf" else "Data\\NuclideLibrary\\*.NLB (Genie), *.LIB (GammaVision)"
             layout.addWidget(self._step_banner(kind, "Coincidence summing: "+("certificate (.CTF)" if kind=="ctf" else "nuclide library (.NLB / .LIB)"), input_req=need))
             bar = QHBoxLayout()
-            load = with_icon(QPushButton("Open "+("Genie certificate (.CTF)…" if kind=="ctf" else "library (.NLB / GammaVision .LIB)…")), OPEN)
-            load.setStyleSheet("font-weight:600;background:#2563eb;color:#ffffff;border:1px solid #1d4ed8;padding:6px 14px;")
+            load = with_icon(set_role(QPushButton("Open "+("Genie certificate (.CTF)…" if kind=="ctf" else "library (.NLB / GammaVision .LIB)…")), "primary"), OPEN)
             load.clicked.connect(partial(self.import_genie, kind))
             process = with_icon(QPushButton("Calculate summing only"), RUN)
             process.clicked.connect(partial(self.process_genie, kind))
-            export = with_icon(QPushButton("Export corrected "+("certificate (.CTF)…" if kind=="ctf" else "library (.NLB / .LIB)…")), SAVE)
-            export.setStyleSheet("font-weight:600;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;")
+            export = with_icon(set_role(QPushButton("Export corrected "+("certificate (.CTF)…" if kind=="ctf" else "library (.NLB / .LIB)…")), "tinted"), SAVE)
             export.clicked.connect(partial(self.export_genie, kind))
-            export_cal = with_icon(QPushButton("Export sample efficiency (.CAL / .EFT)…"), SAVE)
-            export_cal.setStyleSheet("font-weight:600;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;")
+            export_cal = with_icon(set_role(QPushButton("Export sample efficiency (.CAL / .EFT)…"), "tinted"), SAVE)
             export_cal.clicked.connect(self.export_calibration)
             self.btn_export_cal_on_sum[kind] = export_cal
             switch = QPushButton("Switch to "+("nuclide library (.NLB / .LIB)" if kind=="ctf" else "certificate (.CTF)"))
@@ -1622,7 +1306,6 @@ class MainWindow(QMainWindow):
                 self.nuclides.textEdited.connect(self.changed)
                 nbar = QHBoxLayout()
                 nlbl = QLabel("<b>Nuclides:</b>")
-                nlbl.setStyleSheet("background:transparent;")
                 nbar.addWidget(nlbl)
                 nbar.addWidget(self.nuclides, 1)
                 layout.addLayout(nbar)
@@ -1647,7 +1330,7 @@ class MainWindow(QMainWindow):
                                "u(C): propagated from the efficiency uncertainties above; decay-data uncertainties not included "
                                "(see docs/TCS_UNCERTAINTY.md).")
             foot_note.setWordWrap(True)
-            foot_note.setStyleSheet("color:#475569;font-size:9pt;background:transparent;")
+            set_role(foot_note, "caption")
             layout.addWidget(foot_note)
             self._attach_footer(page, self._nav_row(kind))
             self.tabs.addTab(page, title)
@@ -1655,7 +1338,6 @@ class MainWindow(QMainWindow):
         """Inputs of the TCS uncertainty: u(ε_peak), u(ε_total), their correlation, on/off."""
         row = QHBoxLayout()
         label = QLabel("<b>TCS uncertainty inputs:</b>")
-        label.setStyleSheet("background:transparent;")
         label.setToolTip("Relative standard uncertainties (k=1) of the peak and total efficiencies computed by the "
                          "detector model. They are propagated to u(C) through sensitivity coefficients. "
                          "Defaults are assumptions; enter your laboratory's values. See docs/TCS_UNCERTAINTY.md.")
@@ -1666,7 +1348,7 @@ class MainWindow(QMainWindow):
                 ("total_efficiency_percent", "u(ε total)", 0., 100., .5, 2, " %"),
                 ("peak_total_correlation", "correlation", -1., 1., .1, 2, "")]:
             caption = QLabel(text)
-            caption.setStyleSheet("background:transparent;")
+            set_role(caption, "secondary")
             box = QDoubleSpinBox()
             box.setRange(low, high)
             box.setSingleStep(step)
@@ -1681,7 +1363,6 @@ class MainWindow(QMainWindow):
         enabled = QCheckBox("Calculate u(C)")
         enabled.setToolTip("On: each calculation also computes u(C) (four extra engine runs, about one second).\n"
                            "Off: no u(C) column. The summing factors are the same either way.")
-        enabled.setStyleSheet("background:transparent;")
         enabled.setChecked(self.tcs_settings["enabled"])
         enabled.toggled.connect(partial(self._tcs_setting_changed, "enabled"))
         row.addWidget(enabled)
@@ -1953,7 +1634,7 @@ class MainWindow(QMainWindow):
         gammavision_note = ("<p><b>GammaVision support is untested.</b> ORTEC GammaVision files (<code>.EFT</code> efficiency,"
                             " <code>.LIB</code> nuclide library) are handled as in EFFTRAN and MEFFTRAN, but the author has no"
                             " GammaVision installation to test them. Feedback from GammaVision users is welcome.</p>")
-        pre = "<pre style='background:#f1f5f9;padding:8px;border-radius:4px;'>"
+        pre = f"<pre style='background:{theme.WINDOW};padding:8px;'>"
         topics = [
             ("workflow", "Workflow",
              "<h3>Calculation steps</h3>"
@@ -2007,10 +1688,9 @@ class MainWindow(QMainWindow):
              "<h3>EffSuite: EFFTRAN, MEFFTRAN, WEFFTRAN</h3>"
              f"<p><b>Version:</b> {VERSION} (beta)</p>"
              "<p>EffSuite built by ChatGPT, Gemini and Claude under the supervision of G. Lutter.</p>"
-             "<div style='background:#fef2f2;border:1px solid #fecaca;"
-             "border-left:4px solid #dc2626;border-radius:4px;padding:8px;margin:8px 0;'>"
-             "<b style='color:#991b1b;'>Disclaimer:</b><br>"
-             "<span style='color:#7f1d1d;font-size:9pt;"
+             f"<div style='background:{theme.DANGER_TINT};padding:8px;margin:8px 0;'>"
+             f"<b style='color:{theme.DANGER_TEXT};'>Disclaimer:</b><br>"
+             f"<span style='color:{theme.TEXT};font-size:9pt;"
              "'>Provided strictly on an AS-IS basis. G. Lutter accepts NO responsibility or liability under any circumstances for incorrect calculations, inaccurate analytical results, or damages resulting from software use. Users must independently verify all results.</span>"
              "</div>"
              + gammavision_note +
@@ -2018,7 +1698,7 @@ class MainWindow(QMainWindow):
              "<p><b>Additions:</b> coincidence summing factors for all library nuclides in one pass, computed in parallel worker processes; spatial quadrature integration for well detectors.</p>"
              "<p><b>Default installation folder:</b> <code>C:\\GENIE2K\\EffSuite</code></p>"
              "<p><b>Qualification:</b> beta version, for evaluation and qualification. When you set up or change a detector or sample model, check the models and transfer factors against reference standards.</p>"
-             "<p style='color:#64748b;font-size:8.5pt;'>EFFTRAN copyright &copy;"
+             "<p style='color:"+theme.TEXT_SECONDARY+";font-size:8.5pt;'>EFFTRAN copyright &copy;"
              " 2005–2026 Tim Vidmar. Permission to use, copy, modify, distribute and sell this software and its documentation for any purpose is hereby granted without fee, provided that copyright and permission notices appear in supporting documentation.</p>"),
         ]
         target_idx = 0
@@ -2031,15 +1711,15 @@ class MainWindow(QMainWindow):
             lbl.setWordWrap(True)
             lbl.setTextFormat(Qt.TextFormat.RichText)
             lbl.setAlignment(Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignLeft)
-            lbl.setStyleSheet("background:#ffffff;color:#1e293b;padding:12px;font-size:10pt;line-height:1.45;")
+            set_role(lbl, "helpText")
             w.setWidget(lbl)
             tabs.addTab(w, title)
         tabs.setCurrentIndex(target_idx)
         vl.addWidget(tabs, 1)
         close_row = QHBoxLayout()
         close_row.addStretch()
-        btn = QPushButton("Close")
-        btn.setStyleSheet("font-weight:600;background:#2563eb;color:#ffffff;padding:6px 20px;border-radius:4px;")
+        btn = set_role(QPushButton("Close"), "primary")
+        btn.setDefault(True)
         btn.clicked.connect(dialog.accept)
         close_row.addWidget(btn)
         vl.addLayout(close_row)
@@ -2361,7 +2041,7 @@ class MainWindow(QMainWindow):
             for i, row in enumerate(result["efficiency"]):
                 for col, key, bold in [(3, "sample_efficiency",
                                         True), (4, "sample_relative_uncertainty_percent_legacy", False), (5, "transfer_factor", True)]:
-                    item = _num_item(format(row[key], ".6g"), editable=False, bold=bold, bg="#f0f9ff", fg="#0f172a")
+                    item = _num_item(format(row[key], ".6g"), editable=False, bold=bold, bg=theme.ACCENT_TINT, fg=theme.TEXT)
                     self.efficiency.setItem(i, col, item)
             self.draw_chart()
         if result["summing"]:
@@ -2389,19 +2069,19 @@ class MainWindow(QMainWindow):
         dialog = QDialog(self)
         dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         dialog.setWindowTitle("Complete analysis: exports")
-        dialog.setMinimumWidth(560)
+        dialog.setMinimumWidth(720)
         vl = QVBoxLayout(dialog)
         vl.setSpacing(12)
         vl.setContentsMargins(16, 16, 16, 16)
         banner = QFrame()
-        banner.setStyleSheet("QFrame{background:#ecfdf5;border:1px solid #10b981;"
-                             "border-left:5px solid #059669;border-radius:6px;padding:10px;}")
+        banner.setProperty("notice", "success")
         bl = QVBoxLayout(banner)
+        bl.setContentsMargins(16, 12, 16, 12)
         bl.setSpacing(4)
         t = QLabel("<b>Complete analysis finished</b>")
-        t.setStyleSheet("font-size:12pt;color:#065f46;border:none;background:transparent;")
+        t.setStyleSheet(f"font-size:12pt;color:{theme.SUCCESS_TEXT};")
         d = QLabel("Both output files are calculated and ready to export.")
-        d.setStyleSheet("color:#047857;font-size:9.5pt;border:none;background:transparent;")
+        d.setStyleSheet(f"color:{theme.TEXT};")
         bl.addWidget(t)
         bl.addWidget(d)
         vl.addWidget(banner)
@@ -2413,17 +2093,14 @@ class MainWindow(QMainWindow):
         cal_sw = "GammaVision" if cal_is_gv else "Genie 2000"
         cal_ext = ".EFT" if cal_is_gv else ".CAL"
         row1 = QHBoxLayout()
-        info1 = QLabel(f"<b>1. Sample efficiency ({cal_sw} {cal_ext})</b><br><span style='color:#475569;font-size:9pt;'>Transferred efficiency calibration for the sample geometry</span>")
-        info1.setStyleSheet("background:transparent;")
-        btn1 = with_icon(QPushButton(f"Export sample {cal_ext} ({cal_sw})…"), SAVE)
-        btn1.setStyleSheet("font-weight:600;background:#2563eb;color:#ffffff;border:1px solid #1d4ed8;padding:6px 14px;border-radius:4px;")
+        info1 = QLabel(f"<b>1. Sample efficiency ({cal_sw} {cal_ext})</b><br><span style='color:{theme.TEXT_SECONDARY};font-size:9pt;'>Transferred efficiency calibration for the sample geometry</span>")
+        btn1 = with_icon(set_role(QPushButton(f"Export sample {cal_ext} ({cal_sw})…"), "tinted"), SAVE)
         btn1.clicked.connect(self.export_calibration)
+        info1.setWordWrap(True)
         row1.addWidget(info1, 1)
         row1.addWidget(btn1)
         fl.addLayout(row1)
-        sep = QFrame()
-        sep.setFrameShape(QFrame.Shape.HLine)
-        sep.setStyleSheet("color:#e2e8f0;")
+        sep = set_role(QFrame(), "hseparator")
         fl.addWidget(sep)
         row2 = QHBoxLayout()
         sum_src = self.library_file if self.summing_source=="nlb" else self.certificate_file
@@ -2433,11 +2110,10 @@ class MainWindow(QMainWindow):
         lib_ext = ".LIB" if lib_is_gv else (".NLB" if self.summing_source=="nlb" else ".CTF")
         kind_name = f"nuclide library ({lib_sw} {lib_ext})" if self.summing_source=="nlb" else "certificate (Genie 2000 .CTF)"
         desc_sum = "Yields P / C corrected for cascade coincidence summing" if self.summing_source=="nlb" else "Emission rates R / C corrected for cascade coincidence summing"
-        info2 = QLabel(f"<b>2. Corrected {kind_name}</b><br><span style='color:#475569;font-size:9pt;'>{desc_sum}</span>")
-        info2.setStyleSheet("background:transparent;")
-        btn2 = with_icon(QPushButton(f"Export corrected {lib_ext} ({lib_sw})…"), SAVE)
-        btn2.setStyleSheet("font-weight:600;background:#2563eb;color:#ffffff;border:1px solid #1d4ed8;padding:6px 14px;border-radius:4px;")
+        info2 = QLabel(f"<b>2. Corrected {kind_name}</b><br><span style='color:{theme.TEXT_SECONDARY};font-size:9pt;'>{desc_sum}</span>")
+        btn2 = with_icon(set_role(QPushButton(f"Export corrected {lib_ext} ({lib_sw})…"), "tinted"), SAVE)
         btn2.clicked.connect(lambda:self.export_genie(self.summing_source))
+        info2.setWordWrap(True)
         row2.addWidget(info2, 1)
         row2.addWidget(btn2)
         fl.addLayout(row2)
@@ -2446,19 +2122,20 @@ class MainWindow(QMainWindow):
         if dest:
             note = QLabel(f"<b>Result folder:</b> <span style='font-family:Consolas,monospace;font-size:9pt;'>{dest}</span>")
             note.setWordWrap(True)
-            note.setStyleSheet("color:#334155;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:4px;padding:8px;")
+            note.setProperty("notice", "neutral")
+            note.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
             vl.addWidget(note)
         actions = QHBoxLayout()
         btn_open = with_icon(QPushButton("Open result folder"), FOLDER)
         btn_open.clicked.connect(self.open_results)
-        btn_close = QPushButton("Close")
-        btn_close.setStyleSheet("background:#16a34a;color:#ffffff;font-weight:600;"
-                                "padding:6px 20px;border-radius:4px;border:1px solid #15803d;")
+        btn_close = set_role(QPushButton("Close"), "primary")
+        btn_close.setDefault(True)
         btn_close.clicked.connect(dialog.accept)
         actions.addWidget(btn_open)
         actions.addStretch()
         actions.addWidget(btn_close)
         vl.addLayout(actions)
+        _fit_dialog(dialog)
         dialog.show()
     def draw_chart(self):
         """Efficiency chart: standard calibration and transferred sample efficiency."""
@@ -2472,16 +2149,23 @@ class MainWindow(QMainWindow):
             rows = []
         if rows:
             axes.loglog([r["energy_keV"] for r in rows], [r["efficiency"] for r in rows],
-                        "o-", label="Standard (reference)", color="#2563eb", markersize=4, linewidth=1.4)
+                        "o-", label="Standard (reference)", color=theme.CHART_STANDARD, markersize=4, linewidth=1.4)
         if self.transfer_result:
             rows = self.transfer_result["efficiency"]
             axes.loglog([r["energy_keV"] for r in rows], [r["sample_efficiency"] for r in rows],
-                        "s-", label="Sample (transferred)", color="#dc2626", markersize=4, linewidth=1.4)
+                        "s-", label="Sample (transferred)", color=theme.CHART_SAMPLE, markersize=4, linewidth=1.4)
         axes.set_xlabel("Energy [keV]", fontsize=9.5)
         axes.set_ylabel("Full-energy efficiency ε", fontsize=9.5)
-        axes.grid(True, which="both", alpha=.25)
+        axes.grid(True, which="both", alpha=theme.CHART_GRID_ALPHA, color=theme.TEXT_SECONDARY, linewidth=.6)
+        for side in ("top", "right"):
+            axes.spines[side].set_visible(False)
+        for side in ("left", "bottom"):
+            axes.spines[side].set_color(theme.SEPARATOR)
+        axes.tick_params(colors=theme.TEXT_SECONDARY, labelsize=8.5)
+        axes.xaxis.label.set_color(theme.TEXT_SECONDARY)
+        axes.yaxis.label.set_color(theme.TEXT_SECONDARY)
         if axes.lines:
-            axes.legend(fontsize=9, frameon=True, facecolor="#ffffff", edgecolor="#cbd5e1")
+            axes.legend(fontsize=9, frameon=False)
         self.chart.draw_idle()
     def import_genie(self, kind, *unused):
         """Open a nuclide library (.NLB/.LIB) or a certificate (.CTF)."""
@@ -2536,7 +2220,7 @@ class MainWindow(QMainWindow):
                                             ".2f"), editable=False, align=Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignVCenter, tooltip=reason)
                 fac_str = format(factor, ".6f") if factor is not None else ""
                 fac_item = _num_item(fac_str, editable=False,
-                                     bold=(factor is not None), bg="#f0f9ff" if factor is not None else None, fg="#0f172a" if factor is not None else None, align=Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignVCenter, tooltip=reason)
+                                     bold=(factor is not None), bg=theme.ACCENT_TINT if factor is not None else None, fg=theme.TEXT if factor is not None else None, align=Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignVCenter, tooltip=reason)
                 u_value = (tcs_uncertainty.match_uncertainty(self.summing_result, row["nuclide"], float(row["energy"]),
                                                              self.tcs_settings)
                            if factor is not None and self.summing_result else None)
@@ -2544,7 +2228,7 @@ class MainWindow(QMainWindow):
                                    align=Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignVCenter,
                                    tooltip="Relative standard uncertainty of C (k=1), decay data not included")
                 ast_item = _num_item("*" if factor is None else "",
-                                     editable=False, bold=True, fg="#d97706" if factor is None else None, align=Qt.AlignmentFlag.AlignCenter, tooltip=reason)
+                                     editable=False, bold=True, fg=theme.WARNING if factor is None else None, align=Qt.AlignmentFlag.AlignCenter, tooltip=reason)
                 table.setItem(i, 0, nuc_item)
                 table.setItem(i, 1, eng_item)
                 table.setItem(i, 2, fac_item)

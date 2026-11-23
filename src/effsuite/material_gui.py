@@ -19,12 +19,11 @@ from PySide6.QtWidgets import (QFileDialog, QFormLayout, QGroupBox, QHBoxLayout,
 from .materials import TEMPLATE, create_material, default_library, load_composition, save_definition, validate_composition
 from .model_io import COMMON_DATA
 from .qt_icons import with_icon, APPLY, CLEAR, OPEN, SAVE
+from . import gui_theme as theme
+from .gui_theme import set_role
 
 MAX_COMPOUNDS = 10
 RIGHT_ALIGNED = Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
-SUMMARY_NEUTRAL = "background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:4px 8px;color:#334155;font-weight:500;"
-SUMMARY_OK = "background:#f0fdf4;border:1px solid #bbf7d0;border-radius:4px;padding:4px 8px;color:#166534;font-weight:600;"
-SUMMARY_ERROR = "background:#fef2f2;border:1px solid #fecaca;border-radius:4px;padding:4px 8px;color:#991b1b;font-weight:500;"
 
 
 class MaterialEditor(QWidget):
@@ -40,10 +39,12 @@ class MaterialEditor(QWidget):
         self.owner = owner
         self.loading = False   # True while we fill the form ourselves (no recalculation)
         self.setWindowTitle("EffSuite Material Editor")
+        self.setObjectName("MaterialEditor")
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)   # lets the stylesheet paint the window
         self.resize(900, 640)
         layout = QVBoxLayout(self)
-        layout.setSpacing(8)
-        layout.setContentsMargins(12, 8, 12, 8)
+        layout.setSpacing(10)
+        layout.setContentsMargins(16, 12, 16, 12)
         layout.addLayout(self._title_bar())
         layout.addWidget(self._name_and_density_box())
         layout.addWidget(self._composition_box(), 1)
@@ -56,14 +57,13 @@ class MaterialEditor(QWidget):
     def _title_bar(self):
         bar = QHBoxLayout()
         title = QLabel("Material composition and XCOM attenuation")
-        title.setStyleSheet("font-size:13.5pt;font-weight:600;color:#0f172a;")
+        set_role(title, "pageTitle")
         bar.addWidget(title)
         bar.addStretch()
         # Which form field "Apply" selects the material in (set by set_target).
         self.target_label = QLabel()
         self.target_label.setTextFormat(Qt.TextFormat.RichText)
-        self.target_label.setStyleSheet("color:#1e40af;background:#eff6ff;border:1px solid #bfdbfe;"
-                                        "border-radius:4px;padding:4px 10px;")
+        self.target_label.setProperty("notice", "info")
         bar.addWidget(self.target_label)
         self.set_target(None)
         return bar
@@ -79,7 +79,6 @@ class MaterialEditor(QWidget):
         self.name = QLineEdit()
         self.name.setPlaceholderText("e.g. Salt_water, Glucose")
         name_label = QLabel("Material name")
-        name_label.setStyleSheet("font-weight:600;color:#1e293b;")
         name_form.addRow(name_label, self.name)
         row.addLayout(name_form, 2)
 
@@ -88,9 +87,8 @@ class MaterialEditor(QWidget):
         self.density = QLineEdit()
         self.density.setPlaceholderText("e.g. 1.346")
         self.density.setAlignment(RIGHT_ALIGNED)
-        density_label = QLabel('Density <span style="color:#64748b;font-weight:normal;">[g/cm³]</span>')
+        density_label = QLabel(f'Density <span style="color:{theme.TEXT_SECONDARY};">[g/cm³]</span>')
         density_label.setTextFormat(Qt.TextFormat.RichText)
-        density_label.setStyleSheet("font-weight:600;color:#1e293b;")
         density_form.addRow(density_label, self.density)
         row.addLayout(density_form, 1)
         return box
@@ -128,7 +126,7 @@ class MaterialEditor(QWidget):
 
         self.summary = QLabel("Enter chemical formulas and relative weights")
         self.summary.setWordWrap(True)
-        self.summary.setStyleSheet(SUMMARY_NEUTRAL)
+        self._set_summary_notice("neutral")
         column.addWidget(self.summary)
         return box
 
@@ -138,7 +136,6 @@ class MaterialEditor(QWidget):
         row.setSpacing(10)
         row.setContentsMargins(10, 12, 10, 8)
         label = QLabel("Data folder:")
-        label.setStyleSheet("font-weight:600;color:#334155;")
         row.addWidget(label)
         # Start in the data folder the main window uses, so the new material is
         # saved where the calculations look for it.
@@ -149,18 +146,22 @@ class MaterialEditor(QWidget):
         row.addWidget(browse)
         return box
 
+    def _set_summary_notice(self, kind):
+        """Colour the composition summary line: neutral, success or danger."""
+        self.summary.setProperty("notice", kind)
+        self.summary.style().unpolish(self.summary)
+        self.summary.style().polish(self.summary)
+
     def _apply_bar(self):
         bar = QHBoxLayout()
         bar.setSpacing(8)
         self.status = QLabel("")
         self.status.setWordWrap(True)
-        self.status.setStyleSheet("color:#334155;font-weight:500;")
+        set_role(self.status, "secondary")
         bar.addWidget(self.status, 1)
-        self.apply_button = with_icon(QPushButton("Apply: create material and XCOM table"), APPLY)
+        self.apply_button = with_icon(set_role(QPushButton("Apply: create material and XCOM table"), "success"), APPLY)
         self.apply_button.setToolTip("Save the composition, generate the XCOM attenuation table and update the "
                                      "material lists of the Detector and Standard & Sample pages")
-        self.apply_button.setStyleSheet("font-weight:600;font-size:10pt;background:#16a34a;color:#ffffff;"
-                                        "border:1px solid #15803d;padding:7px 18px;border-radius:5px;")
         self.apply_button.clicked.connect(self.generate)
         bar.addWidget(self.apply_button)
         close = QPushButton("Close")
@@ -253,12 +254,12 @@ class MaterialEditor(QWidget):
                     self.table.takeItem(row, 2)
             self.summary.setText(f'{len(definition["components"])} compound(s), density = {definition["density_g_cm3"]:g} g/cm³, '
                                  f"total weight = {total:g} (normalized to 100%)")
-            self.summary.setStyleSheet(SUMMARY_OK)
+            self._set_summary_notice("success")
         except Exception as exc:   # incomplete or invalid input: show why
             for row in range(MAX_COMPOUNDS):
                 self.table.takeItem(row, 2)
             self.summary.setText(str(exc))
-            self.summary.setStyleSheet(SUMMARY_ERROR)
+            self._set_summary_notice("danger")
         finally:
             self.loading = False
 
