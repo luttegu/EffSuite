@@ -181,11 +181,11 @@ Run any command with `--help` for its full option list.
 | `--output-cal` | String (path) | Target file path for the transferred sample calibration (Genie `.CAL` or GammaVision `.EFT`). |
 | `--output-nlb` | String (path) | Target file path for the summing-corrected nuclide library (Genie `.NLB` or GammaVision `.LIB`). |
 | `--output-ctf` | String (path) | Target file path for the summing-corrected Genie certificate (`.CTF`). |
-| `--sample-height` | Float (mm) | **Dynamic override**: Sample filling height in mm. |
-| `--sample-density`| Float (g/cm³) | **Dynamic override**: Sample bulk density. Sets line 8 of the source model (`rho`); the engines scale the attenuation $\mu(E)$ by $\rho / \rho_0$. `Composition/*.txt` files are not changed. |
-| `--sample-material`| String | **Dynamic override**: Matrix material name (must exist in `Composition` of the `--data-dir`, of your data folder, or among the bundled original materials). |
-| `--sample-diameter`| Float (mm) | **Dynamic override**: Outer container diameter in mm. |
-| `--sample-gap` | Float (mm) | **Dynamic override**: Endcap/crystal-to-container face distance in mm. |
+| `--sample-height` | Float (mm) | Overrides the sample filling height [mm]. |
+| `--sample-density`| Float (g/cm³) | Overrides the sample bulk density. Sets line 8 of the source model (`rho`); the engines scale the attenuation $\mu(E)$ by $\rho / \rho_0$. `Composition/*.txt` files are not changed. |
+| `--sample-material`| String | Overrides the matrix material name (must exist in `Composition` of the `--data-dir`, of your data folder, or among the bundled original materials). |
+| `--sample-diameter`| Float (mm) | Overrides the outer container diameter [mm]. |
+| `--sample-gap` | Float (mm) | Overrides the sample-to-detector positioning gap [mm]. |
 | `--out` | String (directory) | Destination directory for audit manifests, tables, and logs. Default: `<user folder>\Results\<timestamp>`, where the user folder is `C:\GENIE2K\EffSuite`, or `Documents\EffSuite` when that cannot be written (`EFFSUITE_ROOT` overrides both). |
 | `--workers` | Integer | Number of worker processes: `0` = automatic (number of CPUs minus 2, at least 1), `1` = serial single-process. |
 | `--plot-geometry`| Flag or file path | Generates a CAD axial cross-section diagram with all dimensions as PNG/PDF. |

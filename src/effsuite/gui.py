@@ -19,6 +19,7 @@ from .model_io import (COMMON_DATA, MODES, fields, read_model, model_bytes, cali
 from .suite import VERSION, run_project, validate_project
 from .parallel_coincidence import CalculationCancelled, CoincidenceError
 from . import tcs_uncertainty
+from .qt_icons import icon, with_icon, OPEN, SAVE, FOLDER, RUN, STOP, NEXT, CLEAR, INFO, WARNING
 
 APP_STYLESHEET = """
 QWidget {
@@ -50,6 +51,16 @@ QMenu {
     background: #ffffff;
     color: #172b4d;
     border: 1px solid #bac4d0;
+    padding: 2px 0;
+    min-width: 160px;
+}
+QMenu::item {
+    padding: 3px 20px 3px 10px;
+}
+QMenu::separator {
+    height: 1px;
+    background: #e2e8f0;
+    margin: 2px 6px;
 }
 QMenu::item:selected {
     background: #d8e8fc;
@@ -477,10 +488,10 @@ class ModelForm(QWidget):
                     edit.currentTextChanged.connect(self.changed)
                     if mode=="well" and index==11:
                         edit.setCurrentText("copper")
-                    btn = QPushButton("✏️ Edit")
+                    btn = QPushButton("Edit")
                     btn.setFixedWidth(58)
                     btn.setStyleSheet("background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd;padding:2px 4px;font-size:8.5pt;")
-                    btn.setToolTip(f"Modify density or chemical composition of {label.lower()} in Material Editor")
+                    btn.setToolTip(f"Edit the composition or density of {label.lower()} in the Material Editor")
                     btn.clicked.connect(partial(self.modify_material, index))
                     cell = QWidget()
                     cell.setStyleSheet("background:transparent;")
@@ -507,7 +518,7 @@ class ModelForm(QWidget):
         """Open the material editor for the material chosen in field ``index``."""
         if self.owner and hasattr(self.owner, "open_material_editor_for_input"):
             label = fields(self.mode, self.kind, extended=True)[index][0]
-            self.owner.open_material_editor_for_input(self.inputs[index], "Detector — "+label)
+            self.owner.open_material_editor_for_input(self.inputs[index], "Detector: "+label)
     def values(self):
         """The detector model as a list, in file order (raises ValueError on bad input)."""
         def_fields = fields(self.mode, self.kind, extended=True)
@@ -581,7 +592,7 @@ class SourceForm(QWidget):
         self._setting_values = False
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
-        card = QGroupBox("Geometry Parameters && Materials")
+        card = QGroupBox("Geometry and materials")
         g = QGridLayout(card)
         g.setHorizontalSpacing(20)
         g.setVerticalSpacing(8)
@@ -591,7 +602,7 @@ class SourceForm(QWidget):
         self._col_headers = {}
         self._standard_widgets = []   # everything in the standard column (hidden for summing only)
         self._grid = g
-        for column, (kind, subtitle) in enumerate([("standard", "Standard (Reference)"), ("sample", "Sample (Measured)")], 1):
+        for column, (kind, subtitle) in enumerate([("standard", "Standard (reference)"), ("sample", "Sample (measured)")], 1):
             hdr = QLabel(f"<b>{subtitle}</b>")
             hdr.setAlignment(Qt.AlignmentFlag.AlignCenter)
             hdr.setStyleSheet("background:#f1f5f9;color:#0f172a;border:1px solid #cbd5e1;border-radius:4px;padding:5px 8px;")
@@ -622,10 +633,10 @@ class SourceForm(QWidget):
                         edit.currentTextChanged.connect(lambda t, k=kind:self._on_source_material_changed(k, t))
                     else:
                         edit.currentTextChanged.connect(lambda _t, k=kind:(self.kind_edited.emit(k.title()), self.changed.emit()))
-                    btn = QPushButton("✏️ Edit")
+                    btn = QPushButton("Edit")
                     btn.setFixedWidth(58)
                     btn.setStyleSheet("background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd;padding:2px 4px;font-size:8.5pt;")
-                    btn.setToolTip(f"Edit chemical composition or nominal density [g/cm³] of {kind.title()} {label.lower()}")
+                    btn.setToolTip(f"Edit the composition or nominal density [g/cm³] of the {kind} {label.lower()}")
                     btn.clicked.connect(partial(self.modify_material, kind, index))
                     cell = QWidget()
                     cell.setStyleSheet("background:transparent;")
@@ -652,9 +663,9 @@ class SourceForm(QWidget):
         for column, kind in enumerate(("standard", "sample"), 1):
             bar = QHBoxLayout()
             bar.setSpacing(6)
-            load = QPushButton(f"📂 Load {kind.title()}…")
+            load = with_icon(QPushButton(f"Load {kind}…"), OPEN)
             load.setStyleSheet("font-weight:600;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;")
-            save = QPushButton(f"💾 Store {kind.title()}…")
+            save = with_icon(QPushButton(f"Store {kind}…"), SAVE)
             bar.addWidget(load)
             bar.addWidget(save)
             g.addLayout(bar, row, column)
@@ -896,8 +907,8 @@ class MainWindow(QMainWindow):
         self._build_menus()
         self.workers.valueChanged.connect(self.changed)
         self.setStyleSheet(APP_STYLESHEET)
-        self.append_log(f"EffSuite v{VERSION} — Efficiency Transfer & Coincidence Summing ready.")
-        self.append_log("EffSuite built by ChatGPT & Gemini under the supervision of G. Lutter.")
+        self.append_log(f"EffSuite v{VERSION} started")
+        self.append_log("EffSuite built by ChatGPT, Gemini and Claude under the supervision of G. Lutter")
         self.append_log(f"Data directory: {self.data_directory or 'bundled assets'}")
         # Fill the material lists now, so the laboratory's own materials are
         # offered from the start (not only after a mode change).
@@ -923,9 +934,9 @@ class MainWindow(QMainWindow):
         sw_lbl.setStyleSheet("border:none;background:transparent;")
         top.addWidget(sw_lbl)
         self.software = QComboBox()
-        self.software.setToolTip("Spectrometry software: Auto selects GammaVision for .LIB / .EFT files and Genie 2000 for .CAL / .NLB / .CTF files")
+        self.software.setToolTip("Auto: GammaVision for .EFT / .LIB files, Genie 2000 for .CAL / .NLB / .CTF files")
         for label, key in (("Auto (.CAL/.NLB/.CTF vs .EFT/.LIB)",
-                            ""), ("Genie 2000 (.CAL/.NLB/.CTF)", "genie"), ("GammaVision (.EFT/.LIB — untested)", "gammavision")):
+                            ""), ("Genie 2000 (.CAL/.NLB/.CTF)", "genie"), ("GammaVision (.EFT/.LIB, untested)", "gammavision")):
             self.software.addItem(label, key)
         # The choice is passed to the backend through the EFFSUITE_SOFTWARE
         # environment variable. Show the value already set (if any), so the
@@ -938,10 +949,10 @@ class MainWindow(QMainWindow):
         sep_v.setFrameShape(QFrame.Shape.VLine)
         sep_v.setStyleSheet("color:#cbd5e1;")
         top.addWidget(sep_v)
-        self.data_button = QPushButton("📁 Data Folder…")
-        self.data_button.setToolTip("Data folder of this session/project (your own Composition, Material, Detector, Sample, Standard).\n"
+        self.data_button = with_icon(QPushButton("Data folder…"), FOLDER)
+        self.data_button.setToolTip("Data folder of this project: your own Composition, Material, Detector, Sample and Standard files.\n"
                                     "The original EFFTRAN / MEFFTRAN materials are always available.\n"
-                                    "To change the default for every session: Tools → Default Data Folder…")
+                                    "Default for every session: Tools → Default data folder…")
         self.data_button.clicked.connect(self.choose_data)
         top.addWidget(self.data_button)
         self.data_label = QLabel()
@@ -965,7 +976,7 @@ class MainWindow(QMainWindow):
         sep_v3.setFrameShape(QFrame.Shape.VLine)
         sep_v3.setStyleSheet("color:#cbd5e1;")
         top.addWidget(sep_v3)
-        help_btn = QPushButton("❓ Help")
+        help_btn = QPushButton("Help")
         help_btn.setStyleSheet("background:#e9edf2;color:#172b4d;border:1px solid #aeb9c7;padding:4px 10px;")
         help_btn.clicked.connect(lambda:self.show_help_dialog("workflow"))
         top.addWidget(help_btn)
@@ -995,22 +1006,22 @@ class MainWindow(QMainWindow):
         footer = QHBoxLayout()
         footer.setContentsMargins(2, 0, 2, 0)
         footer.setSpacing(8)
-        self.status = QLabel("Ready — select a step above or load an example.")
+        self.status = QLabel("Ready: choose a step above or load the built-in example")
         self.status.setStyleSheet("font-weight:600;color:#172b4d;background:transparent;")
         footer.addWidget(self.status, 1)
-        self.copy_btn = QPushButton("📋 Copy Log")
-        self.copy_btn.setToolTip("Copy entire calculation log to clipboard")
+        self.copy_btn = QPushButton("Copy log")
+        self.copy_btn.setToolTip("Copy the whole log to the clipboard")
         self.copy_btn.setStyleSheet("background:#e9edf2;color:#172b4d;border:1px solid #aeb9c7;"
                                     "font-weight:500;padding:3px 10px;font-size:9pt;")
         self.copy_btn.clicked.connect(self.copy_log)
         footer.addWidget(self.copy_btn)
-        self.clear_btn = QPushButton("🗑 Clear")
-        self.clear_btn.setToolTip("Clear activity log")
+        self.clear_btn = with_icon(QPushButton("Clear"), CLEAR)
+        self.clear_btn.setToolTip("Clear the log")
         self.clear_btn.setStyleSheet("background:#e9edf2;color:#172b4d;border:1px solid #aeb9c7;"
                                      "font-weight:500;padding:3px 10px;font-size:9pt;")
         self.clear_btn.clicked.connect(self.clear_log)
         footer.addWidget(self.clear_btn)
-        self.cancel_button = QPushButton("⏹ Cancel Calculation")
+        self.cancel_button = with_icon(QPushButton("Cancel calculation"), STOP)
         self.cancel_button.setStyleSheet("background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;font-weight:600;padding:3px 12px;")
         self.cancel_button.setEnabled(False)
         self.cancel_button.clicked.connect(lambda:self.cancel_event.set())
@@ -1024,7 +1035,7 @@ class MainWindow(QMainWindow):
                                "padding:6px;font-family:'Cascadia Mono','Consolas',monospace;font-size:9.5pt;")
         self.log.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.log.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self.log.setPlaceholderText("Calculation progress & activity log…")
+        self.log.setPlaceholderText("Calculation log")
         log_layout.addWidget(self.log, 1)
         self.splitter.addWidget(log_panel)
         self.splitter.setStretchFactor(0, 6)
@@ -1047,25 +1058,29 @@ class MainWindow(QMainWindow):
             menu.addAction(action)
 
         tools_menu = self.menuBar().addMenu("Tools")
-        action = QAction("🧪 Material Editor…", self)
+        action = QAction("Material Editor…", self)
         action.triggered.connect(lambda:self.open_material_editor_for_input(None))
         tools_menu.addAction(action)
         tools_menu.addSeparator()
-        for label, slot in [("📁 Default Data Folder…", self.choose_default_data),
-                            ("↺ Reset Default Data Folder", self.reset_default_data)]:
+        for label, slot, pixmap in [("Default data folder…", self.choose_default_data, FOLDER),
+                                    ("Reset default data folder", self.reset_default_data, None)]:
             action = QAction(label, self)
+            if pixmap is not None:
+                with_icon(action, pixmap)
             action.triggered.connect(slot)
             tools_menu.addAction(action)
 
         help_menu = self.menuBar().addMenu("Help")
-        for label, topic in [
-            ("📖 Workflow & Step-by-Step Guide", partial(self.show_help_dialog, "workflow")),
-            ("🧪 Material & Bulk Density Guide (XCOM)", partial(self.show_help_dialog, "materials")),
-            ("💻 CLI & Batch Calculation Guide", partial(self.show_help_dialog, "cli")),
-            ("⚠️ Disclaimer & Terms of Use…", lambda:self.show_disclaimer_dialog(is_first_run=False)),
-            ("ℹ️ About & Qualification Notice", partial(self.show_help_dialog, "about")),
+        for label, topic, pixmap in [
+            ("Workflow guide", partial(self.show_help_dialog, "workflow"), None),
+            ("Materials and density guide", partial(self.show_help_dialog, "materials"), None),
+            ("Command line and batch guide", partial(self.show_help_dialog, "cli"), None),
+            ("Disclaimer…", lambda:self.show_disclaimer_dialog(is_first_run=False), WARNING),
+            ("About EffSuite", partial(self.show_help_dialog, "about"), INFO),
         ]:
             action = QAction(label, self)
+            if pixmap is not None:
+                with_icon(action, pixmap)
             action.triggered.connect(topic)
             help_menu.addAction(action)
         self.mode.currentIndexChanged.connect(self.change_mode)
@@ -1081,7 +1096,7 @@ class MainWindow(QMainWindow):
         """Dialog explaining that results must be verified before use."""
         from .paths import get_effsuite_root
         dialog = QDialog(self)
-        dialog.setWindowTitle("EffSuite — Disclaimer & Terms of Use")
+        dialog.setWindowTitle("EffSuite disclaimer")
         dialog.setMinimumWidth(540)
         vl = QVBoxLayout(dialog)
         vl.setContentsMargins(18, 16, 18, 16)
@@ -1092,7 +1107,7 @@ class MainWindow(QMainWindow):
                              "border-left:5px solid #dc2626;border-radius:6px;padding:12px;}")
         bl = QVBoxLayout(banner)
         bl.setSpacing(6)
-        t = QLabel("<b>⚠️ Important Notice & Disclaimer</b>")
+        t = QLabel("<b>Disclaimer</b>")
         t.setStyleSheet("font-size:11.5pt;color:#991b1b;border:none;background:transparent;")
         bl.addWidget(t)
 
@@ -1110,7 +1125,7 @@ class MainWindow(QMainWindow):
 
         note = QLabel(
             f"<p style='font-size:9.5pt;color:#475569;margin:0;line-height:1.4;'>"
-            f"<b>EffSuite v{VERSION}</b> — Built by ChatGPT &amp; Gemini under the supervision of G. Lutter.<br>"
+            f"<b>EffSuite v{VERSION}</b>, built by ChatGPT, Gemini and Claude under the supervision of G. Lutter.<br>"
             f"Physics engines based on EFFTRAN / MEFFTRAN / WEFFTRAN by Tim Vidmar and NIST XCOM."
             f"</p>"
         )
@@ -1120,7 +1135,7 @@ class MainWindow(QMainWindow):
 
         btn_row = QHBoxLayout()
         btn_row.addStretch()
-        btn_ok = QPushButton("I Understand and Accept" if is_first_run else "Close")
+        btn_ok = QPushButton("I understand and accept" if is_first_run else "Close")
         btn_ok.setStyleSheet("font-weight:600;background:#2563eb;color:#ffffff;"
                              "padding:7px 22px;border-radius:4px;border:1px solid #1d4ed8;")
         def on_accept():
@@ -1179,7 +1194,7 @@ class MainWindow(QMainWindow):
     STEP_KEYS = ("welcome", "detector", "source", "efficiency", "ctf", "nlb")
     STEP_TITLES = {"welcome":"Choose calculation", "detector":"Detector", "source":"Standard & Sample",
                  "efficiency":"Efficiency (.CAL / .EFT)", "ctf":"Certificate (.CTF)", "nlb":"Nuclide library (.NLB / .LIB)"}
-    RUN_LABELS = {"transfer":"▶ Run Efficiency Transfer", "summing":"▶ Run Coincidence Summing", "both":"🚀 Run Complete Analysis"}
+    RUN_LABELS = {"transfer":"Run efficiency transfer", "summing":"Run coincidence summing", "both":"Run complete analysis"}
     def tab_index(self, key):
         """Position of a step's tab (e.g. "detector")."""
         return self.STEP_KEYS.index(key)
@@ -1216,13 +1231,14 @@ class MainWindow(QMainWindow):
         """Back / Next buttons for a step page."""
         row = QHBoxLayout()
         row.setContentsMargins(0, 0, 0, 0)
-        back = QPushButton("◀ Previous Step")
+        back = QPushButton("Previous step")
         back.clicked.connect(lambda:self.go_step(-1))
         row.addWidget(back)
         row.addStretch()
         if extra_btn is not None:
             row.addWidget(extra_btn)
-        nxt = QPushButton("Next ▶")
+        nxt = QPushButton("Next")
+        nxt.setLayoutDirection(Qt.LayoutDirection.RightToLeft)   # icon after the text
         nxt.clicked.connect(lambda:self.go_step(1))
         row.addWidget(nxt)
         self._nav_next[key] = nxt
@@ -1258,14 +1274,14 @@ class MainWindow(QMainWindow):
         total = len(keys)-1
         if "source" in self._banners:
             label, _ = self._banners["source"]
-            self._banners["source"] = (label, "Sample geometry (Standard not needed for coincidence summing only)"
+            self._banners["source"] = (label, "Sample geometry (Standard not needed for coincidence summing)"
                                        if self.workflow=="summing" else "Standard & Sample geometries")
             self.tabs.setTabText(self.tab_index("source"),
                                  "Sample" if self.workflow=="summing" else "Standard && Sample")   # "&&" shows a single "&"
         for i, key in enumerate(keys[1:], 1):
             if key in self._banners:
                 label, title = self._banners[key]
-                label.setText(f"<b>STEP {i} of {total}: {title}</b>")
+                label.setText(f"<b>Step {i} of {total}: {title}</b>")
         summing_only = self.workflow=="summing"
         for key, button in self._nav_next.items():
             if key not in keys:
@@ -1273,12 +1289,14 @@ class MainWindow(QMainWindow):
             pos = keys.index(key)
             if pos==len(keys)-1:
                 button.setText(self.RUN_LABELS[self.workflow])
+                button.setIcon(icon(RUN))
                 button.setStyleSheet("font-weight:600;background:#16a34a;color:#ffffff;"
                                      "border:1px solid #15803d;padding:7px 18px;border-radius:5px;")
             else:
                 following = keys[pos+1]
                 title = "Sample" if following=="source" and summing_only else self.STEP_TITLES[following]
-                button.setText(f"Next: {title.replace('&', '&&')} ▶")   # "&&" shows a single "&"
+                button.setText(f"Next: {title.replace('&', '&&')}")   # "&&" shows a single "&"
+                button.setIcon(icon(NEXT))
                 button.setStyleSheet("font-weight:600;background:#2563eb;color:#ffffff;"
                                      "border:1px solid #1d4ed8;padding:7px 16px;border-radius:5px;")
         for value, radio in self._workflow_radios.items():
@@ -1300,21 +1318,21 @@ class MainWindow(QMainWindow):
                 diagram.live_widget.set_standard_available(self.workflow!="summing")
         if getattr(self, "btn_export_sum_on_eff", None) is not None:
             self.btn_export_sum_on_eff.setVisible(self.workflow=="both")
-            self.btn_export_sum_on_eff.setText("💾 Export Corrected "+("Library (.NLB / .LIB)…" if self.summing_source=="nlb" else "Certificate (.CTF)…"))
+            self.btn_export_sum_on_eff.setText("Export corrected "+("library (.NLB / .LIB)…" if self.summing_source=="nlb" else "certificate (.CTF)…"))
         if hasattr(self, "btn_export_cal_on_sum"):
             for btn in self.btn_export_cal_on_sum.values():
                 btn.setVisible(self.workflow=="both")
     def needs_text(self):
         """HTML list of the files the chosen workflow needs (Start page)."""
-        items = ["<b>Detector (.txt)</b> — from <code>Data/Detector</code>",
-               "<b>Sample (.txt)</b> — geometry, matrix & density from <code>Data/Standard</code> or <code>Data/Sample</code>"]
+        items = ["<b>Detector (.txt)</b> from <code>Data/Detector</code>",
+               "<b>Sample (.txt)</b>: geometry, matrix and density, from <code>Data/Standard</code> or <code>Data/Sample</code>"]
         if self.workflow in ("transfer", "both"):
-            items += ["<b>Standard (.txt)</b> — calibration source geometry from <code>Data/Standard</code>",
-                    "<b>Reference Calibration (.CAL / .EFT / .txt / .csv)</b> — from <code>Data/Calibration</code> → <i>exports Sample .CAL or .EFT</i>"]
+            items += ["<b>Standard (.txt)</b>: calibration source geometry, from <code>Data/Standard</code>",
+                    "<b>Reference calibration (.CAL / .EFT / .txt / .csv)</b> from <code>Data/Calibration</code> → exports the Sample .CAL or .EFT"]
         if self.workflow in ("summing", "both"):
-            items.append("<b>Genie Certificate (.CTF)</b> → <i>exports corrected .CTF</i>"
+            items.append("<b>Genie certificate (.CTF)</b> → exports the corrected .CTF"
                          if self.summing_source=="ctf" else
-                         "<b>Nuclide Library (Genie .NLB / GammaVision .LIB)</b> — from <code>Data/NuclideLibrary</code> → <i>exports corrected .NLB or .LIB</i>")
+                         "<b>Nuclide library (Genie .NLB / GammaVision .LIB)</b> from <code>Data/NuclideLibrary</code> → exports the corrected .NLB or .LIB")
         return "<ol style='margin:0px;line-height:1.35;'>"+"".join(f"<li>{i}</li>" for i in items)+"</ol>"
     def missing_items(self):
         """What must still be entered before running: [(step, message), ...]."""
@@ -1322,7 +1340,7 @@ class MainWindow(QMainWindow):
         try:
             self.detector_form.values()
         except Exception as exc:
-            out.append(("detector", "Detector — "+str(exc)))
+            out.append(("detector", "Detector: "+str(exc)))
         try:
             self.source_form.values("sample")
         except Exception as exc:
@@ -1334,14 +1352,14 @@ class MainWindow(QMainWindow):
                 out.append(("source", str(exc)))
             try:
                 if not self.calibration():
-                    out.append(("efficiency", "Efficiency — import the reference calibration (.CAL / .EFT / .txt / .csv)"))
+                    out.append(("efficiency", "Efficiency: import the reference calibration (.CAL / .EFT / .txt / .csv)"))
             except Exception as exc:
-                out.append(("efficiency", "Efficiency — "+str(exc)))
+                out.append(("efficiency", "Efficiency: "+str(exc)))
         if self.workflow in ("summing", "both"):
             if self.summing_source=="ctf" and not self.certificate_rows:
-                out.append(("ctf", "Certificate — open the Genie certificate (.CTF)"))
+                out.append(("ctf", "Certificate: open the Genie certificate (.CTF)"))
             if self.summing_source=="nlb" and not self.library_rows and not self.nuclides.text().strip():
-                out.append(("nlb", "Nuclide library — open the Genie (.NLB) or GammaVision (.LIB) library or type a nuclide list"))
+                out.append(("nlb", "Nuclide library: open the Genie (.NLB) or GammaVision (.LIB) library, or type a nuclide list"))
         return out
     def sync_nuclides(self):
         """Copy the nuclide names of the loaded library/certificate into the nuclide list."""
@@ -1352,7 +1370,7 @@ class MainWindow(QMainWindow):
         """Run the chosen workflow, or point the user to the first missing input."""
         missing = self.missing_items()
         if missing:
-            self.error("Please complete these items before running:\n\n"+"\n".join("• "+text for _, text in missing))
+            self.error("Complete these items before running:\n\n"+"\n".join("• "+text for _, text in missing))
             self.tabs.setCurrentIndex(self.tab_index(missing[0][0]))
             return
         if self.workflow in ("summing", "both"):
@@ -1383,18 +1401,18 @@ class MainWindow(QMainWindow):
         self.refresh_geometry()
     def _build_welcome_tab(self):
         """The Start page: choice of workflow and of the summing input (library or certificate)."""
-        page, layout = self._page("Welcome — Select Calculation Workflow")
-        box = QGroupBox("A. Calculation Mode")
+        page, layout = self._page("Choose the calculation")
+        box = QGroupBox("A. Calculation")
         bl = QVBoxLayout(box)
         bl.setSpacing(1)
         bl.setContentsMargins(12, 10, 12, 8)
         group = QButtonGroup(box)
-        for value, title, desc in [("both", "Complete Analysis — Efficiency Transfer + Coincidence Summing (Recommended)",
-                                    "Outputs transferred Sample .CAL / .EFT and summing-corrected .NLB / .LIB or .CTF."),
-                                 ("transfer", "Efficiency Transfer Only",
-                                  "Computes F_ε(E) = ε_sample / ε_standard and exports transferred Sample .CAL / .EFT."),
-                                 ("summing", "True Coincidence Summing Only",
-                                  "Computes cascade summing factors C and exports corrected .NLB / .LIB or .CTF.")]:
+        for value, title, desc in [("both", "Complete analysis: efficiency transfer and coincidence summing (recommended)",
+                                    "Exports the transferred Sample .CAL / .EFT and the summing-corrected .NLB / .LIB or .CTF"),
+                                 ("transfer", "Efficiency transfer only",
+                                  "Computes F_ε(E) = ε_sample / ε_standard and exports the transferred Sample .CAL / .EFT"),
+                                 ("summing", "True coincidence summing only",
+                                  "Computes cascade summing factors C and exports the corrected .NLB / .LIB or .CTF")]:
             radio = PaintedRadio(title)
             group.addButton(radio)
             bl.addWidget(radio)
@@ -1405,15 +1423,15 @@ class MainWindow(QMainWindow):
             note.setStyleSheet("color:#59677a;font-size:9pt;background:transparent;margin-left:26px;margin-bottom:5px;")
             bl.addWidget(note)
         bl.addStretch(1)
-        self._source_box = QGroupBox("B. Coincidence Summing Target File")
+        self._source_box = QGroupBox("B. Coincidence summing file")
         sl = QVBoxLayout(self._source_box)
         sl.setSpacing(1)
         sl.setContentsMargins(12, 10, 12, 8)
         group2 = QButtonGroup(self._source_box)
-        for value, title, desc in [("nlb", "Nuclide Library (Genie .NLB / GammaVision .LIB) — Default for Sample Analysis",
-                                    "Updates gamma abundances (P_corr = P / C). Uncomputed lines (*) are preserved unchanged."),
-                                 ("ctf", "Genie Certificate File (.CTF) — For Calibration Certificates",
-                                  "Updates certificate emission rates (R_corr = R / C).")]:
+        for value, title, desc in [("nlb", "Nuclide library (Genie .NLB / GammaVision .LIB), for sample analysis",
+                                    "Updates gamma abundances (P_corr = P / C). Lines without a factor (*) are kept unchanged."),
+                                 ("ctf", "Genie certificate (.CTF), for calibration certificates",
+                                  "Updates certificate emission rates (R_corr = R / C)")]:
             radio = PaintedRadio(title)
             group2.addButton(radio)
             sl.addWidget(radio)
@@ -1429,7 +1447,7 @@ class MainWindow(QMainWindow):
         ab_row.addWidget(box, 3)
         ab_row.addWidget(self._source_box, 2)
         layout.addLayout(ab_row)
-        need = QGroupBox("C. Required Files Checklist")
+        need = QGroupBox("C. Required files")
         nl = QVBoxLayout(need)
         nl.setContentsMargins(12, 10, 12, 8)
         self.needs_label = QLabel()
@@ -1440,22 +1458,23 @@ class MainWindow(QMainWindow):
         layout.addStretch(1)
         row = QHBoxLayout()
         row.setContentsMargins(0, 0, 0, 0)
-        start = QPushButton("Start Guided Setup: Step 1 — Detector ▶")
+        start = with_icon(QPushButton("Start guided setup"), NEXT)
+        start.setLayoutDirection(Qt.LayoutDirection.RightToLeft)   # icon after the text
         start.setStyleSheet("font-weight:600;background:#245c96;color:#ffffff;border:1px solid #1a4470;padding:7px 18px;border-radius:4px;")
         start.clicked.connect(lambda:self.go_step(1))
-        example = QPushButton("📋 Load Built-in Example")
+        example = QPushButton("Load built-in example")
         example.clicked.connect(self.load_example)
-        open_project = QPushButton("📂 Open Project…")
+        open_project = with_icon(QPushButton("Open project…"), OPEN)
         open_project.clicked.connect(self.open_project)
         row.addWidget(start)
         row.addWidget(example)
         row.addWidget(open_project)
         row.addStretch()
         self._attach_footer(page, row)
-        self.tabs.addTab(page, "Welcome")
+        self.tabs.addTab(page, "Start")
     def _build_detector_tab(self, mode):
         """The Detector page: model form and live geometry preview."""
-        page, layout = self._page("Detector Geometry & Materials")
+        page, layout = self._page("Detector geometry and materials")
         if mode=="well":
             untested_banner = QFrame()
             untested_banner.setStyleSheet("QFrame{background:#fffbeb;border:1px solid #fde68a;"
@@ -1463,21 +1482,22 @@ class MainWindow(QMainWindow):
             ub_l = QHBoxLayout(untested_banner)
             ub_l.setContentsMargins(4, 2, 4, 2)
             ub_l.setSpacing(8)
-            ub_icon = QLabel("⚠️")
-            ub_icon.setStyleSheet("font-size:14pt;border:none;background:transparent;")
+            ub_icon = QLabel()
+            ub_icon.setPixmap(icon(WARNING).pixmap(24, 24))
+            ub_icon.setStyleSheet("border:none;background:transparent;")
             ub_l.addWidget(ub_icon)
-            ub_text = QLabel("<b>WEFFTRAN Qualification Status:</b> The WEFFTRAN (Well-type detector) engine has been updated with the 3D spatial summing and ray-tracing boundary patch, but <b>is not fully laboratory tested/qualified yet</b>. Results must be independently verified by the analyst.")
+            ub_text = QLabel("<b>WEFFTRAN is not yet qualified in the laboratory.</b> The well engine has the 3D spatial summing model and the ray boundary patch, but has not been fully tested. Verify well results independently.")
             ub_text.setWordWrap(True)
             ub_text.setStyleSheet("color:#92400e;font-size:9.5pt;border:none;background:transparent;")
             ub_l.addWidget(ub_text, 1)
             layout.addWidget(untested_banner)
-        load = QPushButton("📂 Load Detector…")
+        load = with_icon(QPushButton("Load detector…"), OPEN)
         load.setStyleSheet("font-weight:600;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:4px 10px;")
-        save = QPushButton("💾 Store Detector…")
+        save = with_icon(QPushButton("Store detector…"), SAVE)
         save.setStyleSheet("padding:4px 10px;")
         load.clicked.connect(partial(self.load_model, "detector"))
         save.clicked.connect(partial(self.store_model, "detector"))
-        layout.addWidget(self._step_banner("detector", "Detector geometry & materials",
+        layout.addWidget(self._step_banner("detector", "Detector geometry and materials",
                                            input_req="Data\\Detector\\*.txt",
                                            extra_widgets=[self._materials_button(), load, save]))
         det_split = QHBoxLayout()
@@ -1485,26 +1505,26 @@ class MainWindow(QMainWindow):
         self.detector_form = ModelForm(mode, "detector", owner=self)
         self.detector_form.changed.connect(self.changed)
         det_split.addWidget(self.detector_form, 6)
-        self.diagram = Schematic(self, default_kind="Detector Only")
+        self.diagram = Schematic(self, default_kind="Detector only")
         det_split.addWidget(self.diagram, 5)
         layout.addLayout(det_split, 1)
         self._attach_footer(page, self._nav_row("detector"))
         self.tabs.addTab(page, "Detector")
     def _materials_button(self):
         """Page button that opens the material editor window (no target field)."""
-        button = QPushButton("🧪 Materials…")
-        button.setToolTip("Open the Material Editor in a separate window (create or modify a material "
-                          "while you keep filling in this page)")
+        button = QPushButton("Materials…")
+        button.setToolTip("Open the Material Editor in its own window, to create or edit a material "
+                          "while this page stays open")
         button.setStyleSheet("font-weight:600;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;padding:4px 10px;")
         button.clicked.connect(lambda:self.open_material_editor_for_input(None))
         return button
     def _build_source_tab(self, mode):
         """The Standard & Sample page: sample and standard forms and their preview."""
-        page, layout = self._page("Source Geometries — Standard & Sample")
+        page, layout = self._page("Standard and Sample geometries")
         layout.addWidget(self._step_banner("source", "Standard & Sample geometries", input_req="Data\\Standard\\*.txt",
                                            extra_widgets=[self._materials_button()]))
-        self.source_hint = QLabel("ℹ Coincidence summing only: only the Sample is needed. The Standard (reference "
-                                  "calibration source) is used for efficiency transfer only and is hidden.")
+        self.source_hint = QLabel("Coincidence summing only needs the Sample. The Standard (reference "
+                                  "calibration source) is used only for efficiency transfer, so it is hidden.")
         self.source_hint.setStyleSheet("color:#1e40af;background:#eff6ff;border:1px solid #bfdbfe;border-radius:4px;padding:4px 8px;")
         layout.addWidget(self.source_hint)
         src_split = QHBoxLayout()
@@ -1523,19 +1543,19 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(page, "Standard && Sample")   # "&&" shows a single "&"
     def _build_efficiency_tab(self):
         """The Efficiency page: reference calibration table, chart and export buttons."""
-        page, layout = self._page("Efficiency Transfer")
+        page, layout = self._page("Efficiency transfer")
         layout.addWidget(self._step_banner("efficiency", "Reference efficiency calibration (.CAL / .EFT)",
                                            input_req="Data\\Calibration\\*.CAL, *.EFT, *.txt, *.csv (0 &lt; ε &le; 1)"))
         controls = QHBoxLayout()
-        load = QPushButton("① Import Standard Efficiency (.CAL / .EFT / CSV)…")
+        load = with_icon(QPushButton("Import standard efficiency (.CAL / .EFT / CSV)…"), OPEN)
         load.setStyleSheet("font-weight:600;background:#2563eb;color:#ffffff;border:1px solid #1d4ed8;padding:6px 14px;")
         load.clicked.connect(self.import_calibration)
-        transfer = QPushButton("▶ Check Transfer Only")
+        transfer = with_icon(QPushButton("Calculate transfer only"), RUN)
         transfer.clicked.connect(partial(self.calculate, "transfer"))
-        export = QPushButton("💾 Export Sample Efficiency (.CAL / .EFT)…")
+        export = with_icon(QPushButton("Export sample efficiency (.CAL / .EFT)…"), SAVE)
         export.setStyleSheet("font-weight:600;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;")
         export.clicked.connect(self.export_calibration)
-        self.btn_export_sum_on_eff = QPushButton("💾 Export Corrected Library (.NLB / .LIB)…")
+        self.btn_export_sum_on_eff = with_icon(QPushButton("Export corrected library (.NLB / .LIB)…"), SAVE)
         self.btn_export_sum_on_eff.setStyleSheet("font-weight:600;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;")
         self.btn_export_sum_on_eff.clicked.connect(lambda:self.export_genie(self.summing_source))
         for b in (load, transfer, export, self.btn_export_sum_on_eff):
@@ -1546,7 +1566,7 @@ class MainWindow(QMainWindow):
         self.efficiency.setAlternatingRowColors(True)
         self.efficiency.setMinimumHeight(170)
         self.efficiency.setHorizontalHeaderLabels(["E [keV]",
-                                                   "Standard ε", "Standard u [%]", "Sample ε (Transferred)", "Sample u [%]", "Transfer Factor F_ε"])
+                                                   "Standard ε", "Standard u [%]", "Sample ε (transferred)", "Sample u [%]", "Transfer factor F_ε"])
         self.efficiency.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
         self.efficiency.horizontalHeader().setStretchLastSection(True)
         self.efficiency.itemChanged.connect(self.changed)
@@ -1571,23 +1591,23 @@ class MainWindow(QMainWindow):
     def _build_summing_tabs(self):
         """The Certificate and Library pages (only the one chosen on the Start page is shown)."""
         for kind, title in [("ctf", "Certificate"), ("nlb", "Library")]:
-            page, layout = self._page("True Coincidence Summing — "+("Genie Certificate (.CTF)" if kind=="ctf" else "Nuclide Library (Genie .NLB / GammaVision .LIB)"))
+            page, layout = self._page("True coincidence summing: "+("Genie certificate (.CTF)" if kind=="ctf" else "nuclide library (Genie .NLB / GammaVision .LIB)"))
             need = "Data\\Certificates\\*.CTF (Genie)" if kind=="ctf" else "Data\\NuclideLibrary\\*.NLB (Genie), *.LIB (GammaVision)"
-            layout.addWidget(self._step_banner(kind, "Coincidence summing — "+("Certificate (.CTF)" if kind=="ctf" else "Nuclide library (.NLB / .LIB)"), input_req=need))
+            layout.addWidget(self._step_banner(kind, "Coincidence summing: "+("certificate (.CTF)" if kind=="ctf" else "nuclide library (.NLB / .LIB)"), input_req=need))
             bar = QHBoxLayout()
-            load = QPushButton("① Open "+("Genie Certificate (.CTF)…" if kind=="ctf" else "Library (.NLB / GammaVision .LIB)…"))
+            load = with_icon(QPushButton("Open "+("Genie certificate (.CTF)…" if kind=="ctf" else "library (.NLB / GammaVision .LIB)…")), OPEN)
             load.setStyleSheet("font-weight:600;background:#2563eb;color:#ffffff;border:1px solid #1d4ed8;padding:6px 14px;")
             load.clicked.connect(partial(self.import_genie, kind))
-            process = QPushButton("▶ Check Summing Only")
+            process = with_icon(QPushButton("Calculate summing only"), RUN)
             process.clicked.connect(partial(self.process_genie, kind))
-            export = QPushButton("💾 Export Corrected "+("Certificate (.CTF)…" if kind=="ctf" else "Library (.NLB / .LIB)…"))
+            export = with_icon(QPushButton("Export corrected "+("certificate (.CTF)…" if kind=="ctf" else "library (.NLB / .LIB)…")), SAVE)
             export.setStyleSheet("font-weight:600;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;")
             export.clicked.connect(partial(self.export_genie, kind))
-            export_cal = QPushButton("💾 Export Sample Efficiency (.CAL / .EFT)…")
+            export_cal = with_icon(QPushButton("Export sample efficiency (.CAL / .EFT)…"), SAVE)
             export_cal.setStyleSheet("font-weight:600;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;")
             export_cal.clicked.connect(self.export_calibration)
             self.btn_export_cal_on_sum[kind] = export_cal
-            switch = QPushButton("⇄ Switch to "+("Nuclide Library (.NLB / .LIB)" if kind=="ctf" else "Certificate (.CTF)"))
+            switch = QPushButton("Switch to "+("nuclide library (.NLB / .LIB)" if kind=="ctf" else "certificate (.CTF)"))
             other = "nlb" if kind=="ctf" else "ctf"
             switch.clicked.connect(lambda checked=False, o=other:(self.set_workflow(summing_source=o),
                                                                   self.tabs.setCurrentIndex(self.tab_index(o))))
@@ -1598,7 +1618,7 @@ class MainWindow(QMainWindow):
             layout.addLayout(bar)
             if kind=="nlb":
                 self.nuclides = QLineEdit()
-                self.nuclides.setPlaceholderText("e.g. Co-60, Cs-134, Eu-152, Ba-133, Y-88 (auto-populated from .NLB / .LIB)")
+                self.nuclides.setPlaceholderText("e.g. Co-60, Cs-134, Eu-152, Ba-133, Y-88 (filled from the .NLB / .LIB)")
                 self.nuclides.textEdited.connect(self.changed)
                 nbar = QHBoxLayout()
                 nlbl = QLabel("<b>Nuclides:</b>")
@@ -1609,7 +1629,7 @@ class MainWindow(QMainWindow):
             layout.addLayout(self._tcs_input_row(kind))
             table = QTableWidget(0, 5)
             table.setAlternatingRowColors(True)
-            table.setHorizontalHeaderLabels(["Nuclide", "Energy E [keV]", "Summing Factor C", "u(C) [%] (k=1)", "Not Computed"])
+            table.setHorizontalHeaderLabels(["Nuclide", "Energy E [keV]", "Summing factor C", "u(C) [%] (k=1)", "Not computed"])
             table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
             table.horizontalHeader().setStretchLastSection(True)
             table.setColumnWidth(0, 140)
@@ -1623,7 +1643,7 @@ class MainWindow(QMainWindow):
                 self.library_table = table
             else:
                 self.certificate_table = table
-            foot_note = QLabel("ℹ A_corr = C · A.  * = no EFFTRAN decay data (original yield preserved unchanged).  "
+            foot_note = QLabel("A_corr = C · A.  * = no EFFTRAN decay data (original yield kept).  "
                                "u(C): propagated from the efficiency uncertainties above; decay-data uncertainties not included "
                                "(see docs/TCS_UNCERTAINTY.md).")
             foot_note.setWordWrap(True)
@@ -1766,8 +1786,8 @@ class MainWindow(QMainWindow):
                 pass
         self.refresh_geometry()
         if self.current_mode() == "well":
-            self.status.setText("⚠️ WEFFTRAN (Well detector): The physics and spatial summing model is currently experimental / not fully tested. Verify results.")
-            self.log.appendPlainText("[NOTICE] WEFFTRAN geometry selected. Note: WEFFTRAN spatial summing & ray-tracing updates are not fully laboratory qualified yet. Users must independently verify all results.")
+            self.status.setText("WEFFTRAN (well): experimental, not yet qualified in the laboratory. Verify the results")
+            self.log.appendPlainText("[WARN] WEFFTRAN selected. The spatial summing model and the ray boundary patch are not yet qualified in the laboratory; verify all results independently.")
     def data_folder(self, sub=""):
         """A subfolder (Detector, Sample, Calibration…) of the data folder in use (created if needed)."""
         from .paths import get_data_dir
@@ -1924,89 +1944,80 @@ class MainWindow(QMainWindow):
     def show_help_dialog(self, topic="workflow", *unused):
         """The built-in user guide."""
         dialog = QDialog(self)
-        dialog.setWindowTitle("EffSuite — User Guide & Reference")
+        dialog.setWindowTitle("EffSuite help")
         dialog.resize(820, 620)
         vl = QVBoxLayout(dialog)
         vl.setContentsMargins(14, 12, 14, 12)
         vl.setSpacing(10)
         tabs = QTabWidget()
+        gammavision_note = ("<p><b>GammaVision support is untested.</b> ORTEC GammaVision files (<code>.EFT</code> efficiency,"
+                            " <code>.LIB</code> nuclide library) are handled as in EFFTRAN and MEFFTRAN, but the author has no"
+                            " GammaVision installation to test them. Feedback from GammaVision users is welcome.</p>")
+        pre = "<pre style='background:#f1f5f9;padding:8px;border-radius:4px;'>"
         topics = [
-            ("workflow", "📖 Workflow Guide",
-             "<h3>Step-by-Step Calculation Guide</h3>"
-             "<div style='background:#fffbeb;border:1px solid #fde68a;"
-             "border-left:4px solid #d97706;border-radius:4px;padding:8px;margin:6px 0;'>"
-             "<b style='color:#92400e;'>⚠️ GammaVision Notice (Untested — Volunteers Welcome):</b><br>"
-             "<span style='color:#78350f;font-size:9pt;'>ORTEC GammaVision support (<code>.EFT</code> efficiency &amp;"
-             " <code>.LIB</code> nuclide library) has been implemented exactly as EFFTRAN and MEFFTRAN do it, "
-             "but cannot be tested by the author because GammaVision software is not available. Volunteers are welcome to test and provide feedback.</span>"
-             "</div>"
-             "<p><b>1. Welcome Tab — Choose Calculation Mode:</b></p>"
+            ("workflow", "Workflow",
+             "<h3>Calculation steps</h3>"
+             + gammavision_note +
+             "<p><b>1. Start</b>: choose the calculation.</p>"
              "<ul>"
-             "<li><b>Complete Analysis (Recommended):</b> Performs both Efficiency Transfer (<i>Standard → Sample</i>) and True Coincidence Summing corrections in one run. Produces the transferred Sample <code>.CAL</code> (Genie 2000) or <code>.EFT</code> (GammaVision) and the summing-corrected Nuclide Library (<code>.NLB</code> / <code>.LIB</code>) or Genie Certificate (<code>.CTF</code>).</li>"
-             "<li><b>Efficiency Transfer Only:</b> Computes transfer factors <i>F<sub>ε</sub>(E) = ε<sub>sample</sub>(E) / ε<sub>standard</sub>(E)</i> and exports the Sample <code>.CAL</code> or <code>.EFT</code>.</li>"
-             "<li><b>True Coincidence Summing Only:</b> Computes cascade summing factors <i>C</i> (where <i>A<sub>corr</sub> = C · A</i>) for the Sample geometry without requiring a reference calibration curve.</li>"
+             "<li><b>Complete analysis</b> (recommended): efficiency transfer (Standard → Sample) and true coincidence summing corrections in one run. Exports the transferred Sample <code>.CAL</code> (Genie 2000) or <code>.EFT</code> (GammaVision), and the summing-corrected nuclide library (<code>.NLB</code> / <code>.LIB</code>) or Genie certificate (<code>.CTF</code>).</li>"
+             "<li><b>Efficiency transfer only</b>: computes the transfer factors <i>F<sub>ε</sub>(E) = ε<sub>sample</sub>(E) / ε<sub>standard</sub>(E)</i> and exports the Sample <code>.CAL</code> or <code>.EFT</code>.</li>"
+             "<li><b>True coincidence summing only</b>: computes the cascade summing factors <i>C</i> (<i>A<sub>corr</sub> = C · A</i>) for the Sample geometry. No reference calibration is needed.</li>"
              "</ul>"
-             "<p><b>2. Detector Tab:</b> Load your detector model (<code>Data/Detector/*.txt</code>) or enter crystal, dead-layer, window, and housing dimensions in mm. The live axial cross-section updates in real time with all dimensions.</p>"
-             "<p><b>3. Standard &amp; Sample Tab</b> (just <b>Sample</b> for coincidence summing only)<b>:</b> Load or edit the <b>Sample</b> (measured sample geometry) and the <b>Standard</b> (reference calibration geometry). The Standard is needed for efficiency transfer only: with <i>True Coincidence Summing Only</i> its column is hidden. Enter the apparent <b>Source density [g/cm³]</b> directly on this tab (auto-filled when selecting a material), or click <b>✏️ Edit</b> next to any material to define a new chemical composition.</p>"
-             "<p><b>4. Efficiency (.CAL / .EFT) &amp;"
-             " Library (.NLB / .LIB) / Certificate (.CTF) Tabs:</b> Import your Genie 2000 (<code>.CAL</code> / <code>.NLB</code> / <code>.CTF</code>) or GammaVision (<code>.EFT</code> / <code>.LIB</code>) reference files, run the calculation, and export the corrected files. Every exported file explicitly displays whether it targets <b>Genie 2000</b> or <b>GammaVision</b>.</p>"),
-            ("materials", "🧪 Materials & Density (XCOM)",
-             "<h3>Material Composition &amp; Bulk Density Guide</h3>"
-             "<p>Self-attenuation in gamma-ray spectrometry depends on both the <b>chemical composition</b> (mass attenuation coefficient <i>μ/ρ</i>) and the <b>bulk density</b> <i>ρ</i> [g/cm³] of the sample matrix (<i>μ = (μ/ρ) · ρ</i>).</p>"
+             "<p><b>2. Detector</b>: load a detector model (<code>Data/Detector/*.txt</code>) or enter the crystal, dead layer, window and housing dimensions in mm. The cross-section drawing follows the inputs and shows all dimensions.</p>"
+             "<p><b>3. Standard &amp; Sample</b> (<b>Sample</b> with coincidence summing only): load or edit the <b>Sample</b> (measured geometry) and the <b>Standard</b> (reference calibration geometry). The Standard is only needed for efficiency transfer; with <b>True coincidence summing only</b> its column is hidden. Enter the apparent <b>Source density [g/cm³]</b> on this page (filled in when you choose a material), or click <b>Edit</b> next to a material to define a new composition.</p>"
+             "<p><b>4. Efficiency (.CAL / .EFT), then Library (.NLB / .LIB) or Certificate (.CTF)</b>: import the Genie 2000 (<code>.CAL</code> / <code>.NLB</code> / <code>.CTF</code>) or GammaVision (<code>.EFT</code> / <code>.LIB</code>) reference files, run the calculation and export the corrected files. Each export names its target software, Genie 2000 or GammaVision.</p>"),
+            ("materials", "Materials and density",
+             "<h3>Material composition and bulk density</h3>"
+             "<p>Self-attenuation in gamma-ray spectrometry depends on the <b>chemical composition</b> (mass attenuation coefficient <i>μ/ρ</i>) and on the <b>bulk density</b> <i>ρ</i> [g/cm³] of the sample matrix: <i>μ = (μ/ρ) · ρ</i>.</p>"
              "<ul>"
-             "<li><b>Direct Source Density Entry (EFFTRAN 4.9 / MEFFTRAN 1.8):</b> You can enter the apparent bulk density <i>ρ</i> [g/cm³] directly in the <b>Source density [g/cm³]</b> field of the Standard &amp; Sample tab without creating a separate material file. The engine scales the linear attenuation coefficient dynamically by <i>ρ / ρ<sub>0</sub></i>.</li>"
-             "<li><b>Automatic XCOM Generation:</b> If a material exists in <code>Composition/</code> but is missing in <code>Material/</code>, EffSuite automatically runs NIST XCOM to generate its photon attenuation table before calculation.</li>"
-             "<li><b>Defining New Chemical Matrices:</b> Click <b>✏️ Edit</b> next to a material (or <b>🧪 Materials…</b> on the Detector and Standard &amp; Sample pages, or <i>Tools → Material Editor</i>). The Material Editor opens in a separate window, so you can keep working on the Detector and Standard &amp; Sample pages. Enter the chemical formulas and nominal density in <code>g/cm³</code> and click <b>✔ Apply</b>: the attenuation table is generated and the material appears at once in the Detector and Standard &amp; Sample material lists (and is selected in the field you clicked <b>✏️ Edit</b> for).</li>"
-             "<li><b>Formula Entry:</b> Up to 10 chemical compounds (e.g. <code>H2O</code>, <code>C6H12O6</code>, <code>SiO2</code>, <code>CaCO3</code>) with relative weights by mass (automatically normalized to 100%).</li>"
+             "<li><b>Source density</b> (EFFTRAN 4.9 and later, MEFFTRAN 1.8 and later): enter the apparent bulk density <i>ρ</i> [g/cm³] in the <b>Source density [g/cm³]</b> field of the Standard &amp; Sample page. No separate material file is needed. The engine scales the linear attenuation coefficient by <i>ρ / ρ<sub>0</sub></i>.</li>"
+             "<li><b>XCOM tables</b>: if a material is in <code>Composition/</code> but not in <code>Material/</code>, EffSuite runs NIST XCOM to generate its photon attenuation table before the calculation.</li>"
+             "<li><b>New materials</b>: click <b>Edit</b> next to a material, <b>Materials…</b> on the Detector and Standard &amp; Sample pages, or <b>Tools → Material Editor</b>. The Material Editor opens in its own window, so the other pages stay usable. Enter the chemical formulas and the nominal density [g/cm³], then click <b>Apply</b>: the attenuation table is generated and the material appears in the Detector and Standard &amp; Sample material lists. When the editor was opened with <b>Edit</b>, the material is also selected in that field.</li>"
+             "<li><b>Formulas</b>: up to 10 compounds (e.g. <code>H2O</code>, <code>C6H12O6</code>, <code>SiO2</code>, <code>CaCO3</code>) with relative weights by mass, normalized to 100%.</li>"
              "</ul>"),
-            ("cli", "💻 CLI & Batch Calculations",
-             "<h3>Command-Line Interface (CLI) &amp; Batch Runner</h3>"
-             "<p>Every operation available in the GUI can be executed directly from the command line or automated in batch scripts (supporting both <b>Genie 2000</b> <code>.CAL</code>/<code>.NLB</code>/<code>.CTF</code> and <b>GammaVision</b> <code>.EFT</code>/<code>.LIB</code>):</p>"
-             "<p><b>1a. Genie 2000 Single Calculation with Inline Overrides:</b></p>"
-             "<pre style='background:#f1f5f9;padding:8px;border-radius:4px;'>"
+            ("cli", "Command line",
+             "<h3>Command line and batch runs</h3>"
+             "<p>The GUI calculations can also run from the command line or from batch scripts, with <b>Genie 2000</b> (<code>.CAL</code> / <code>.NLB</code> / <code>.CTF</code>) or <b>GammaVision</b> (<code>.EFT</code> / <code>.LIB</code>) files.</p>"
+             "<p><b>1a. Genie 2000, one sample, with overrides</b></p>"
+             + pre +
              "effsuite cylinder --detector High-energy --standard Solution --sample Water \\\n"
              "  --sample-height 33.4 --sample-material Glucose --sample-density 1.346 \\\n"
              "  --calibration TF400_268_2025.CAL --library LIBRARY.NLB \\\n"
              "  --output-cal Sample_207724.CAL --output-nlb Sample_207724.NLB --plot-geometry"
              "</pre>"
-             "<p><b>1b. GammaVision Single Calculation (<code>.EFT</code> + <code>.LIB</code>, auto-detected or <code>--software gammavision</code>):</b></p>"
-             "<pre style='background:#f1f5f9;padding:8px;border-radius:4px;'>"
+             "<p><b>1b. GammaVision, one sample</b> (<code>.EFT</code> + <code>.LIB</code>, detected from the extension or set with <code>--software gammavision</code>)</p>"
+             + pre +
              "effsuite cylinder --detector High-energy --standard Solution --sample Water \\\n"
              "  --calibration EFFTRAN.EFT --library EFFTRAN.Lib \\\n"
              "  --output-cal Sample_transferred.EFT --output-nlb Sample_corrected.LIB"
              "</pre>"
-             "<p><b>2. Batch Processing from a CSV or JSON Table:</b></p>"
-             "<pre style='background:#f1f5f9;padding:8px;border-radius:4px;'>"
-             "# Generate a ready-to-fill CSV template:\n"
+             "<p><b>2. Batch run from a CSV or JSON table</b></p>"
+             + pre +
+             "# Write a CSV template to fill in:\n"
              "effsuite batch --template my_samples.csv\n\n"
-             "# Run all samples in the CSV and export batch_summary.csv + all .CAL/.EFT and .NLB/.LIB files:\n"
+             "# Run every sample in the CSV; writes batch_summary.csv and the .CAL/.EFT and .NLB/.LIB files:\n"
              "effsuite batch my_samples.csv --out BatchResults_2026 --plot-geometry"
              "</pre>"
-             "<p><b>3. Standalone Geometry Diagram Export (PNG / PDF / SVG):</b></p>"
-             "<pre style='background:#f1f5f9;padding:8px;border-radius:4px;'>"
+             "<p><b>3. Geometry drawing only (PNG / PDF / SVG)</b></p>"
+             + pre +
              "effsuite plot-geometry --geometry cylinder --detector High-energy --sample Water --out geom.png"
              "</pre>"),
-            ("about", "ℹ️ About & Qualification",
-             "<h3>EffSuite — EFFTRAN • MEFFTRAN • WEFFTRAN</h3>"
-             f"<p><b>Version:</b> {VERSION} (Beta Version)</p>"
-             "<p><i>EffSuite built by ChatGPT &amp; Gemini under the supervision of G. Lutter.</i></p>"
+            ("about", "About",
+             "<h3>EffSuite: EFFTRAN, MEFFTRAN, WEFFTRAN</h3>"
+             f"<p><b>Version:</b> {VERSION} (beta)</p>"
+             "<p>EffSuite built by ChatGPT, Gemini and Claude under the supervision of G. Lutter.</p>"
              "<div style='background:#fef2f2;border:1px solid #fecaca;"
              "border-left:4px solid #dc2626;border-radius:4px;padding:8px;margin:8px 0;'>"
              "<b style='color:#991b1b;'>Disclaimer:</b><br>"
              "<span style='color:#7f1d1d;font-size:9pt;"
              "'>Provided strictly on an AS-IS basis. G. Lutter accepts NO responsibility or liability under any circumstances for incorrect calculations, inaccurate analytical results, or damages resulting from software use. Users must independently verify all results.</span>"
              "</div>"
-             "<div style='background:#fffbeb;border:1px solid #fde68a;"
-             "border-left:4px solid #d97706;border-radius:4px;padding:8px;margin:8px 0;'>"
-             "<b style='color:#92400e;'>GammaVision Support (v0.1.4 — Untested, Volunteers Welcome):</b><br>"
-             "<span style='color:#78350f;font-size:9pt;'>GammaVision support (<code>.EFT</code> efficiency &amp;"
-             " <code>.LIB</code> nuclide library) has been implemented as EFFTRAN is doing it, "
-             "but I cannot test it because I do not have the software. Volunteers are welcome to test and provide feedback.</span>"
-             "</div>"
-             "<p><b>Underlying Physics Engines:</b> Built on <b>EFFTRAN (v4.9, 2026)</b>, <b>MEFFTRAN (v1.8, 2026)</b>, and <b>WEFFTRAN (2018)</b> by Tim Vidmar (<a href='https://efftran.github.io/'>https://efftran.github.io/</a>), integrated with NIST XCOM photon cross-sections.</p>"
-             "<p><b>Features:</b> Simultaneous true coincidence summing calculation in one pass across all nuclides in the library, multi-process parallel orchestration, and spatial quadrature integration for well detectors.</p>"
-             "<p><b>Default Installation:</b> <code>C:\\GENIE2K\\EffSuite</code></p>"
-             "<p><b>Notice & Qualification:</b> Beta version (evaluation & qualification release). Whenever evaluating or changing detector or sample characterizations, verify all models and transfer factors against reference standards.</p>"
+             + gammavision_note +
+             "<p><b>Physics engines:</b> EFFTRAN 5.0 and MEFFTRAN 1.9 (2026), and WEFFTRAN (2018), by Tim Vidmar (<a href='https://efftran.github.io/'>https://efftran.github.io/</a>), with NIST XCOM photon cross-sections.</p>"
+             "<p><b>Additions:</b> coincidence summing factors for all library nuclides in one pass, computed in parallel worker processes; spatial quadrature integration for well detectors.</p>"
+             "<p><b>Default installation folder:</b> <code>C:\\GENIE2K\\EffSuite</code></p>"
+             "<p><b>Qualification:</b> beta version, for evaluation and qualification. When you set up or change a detector or sample model, check the models and transfer factors against reference standards.</p>"
              "<p style='color:#64748b;font-size:8.5pt;'>EFFTRAN copyright &copy;"
              " 2005–2026 Tim Vidmar. Permission to use, copy, modify, distribute and sell this software and its documentation for any purpose is hereby granted without fee, provided that copyright and permission notices appear in supporting documentation.</p>"),
         ]
@@ -2238,7 +2249,7 @@ class MainWindow(QMainWindow):
     def start_task(self, operation, callback, cancellable=False):
         """Run ``operation`` in the background; then call ``callback`` with its result."""
         if self.thread is not None:
-            self.status.setText("Please wait: another task is still running.")
+            self.status.setText("Another task is still running")
             return
         self._callback = callback
         self.cancel_event = threading.Event()
@@ -2268,11 +2279,11 @@ class MainWindow(QMainWindow):
         text = self.log.toPlainText()
         if text:
             QApplication.clipboard().setText(text)
-            self.status.setText("Log copied to clipboard.")
+            self.status.setText("Log copied to the clipboard")
     def clear_log(self):
         """Empty the log panel."""
         self.log.clear()
-        self.status.setText("Log cleared.")
+        self.status.setText("Log cleared")
     def append_log(self, message):
         """Add a time-stamped line to the log (keeps scrolling at the bottom)."""
         t = time.strftime("%H:%M:%S")
@@ -2326,8 +2337,8 @@ class MainWindow(QMainWindow):
             self.error(exc)
             return
         self.last_task = task
-        task_label = "Complete Analysis (Transfer + Summing)" if task == "both" else ("Efficiency Transfer" if task == "transfer" else "Coincidence Summing")
-        self.append_log(f"Starting {task_label} calculation ({self.current_mode().title()} mode)...")
+        task_label = "complete analysis (transfer and summing)" if task == "both" else ("efficiency transfer" if task == "transfer" else "coincidence summing")
+        self.append_log(f"Starting {task_label}, {self.current_mode()} geometry…")
         try:
             recovery = documents("Recovery")/"last_project.json"
             temporary = recovery.with_suffix(".tmp")
@@ -2361,7 +2372,7 @@ class MainWindow(QMainWindow):
         elif result["summing"]:
             self.tabs.setCurrentIndex(self.tab_index(self.summing_source))
         self._loading = False
-        self.status.setText("Completed — "+result["output_directory"])
+        self.status.setText("Completed: "+result["output_directory"])
         self.append_log("Saved "+result["output_directory"])
         for warning in result["warnings"]:
             self.append_log(warning)
@@ -2377,7 +2388,7 @@ class MainWindow(QMainWindow):
             return
         dialog = QDialog(self)
         dialog.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
-        dialog.setWindowTitle("Complete Analysis — Outputs Ready")
+        dialog.setWindowTitle("Complete analysis: exports")
         dialog.setMinimumWidth(560)
         vl = QVBoxLayout(dialog)
         vl.setSpacing(12)
@@ -2387,14 +2398,14 @@ class MainWindow(QMainWindow):
                              "border-left:5px solid #059669;border-radius:6px;padding:10px;}")
         bl = QVBoxLayout(banner)
         bl.setSpacing(4)
-        t = QLabel("<b>✔ Complete Analysis Finished Successfully</b>")
+        t = QLabel("<b>Complete analysis finished</b>")
         t.setStyleSheet("font-size:12pt;color:#065f46;border:none;background:transparent;")
-        d = QLabel("Both required output files (Genie 2000 / GammaVision) have been calculated and are ready for export:")
+        d = QLabel("Both output files are calculated and ready to export.")
         d.setStyleSheet("color:#047857;font-size:9.5pt;border:none;background:transparent;")
         bl.addWidget(t)
         bl.addWidget(d)
         vl.addWidget(banner)
-        box = QGroupBox("Available Exports")
+        box = QGroupBox("Exports")
         fl = QVBoxLayout(box)
         fl.setSpacing(10)
         cal_is_gv = Path(self.calibration_template or "").suffix.lower()==".eft" or os.environ.get("EFFSUITE_SOFTWARE",
@@ -2402,9 +2413,9 @@ class MainWindow(QMainWindow):
         cal_sw = "GammaVision" if cal_is_gv else "Genie 2000"
         cal_ext = ".EFT" if cal_is_gv else ".CAL"
         row1 = QHBoxLayout()
-        info1 = QLabel(f"<b>1. Corrected Sample Efficiency ({cal_sw} {cal_ext})</b><br><span style='color:#475569;font-size:9pt;'>Transferred efficiency calibration for the sample geometry</span>")
+        info1 = QLabel(f"<b>1. Sample efficiency ({cal_sw} {cal_ext})</b><br><span style='color:#475569;font-size:9pt;'>Transferred efficiency calibration for the sample geometry</span>")
         info1.setStyleSheet("background:transparent;")
-        btn1 = QPushButton(f"💾 Export Sample {cal_ext} ({cal_sw})…")
+        btn1 = with_icon(QPushButton(f"Export sample {cal_ext} ({cal_sw})…"), SAVE)
         btn1.setStyleSheet("font-weight:600;background:#2563eb;color:#ffffff;border:1px solid #1d4ed8;padding:6px 14px;border-radius:4px;")
         btn1.clicked.connect(self.export_calibration)
         row1.addWidget(info1, 1)
@@ -2420,11 +2431,11 @@ class MainWindow(QMainWindow):
                                                                                                                   "").strip().lower()=="gammavision"))
         lib_sw = "GammaVision" if lib_is_gv else "Genie 2000"
         lib_ext = ".LIB" if lib_is_gv else (".NLB" if self.summing_source=="nlb" else ".CTF")
-        kind_name = f"Nuclide Library ({lib_sw} {lib_ext})" if self.summing_source=="nlb" else "Certificate (Genie 2000 .CTF)"
+        kind_name = f"nuclide library ({lib_sw} {lib_ext})" if self.summing_source=="nlb" else "certificate (Genie 2000 .CTF)"
         desc_sum = "Yields P / C corrected for cascade coincidence summing" if self.summing_source=="nlb" else "Emission rates R / C corrected for cascade coincidence summing"
         info2 = QLabel(f"<b>2. Corrected {kind_name}</b><br><span style='color:#475569;font-size:9pt;'>{desc_sum}</span>")
         info2.setStyleSheet("background:transparent;")
-        btn2 = QPushButton(f"💾 Export Corrected {lib_ext} ({lib_sw})…")
+        btn2 = with_icon(QPushButton(f"Export corrected {lib_ext} ({lib_sw})…"), SAVE)
         btn2.setStyleSheet("font-weight:600;background:#2563eb;color:#ffffff;border:1px solid #1d4ed8;padding:6px 14px;border-radius:4px;")
         btn2.clicked.connect(lambda:self.export_genie(self.summing_source))
         row2.addWidget(info2, 1)
@@ -2433,14 +2444,14 @@ class MainWindow(QMainWindow):
         vl.addWidget(box)
         dest = result.get("output_directory", "")
         if dest:
-            note = QLabel(f"<b>Results directory:</b> <span style='font-family:Consolas,monospace;font-size:9pt;'>{dest}</span>")
+            note = QLabel(f"<b>Result folder:</b> <span style='font-family:Consolas,monospace;font-size:9pt;'>{dest}</span>")
             note.setWordWrap(True)
             note.setStyleSheet("color:#334155;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:4px;padding:8px;")
             vl.addWidget(note)
         actions = QHBoxLayout()
-        btn_open = QPushButton("📂 Open Results Folder")
+        btn_open = with_icon(QPushButton("Open result folder"), FOLDER)
         btn_open.clicked.connect(self.open_results)
-        btn_close = QPushButton("Done / View Tabs")
+        btn_close = QPushButton("Close")
         btn_close.setStyleSheet("background:#16a34a;color:#ffffff;font-weight:600;"
                                 "padding:6px 20px;border-radius:4px;border:1px solid #15803d;")
         btn_close.clicked.connect(dialog.accept)
@@ -2461,11 +2472,11 @@ class MainWindow(QMainWindow):
             rows = []
         if rows:
             axes.loglog([r["energy_keV"] for r in rows], [r["efficiency"] for r in rows],
-                        "o-", label="Standard (Reference)", color="#2563eb", markersize=4, linewidth=1.4)
+                        "o-", label="Standard (reference)", color="#2563eb", markersize=4, linewidth=1.4)
         if self.transfer_result:
             rows = self.transfer_result["efficiency"]
             axes.loglog([r["energy_keV"] for r in rows], [r["sample_efficiency"] for r in rows],
-                        "s-", label="Sample (Transferred)", color="#dc2626", markersize=4, linewidth=1.4)
+                        "s-", label="Sample (transferred)", color="#dc2626", markersize=4, linewidth=1.4)
         axes.set_xlabel("Energy [keV]", fontsize=9.5)
         axes.set_ylabel("Full-energy efficiency ε", fontsize=9.5)
         axes.grid(True, which="both", alpha=.25)
@@ -2495,7 +2506,7 @@ class MainWindow(QMainWindow):
             self.summing_source = kind
             self.populate_summing()
             self.apply_workflow()
-            self.status.setText("Loaded "+filename+" — next: "+("click "+self.RUN_LABELS[self.workflow] if self.workflow!="transfer" else "continue"))
+            self.status.setText("Loaded "+filename+". Next: "+("click "+self.RUN_LABELS[self.workflow] if self.workflow!="transfer" else "continue"))
         self.start_task(lambda log:(read_library if kind=="nlb" else read_certificate)(filename), accepted)
     def process_genie(self, kind, *unused):
         """Run the summing calculation for the lines of the loaded file."""
@@ -2610,7 +2621,7 @@ class MainWindow(QMainWindow):
             return
         from .software import export_copy, label
         self.start_task(lambda log:export_copy(source, path,
-                                               self.transfer_result, "cal"), lambda r:self.status.setText(f"{label(source)} calibration exported to {path.name} successfully"))
+                                               self.transfer_result, "cal"), lambda r:self.status.setText(f"{label(source)} calibration exported to {path.name}"))
     def export_genie(self, kind, *unused):
         """Save the corrected library or certificate (copy of the verified export)."""
         source = self.library_file if kind=="nlb" else self.certificate_file

@@ -122,10 +122,10 @@ positioning and decay data are not included.
 
 ### 1.6 Defect in the MEFFTRAN 1.9 detector format
 
-The MEFFTRAN 1.9 `Efficiency Transfer.xlsm` writes a **19-line**
+The MEFFTRAN 1.9 `Efficiency Transfer.xlsm` writes a 19-line
 `detector.txt`, with absorber diameter, thickness and material, as for
 cylinders. `ptt.f` and `eta.f` were updated to read 19 lines, but `mine.f` and
-`total.f` and the bundled `Detector/*.txt` models still use **16 lines**:
+`total.f` and the bundled `Detector/*.txt` models still use 16 lines:
 
 ```
 At line 212 of file mine.f (unit = 7)

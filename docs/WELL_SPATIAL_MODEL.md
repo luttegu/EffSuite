@@ -124,7 +124,7 @@ effsuite-well-spatial --original "C:\WEFFTRAN" --inputs "C:\WEFFTRAN" --nuclide 
 ```
 
 That folder must contain `detector.txt`, `source.txt`, `total.txt`,
-`efficiency.txt`, `buildup.txt`, `ptt.txt` and `param.txt` from the **same**
+`efficiency.txt`, `buildup.txt`, `ptt.txt` and `param.txt` from the same
 preparation. Response files left from another sample or detector give wrong
 results; fresh preparation avoids this.
 

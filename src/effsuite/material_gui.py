@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (QFileDialog, QFormLayout, QGroupBox, QHBoxLayout,
 
 from .materials import TEMPLATE, create_material, default_library, load_composition, save_definition, validate_composition
 from .model_io import COMMON_DATA
+from .qt_icons import with_icon, APPLY, CLEAR, OPEN, SAVE
 
 MAX_COMPOUNDS = 10
 RIGHT_ALIGNED = Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
@@ -38,7 +39,7 @@ class MaterialEditor(QWidget):
         super().__init__(None, Qt.WindowType.Window)
         self.owner = owner
         self.loading = False   # True while we fill the form ourselves (no recalculation)
-        self.setWindowTitle("EffSuite — Material Editor")
+        self.setWindowTitle("EffSuite Material Editor")
         self.resize(900, 640)
         layout = QVBoxLayout(self)
         layout.setSpacing(8)
@@ -54,8 +55,8 @@ class MaterialEditor(QWidget):
     # --- building the form -------------------------------------------------
     def _title_bar(self):
         bar = QHBoxLayout()
-        title = QLabel("Material & XCOM Attenuation Builder")
-        title.setStyleSheet("font-size:13.5pt;font-weight:700;color:#0f172a;")
+        title = QLabel("Material composition and XCOM attenuation")
+        title.setStyleSheet("font-size:13.5pt;font-weight:600;color:#0f172a;")
         bar.addWidget(title)
         bar.addStretch()
         # Which form field "Apply" selects the material in (set by set_target).
@@ -68,7 +69,7 @@ class MaterialEditor(QWidget):
         return bar
 
     def _name_and_density_box(self):
-        box = QGroupBox("1. Material Name && Bulk Density")   # "&&" shows a single "&"
+        box = QGroupBox("1. Material name and bulk density")   # "&&" shows a single "&"
         row = QHBoxLayout(box)
         row.setSpacing(16)
         row.setContentsMargins(10, 12, 10, 8)
@@ -95,7 +96,7 @@ class MaterialEditor(QWidget):
         return box
 
     def _composition_box(self):
-        box = QGroupBox(f"2. Chemical Composition (up to {MAX_COMPOUNDS} compounds)")
+        box = QGroupBox(f"2. Chemical composition (up to {MAX_COMPOUNDS} compounds)")
         column = QVBoxLayout(box)
         column.setSpacing(6)
         column.setContentsMargins(10, 12, 10, 8)
@@ -103,9 +104,11 @@ class MaterialEditor(QWidget):
         buttons = QHBoxLayout()
         buttons.setSpacing(8)
         self._task_buttons = []   # buttons that start a background task (see set_busy)
-        for text, action in [("📂 Load Composition / Excel…", self.load), ("💾 Store JSON…", self.save),
-                             ("📋 Copy Excel Template…", self.copy_template), ("🧹 Clear", self.clear)]:
+        for text, action, pixmap in [("Load composition / Excel…", self.load, OPEN), ("Store JSON…", self.save, SAVE),
+                                     ("Copy Excel template…", self.copy_template, None), ("Clear", self.clear, CLEAR)]:
             button = QPushButton(text)
+            if pixmap is not None:
+                with_icon(button, pixmap)
             button.clicked.connect(action)
             buttons.addWidget(button)
             if action == self.load:
@@ -117,20 +120,20 @@ class MaterialEditor(QWidget):
         self.table = QTableWidget(MAX_COMPOUNDS, 3)
         self.table.setAlternatingRowColors(True)
         self.table.verticalHeader().setDefaultSectionSize(25)
-        self.table.setHorizontalHeaderLabels(["Chemical Formula (e.g. H2O, NaCl, C6H12O6)", "Relative Weight by Mass",
-                                              "Normalized Mass Fraction [%]"])
+        self.table.setHorizontalHeaderLabels(["Chemical formula (e.g. H2O, NaCl, C6H12O6)", "Relative weight by mass",
+                                              "Normalized mass fraction [%]"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.itemChanged.connect(self.update_fractions)
         column.addWidget(self.table, 1)
 
-        self.summary = QLabel("Enter chemical formulas and relative weights.")
+        self.summary = QLabel("Enter chemical formulas and relative weights")
         self.summary.setWordWrap(True)
         self.summary.setStyleSheet(SUMMARY_NEUTRAL)
         column.addWidget(self.summary)
         return box
 
     def _output_box(self):
-        box = QGroupBox("3. Output Data Folder && XCOM Generation")
+        box = QGroupBox("3. Output data folder")
         row = QHBoxLayout(box)
         row.setSpacing(10)
         row.setContentsMargins(10, 12, 10, 8)
@@ -153,7 +156,7 @@ class MaterialEditor(QWidget):
         self.status.setWordWrap(True)
         self.status.setStyleSheet("color:#334155;font-weight:500;")
         bar.addWidget(self.status, 1)
-        self.apply_button = QPushButton("✔ Apply (create material + XCOM attenuation table)")
+        self.apply_button = with_icon(QPushButton("Apply: create material and XCOM table"), APPLY)
         self.apply_button.setToolTip("Save the composition, generate the XCOM attenuation table and update the "
                                      "material lists of the Detector and Standard & Sample pages")
         self.apply_button.setStyleSheet("font-weight:600;font-size:10pt;background:#16a34a;color:#ffffff;"
@@ -180,7 +183,7 @@ class MaterialEditor(QWidget):
             button.setEnabled(not busy)
         text = self.status.text()
         if busy and not text.startswith("Creating"):
-            self.status.setText("A calculation is running — Apply is available when it has finished.")
+            self.status.setText("A calculation is running. Apply is available when it has finished.")
         elif not busy and text.startswith(("A calculation is running", "Creating")):
             self.status.setText("")   # finished without success message (failed or cancelled)
 
@@ -248,8 +251,8 @@ class MaterialEditor(QWidget):
                     index += 1
                 else:
                     self.table.takeItem(row, 2)
-            self.summary.setText(f'✔ {len(definition["components"])} compound(s), density = {definition["density_g_cm3"]:g} g/cm³, '
-                                 f"total weight = {total:g} (normalized to 100%).")
+            self.summary.setText(f'{len(definition["components"])} compound(s), density = {definition["density_g_cm3"]:g} g/cm³, '
+                                 f"total weight = {total:g} (normalized to 100%)")
             self.summary.setStyleSheet(SUMMARY_OK)
         except Exception as exc:   # incomplete or invalid input: show why
             for row in range(MAX_COMPOUNDS):
@@ -336,9 +339,9 @@ class MaterialEditor(QWidget):
         overwrite = False
         if self._material_exists(definition["name"], library):
             answer = QMessageBox.question(
-                self, "Material Already Exists",
-                f"Material '{definition['name']}' already exists.\n\nDo you want to overwrite it with this new composition "
-                "and recalculate attenuation?\n(Select 'No' to go back and rename it to save as a new material).",
+                self, "Material already exists",
+                f"Material '{definition['name']}' already exists.\n\nOverwrite it with this composition "
+                "and recalculate the attenuation table?\nChoose No to go back and save it under a new name.",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.No)
             if answer != QMessageBox.StandardButton.Yes:
                 return
@@ -347,8 +350,8 @@ class MaterialEditor(QWidget):
         def accepted(result):
             # Use the library everywhere and select the new material in the target field.
             self.owner.material_applied(definition, result)
-            self.status.setText(f"✔ '{definition['name']}' created and applied. "
-                                "The window stays open for further materials.")
+            self.status.setText(f"'{definition['name']}' created and applied. "
+                                "The window stays open for more materials.")
 
         self.status.setText(f"Creating '{definition['name']}' (XCOM)…")
         self.owner.start_task(lambda log: create_material(definition, library, geometry=mode, base_directory=base,

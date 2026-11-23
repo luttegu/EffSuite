@@ -2,6 +2,7 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QComboBox, QLabel, QPushButton, QGroupBox, QSizePolicy)
 from matplotlib.figure import Figure
+from .qt_icons import with_icon, RELOAD
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg, NavigationToolbar2QT
 from matplotlib.patches import Rectangle
 
@@ -94,9 +95,9 @@ def draw_geometry(ax, mode, d, s=None, kind='Sample', compact=False):
             box(-outer_s, z-base, 2*outer_s, height+2*base, 'Container')
             box(-inner, z, 2*inner, height, 'Source')
             if outer_s>wr:
-                warnings.append('⚠ Container outer diameter exceeds well cavity diameter.')
+                warnings.append('Warning: container outer diameter exceeds well cavity diameter.')
             if source_top>length:
-                warnings.append(f'⚠ Source extends {source_top-length:g} mm above crystal rim.')
+                warnings.append(f'Warning: source extends {source_top-length:g} mm above crystal rim.')
     else:
         diameter, length = d[2:4]
         r = diameter/2
@@ -153,9 +154,9 @@ def draw_geometry(ax, mode, d, s=None, kind='Sample', compact=False):
                 box(x, z, wall, hole_h, 'Container')
             box(-hole-wall, ceiling-wall, 2*(hole+wall), wall, 'Container')
             if hole<outer:
-                warnings.append('⚠ Marinelli cavity is narrower than detector housing.')
+                warnings.append('Warning: Marinelli cavity is narrower than detector housing.')
             if source_top<=z:
-                warnings.append('⚠ Filling height does not exceed container thickness.')
+                warnings.append('Warning: filling height does not exceed container thickness.')
 
     if not bounds:
         bounds = [(-30, 0), (30, 60)]
@@ -205,7 +206,7 @@ def draw_geometry(ax, mode, d, s=None, kind='Sample', compact=False):
         hw = max(step*1.3, len(text)*step*0.105)
         bounds.extend([(xy_box[0]-hw, xy_box[1]-step*0.4), (xy_box[0]+hw, xy_box[1]+step*0.4)])
 
-    # 3. Bottom Horizontal Quotes (Detector Radial)
+    # 3. Bottom Horizontal dimensions (Detector Radial)
     b_track = geom_bot-step*0.75
     if mode=='well' and well_d>0:
         quote_h(-wr, wr, b_track, f'Well Ø {well_d:g} mm', bottom, bottom, '#0f766e')
@@ -218,7 +219,7 @@ def draw_geometry(ax, mode, d, s=None, kind='Sample', compact=False):
     if mode!='well' and d[0]>0:
         quote_h(-outer, outer, b_track, f'Cap Ø {d[0]:g} mm', 0, 0, '#334155')
 
-    # 4. Top Horizontal Quotes (Source / Cavity Radial)
+    # 4. Top Horizontal dimensions (Source / Cavity Radial)
     t_track = geom_top+step*0.75
     if s:
         if mode=='marinelli' and hole_d>0:
@@ -231,7 +232,7 @@ def draw_geometry(ax, mode, d, s=None, kind='Sample', compact=False):
     elif mode=='cylindrical' and d[12]>0 and d[13]>0:
         quote_h(-d[12]/2, d[12]/2, t_track, f'Absorber Ø {d[12]:g} mm', top, top, '#475569')
 
-    # 5. Left Vertical Quotes (Detector Axial + Thin Layer Callouts)
+    # 5. Left Vertical dimensions (Detector Axial + Thin Layer Callouts)
     l_track = geom_left-step*1.35
     if mode=='well':
         if well_h>0:
@@ -259,7 +260,7 @@ def draw_geometry(ax, mode, d, s=None, kind='Sample', compact=False):
         callout((-outer+d[1]/2, length*0.15), (l_track, -step*0.85),
                 f'Cap wall: {d[1]:g} mm | Holder: {d[10]:g} mm', '#475569')
 
-    # 6. Right Vertical Quotes (Source Axial + Wall/Bottom Callouts)
+    # 6. Right Vertical dimensions (Source Axial + Wall/Bottom Callouts)
     r_track = geom_right+step*1.35
     src_quotes = []
     if s:
@@ -307,9 +308,9 @@ def draw_geometry(ax, mode, d, s=None, kind='Sample', compact=False):
     ax.set_ylim(min(ys)-pad_y, max(ys)+pad_y)
 
     if not compact:
-        ax.set_title(f'{kind} & Detector — Axial Cross-Section (mm)', fontsize=fs+1.8, fontweight='bold', color='#0f172a', pad=8)
+        ax.set_title(('Detector' if kind=='Detector' else f'{kind} and detector')+': axial cross-section [mm]', fontsize=fs+1.8, fontweight='bold', color='#0f172a', pad=8)
         ax.legend(loc='upper left', bbox_to_anchor=(1.01, 1.0), fontsize=8.5, frameon=True, facecolor='#f8fafc', edgecolor='#cbd5e1', title='Regions', title_fontsize=8.5)
-        quotes_card = "ALL DIMENSIONS & MATERIALS\n"+"\n".join("• "+q for q in det_quotes+src_quotes)
+        quotes_card = "Dimensions and materials\n"+"\n".join("• "+q for q in det_quotes+src_quotes)
         if warnings:
             quotes_card += "\n\n"+"\n".join(warnings)
         ax.text(1.01, 0.48, quotes_card, transform=ax.transAxes, va='top', ha='left', fontsize=8.0, color='#0f172a',
@@ -390,7 +391,7 @@ class LiveGeometryWidget(QGroupBox):
     """Embedded live axial cross-section preview with readable CAD dimensions."""
     def __init__(self, owner, default_kind='Sample'):
         """Geometry preview shown inside a tab, with a Sample / Standard / Detector choice."""
-        super().__init__('Live Axial Cross-Section && Quotes (mm)')
+        super().__init__('Axial cross-section with dimensions [mm]')
         self.owner = owner
         layout = QVBoxLayout(self)
         layout.setSpacing(4)
@@ -401,11 +402,11 @@ class LiveGeometryWidget(QGroupBox):
         lbl.setStyleSheet('font-weight:600;color:#334155;background:transparent;')
         bar.addWidget(lbl)
         self.source = QComboBox()
-        self.source.addItems(['Sample', 'Standard', 'Detector Only'])
+        self.source.addItems(['Sample', 'Standard', 'Detector only'])
         self.source.setCurrentText(default_kind)
         bar.addWidget(self.source)
         bar.addStretch()
-        enlarge = QPushButton('🔍 Full-Screen / All Quotes…')
+        enlarge = QPushButton('Large view…')
         enlarge.setStyleSheet('background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:3px 10px;font-weight:600;font-size:9pt;')
         enlarge.clicked.connect(self.open)
         bar.addWidget(enlarge)
@@ -451,7 +452,7 @@ class LiveGeometryWidget(QGroupBox):
         try:
             d, det_complete = _partial_detector_values(self.owner)
             sel = self.source.currentText()
-            if sel=='Detector Only':
+            if sel=='Detector only':
                 s = None
                 kind_label = 'Detector'
             else:
@@ -462,7 +463,7 @@ class LiveGeometryWidget(QGroupBox):
             self.figure.subplots_adjust(left=0.10, right=0.98, bottom=0.16, top=0.86)
             summary = draw_geometry(ax, self.owner.current_mode(), d, s, kind_label, compact=True)
             if not det_complete:
-                summary = 'ℹ Previewing with default placeholders for blank fields  |  '+summary
+                summary = 'Blank fields use preview defaults  |  '+summary
             self.info.setText(summary)
             self.canvas.draw_idle()
         except Exception as exc:
@@ -484,7 +485,7 @@ class GeometryDialog(QDialog):
         """Large window with the dimensioned cross-section and a zoom toolbar."""
         super().__init__(owner)
         self.owner = owner
-        self.setWindowTitle('Detector & Source Axial Cross-Section — Full Quotes View')
+        self.setWindowTitle('Detector and source: axial cross-section with all dimensions')
         self.resize(1160, 780)
         self.setMinimumSize(860, 580)
         layout = QVBoxLayout(self)
@@ -492,13 +493,13 @@ class GeometryDialog(QDialog):
         layout.setContentsMargins(12, 10, 12, 10)
         row = QHBoxLayout()
         row.setSpacing(10)
-        lbl = QLabel('Inspect Geometry:')
+        lbl = QLabel('Show:')
         lbl.setStyleSheet("font-weight:600;color:#1e293b;")
         row.addWidget(lbl)
         self.source = QComboBox()
-        self.source.addItems(['Sample', 'Standard', 'Detector Only'])
+        self.source.addItems(['Sample', 'Standard', 'Detector only'])
         row.addWidget(self.source)
-        refresh = QPushButton('↻ Refresh from inputs')
+        refresh = with_icon(QPushButton('Refresh'), RELOAD)
         row.addWidget(refresh)
         row.addStretch()
         layout.addLayout(row)
@@ -537,7 +538,7 @@ class GeometryDialog(QDialog):
         try:
             d, _ = _partial_detector_values(self.owner)
             sel = self.source.currentText()
-            if sel=='Detector Only':
+            if sel=='Detector only':
                 s = None
                 kind_label = 'Detector'
             else:

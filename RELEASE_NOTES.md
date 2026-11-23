@@ -1,5 +1,16 @@
 # Release Notes
 
+## Unreleased
+
+The engines and all results are unchanged.
+
+- **Plainer GUI text.** Buttons, menus, tabs and group titles use sentence case without emoji; buttons that have a standard Qt icon (open, save, folder, run, stop, back/next, refresh, apply, help) show it. Some labels changed:
+  - The first tab is **Start** (was Welcome). **Check Transfer Only** / **Check Summing Only** are now **Calculate transfer only** / **Calculate summing only**. The geometry preview's **Full-Screen / All Quotes…** is now **Large view…**, and its "Detector Only" choice is **Detector only**.
+  - Help menu: **Workflow guide**, **Materials and density guide**, **Command line and batch guide**, **Disclaimer…**, **About EffSuite**.
+- **Built-in help corrected.** It now names the bundled engines as EFFTRAN 5.0 and MEFFTRAN 1.9 (it said 4.9 and 1.8). The two different GammaVision notices are merged into one. The credit line matches the README. The CLI start-up banner also showed EFFTRAN 4.8 / MEFFTRAN 1.7; it now shows 5.0 / 1.9.
+- **CLI help.** Shorter option descriptions, `FILE` / `DIR` / `N` metavars, and `--calibration` now lists `.EFT`.
+- **Documentation.** Plainer prose across the user and technical documents, with GUI label references updated.
+
 ## EffSuite 0.3.3 (November 2026)
 
 The engines, their sources and all results are unchanged.

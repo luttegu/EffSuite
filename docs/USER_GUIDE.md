@@ -14,24 +14,24 @@
 
 ## 1. Getting started
 
-On the **Welcome** page, choose what to calculate:
+On the **Start** page, choose what to calculate:
 
 | Choice | Needs | Produces |
 |---|---|---|
-| **Complete Analysis** (recommended) | detector, standard and sample, reference calibration, nuclides | transferred calibration and summing factors |
-| **Efficiency Transfer Only** | detector, standard and sample, reference calibration | transferred sample calibration (`.CAL` / `.EFT`) |
-| **True Coincidence Summing Only** | detector, sample, nuclides or a library | summing factors and a corrected `.NLB` / `.CTF` / `.LIB` |
+| **Complete analysis** (recommended) | detector, standard and sample, reference calibration, nuclides | transferred calibration and summing factors |
+| **Efficiency transfer only** | detector, standard and sample, reference calibration | transferred sample calibration (`.CAL` / `.EFT`) |
+| **True coincidence summing only** | detector, sample, nuclides or a library | summing factors and a corrected `.NLB` / `.CTF` / `.LIB` |
 
 At the top of the window, choose the application: `EFFTRAN` 5.0 (cylinder),
 `MEFFTRAN` 1.9 (Marinelli) or `WEFFTRAN` (well). There you also set the
 software (Genie or GammaVision, detected automatically by default), the
 number of workers (Auto = number of CPUs minus 2), and the data folder.
 
-Then go through the tabs with **Start Guided Setup** and **Next ▶**:
+Then go through the tabs with **Start guided setup** and **Next**:
 **Detector → Standard & Sample → Efficiency → Library / Certificate**. New
 materials are created in the **Material Editor** window (section 7).
-**📋 Load Built-in Example** fills
-every tab with a working example, and **📂 Open Project…** opens a saved
+**Load built-in example** fills
+every tab with a working example, and **Open project…** opens a saved
 project.
 
 ## 2. Detector and source models
@@ -41,9 +41,9 @@ project.
   detectors accept optional extended fields (mount cup, mantle and bottom dead
   layers, sample offset); see
   [CHANGES_FROM_ORIGINALS.md, section 2.5](CHANGES_FROM_ORIGINALS.md#25-optional-extended-well-detector-inputs).
-* **Standard & Sample** (named **Sample** with True Coincidence Summing Only). Load or enter the sample and the standard side by
+* **Standard & Sample** (named **Sample** with True coincidence summing only). Load or enter the sample and the standard side by
   side. The standard (reference calibration source) is needed only for
-  efficiency transfer: with **True Coincidence Summing Only** the Standard
+  efficiency transfer: with **True coincidence summing only** the Standard
   column is hidden and only the sample is used. Its values are kept and
   come back when you choose a workflow with efficiency transfer.
   * Both 7-line source files and 8-line source files (with
@@ -51,12 +51,12 @@ project.
   * Choosing a `Source material` fills the density with the nominal value
     from `Composition/<material>.txt`; you can then change it.
   * Do not infer dimensions from a model's name.
-* The cross-section view updates live and shows every dimension.
+* The cross-section view updates as you type and shows every dimension.
 
 ## 3. Efficiency transfer
 
 In **Efficiency**, import the standard calibration with
-**① Import Standard Efficiency**. It accepts a Genie `.CAL`, a GammaVision
+**Import standard efficiency (.CAL / .EFT / CSV)…**. It accepts a Genie `.CAL`, a GammaVision
 `.EFT`, or a two- or three-column text/CSV file. You can also paste cells from
 a spreadsheet into the first three columns.
 
@@ -67,7 +67,7 @@ The columns are:
 
 The calibration needs 2 to 93 points with strictly increasing energies.
 
-Press **▶ Check Transfer Only**, or the run button in the page footer, then
+Press **Calculate transfer only**, or the run button in the page footer, then
 inspect the transferred values and the standard/sample graph.
 
 The **Sample u [%]** column keeps the original programs' transfer
@@ -83,7 +83,7 @@ Neither is a complete uncertainty budget.
 In **Library** (or **Certificate**), either type the nuclides
 (`Co-60, Cs-134, Eu-152`) or open a Genie `.NLB` / `.CTF` or a GammaVision
 `.LIB`; its nuclides fill in automatically. Then press
-**▶ Check Summing Only**, or the run button. No standard calibration is
+**Calculate summing only**, or the run button. No standard calibration is
 needed. Parent and continuation decay records stay together, and workers run
 in separate processes and private folders.
 
@@ -145,7 +145,7 @@ model.**
 
 * **Calculate u(C)** (check box) switches the calculation on or off; the
   factors are the same either way.
-* Changing these inputs after a calculation updates the u(C) column at once,
+* Changing these inputs after a calculation updates the u(C) column,
   and the factors and the transferred efficiencies stay on screen. The result
   folder keeps the values of the last run, so run again to save the new ones.
 * Decay-data uncertainties are not included.
@@ -197,13 +197,13 @@ overrides both.
 **Your data folder.** Only the original EFFTRAN / MEFFTRAN materials are
 bundled; your own materials (`Composition`, `Material`) and models
 (`Detector`, `Sample`, `Standard`) go in your data folder. Change it for every
-session with **Tools → 📁 Default Data Folder…** (or `CLI.bat config --data-dir
-<folder>`); **📁 Data Folder…** in the top bar changes it for the current
+session with **Tools → Default data folder…** (or `CLI.bat config --data-dir
+<folder>`); **Data folder…** in the top bar changes it for the current
 project only. The top bar shows the folder in use. See
 [MATERIALS.md](MATERIALS.md#where-materials-are-stored).
 
 **Recovery.** After a crash, open `Recovery\last_project.json` with
-**Open Project**. It holds the inputs of the last calculation; it is not a
+**Open project…**. It holds the inputs of the last calculation; it is not a
 continuous autosave. Save your project before loading another example or
 changing the application.
 
@@ -220,7 +220,7 @@ the Genie CAM components registered. EffSuite tries the installed 32-bit and
   it under a new name (one PowerShell start per export). Existing files are
   never overwritten.
 * **In the GUI.** The calculation itself exports the corrected files into its
-  result folder. The **💾 Export** buttons then copy that verified file to
+  result folder. The **Export** buttons then copy that verified file to
   the place you choose.
 * **`.CAL` template.** A `.CAL` export needs a vendor `.CAL` template with
   the same number of points as the transferred calibration. A `.CAL` imported
@@ -270,10 +270,10 @@ CLI.bat cylinder --detector d.txt --sample s.txt --standard st.txt --calibration
 
 The Material Editor window, the editable Excel workbook and `CLI.bat material` are
 described in [MATERIALS.md](MATERIALS.md). Open the window with
-**🧪 Materials…** on the Detector or Standard & Sample page, with
-**Tools → Material Editor…**, or with **✏️ Edit** next to a material field. It
-does not block the main window. **✔ Apply** creates the material and updates
-the material lists at once. Generated data folders can be used
+**Materials…** on the Detector or Standard & Sample page, with
+**Tools → Material Editor…**, or with **Edit** next to a material field. It
+does not block the main window. **Apply** creates the material and updates
+the material lists. Generated data folders can be used
 for efficiency transfer and summing in all three applications. A density
 change alone needs no new material: edit `Source density [g/cm³]`.
 
@@ -282,7 +282,7 @@ change alone needs no new material: edit `Source density [g/cm³]`.
 1. Choose the matching application. Load the original detector file in
    **Detector**, and the original standard and sample files in **Standard & Sample**.
    Cylinder, Marinelli and well formats differ and are checked separately.
-2. Select your original installation's data folder with **📁 Data Folder…**
+2. Select your original installation's data folder with **Data folder…**
    (it then comes before your default data folder and the bundled originals),
    so that the same materials and decay data are used. The material lists
    update, and the result records the data hashes.

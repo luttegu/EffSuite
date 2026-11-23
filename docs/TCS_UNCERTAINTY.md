@@ -21,7 +21,7 @@ For each gamma line, the engine computes
   *C* = (peak counts expected without summing) / (peak counts expected with summing),
 
 so that *A*<sub>corrected</sub> = *C* · *A*. Both counts come from the cascade
-(decay) data and from two efficiency curves of the **sample geometry**, which
+(decay) data and from two efficiency curves of the sample geometry, which
 the detector model computes:
 
 | Curve | Symbol | Role in summing | Engine file (cylinder / Marinelli) |
@@ -46,7 +46,7 @@ The relative sensitivity of *C* to each curve is
 
 *S* = 0.08 means that 10 % more efficiency gives 0.8 % more *C*.
 
-EffSuite computes them numerically with the **unchanged** engine. A whole
+EffSuite computes them numerically with the unchanged engine. A whole
 curve is multiplied by e<sup>+h</sup>, then by e<sup>−h</sup> (step *h*,
 default 2 %), *C* is recalculated each time, and the central difference is
 taken:
@@ -80,7 +80,7 @@ First-order propagation (GUM, JCGM 100:2008, eq. 13):
   u<sub>r</sub>(*C*)² = (*S*<sub>P</sub> u<sub>P</sub>)² + (*S*<sub>T</sub> u<sub>T</sub>)² + 2 ρ *S*<sub>P</sub> *S*<sub>T</sub> u<sub>P</sub> u<sub>T</sub> + u<sub>num</sub>²
 
 * u<sub>P</sub> and u<sub>T</sub> are the relative standard uncertainties of the
-  model's peak and total efficiencies. These are **your inputs** (section 3).
+  model's peak and total efficiencies. These are your inputs (section 3).
 * ρ is the correlation between the peak and total efficiency errors.
 * u<sub>num</sub> is the numerical uncertainty of the engine itself:
 
@@ -108,11 +108,11 @@ Typical behaviour, also checked by the tests:
 
 | Setting (project JSON `tcs_uncertainty`) | GUI (Library / Certificate tab) | CLI option | Default |
 |---|---|---|---|
-| `peak_efficiency_percent` — u<sub>P</sub>, % | u(ε peak) | `--tcs-u-peak` | 5 |
-| `total_efficiency_percent` — u<sub>T</sub>, % | u(ε total) | `--tcs-u-total` | 10 |
-| `peak_total_correlation` — ρ, −1 … 1 | correlation | `--tcs-correlation` | 0 |
+| `peak_efficiency_percent`: u<sub>P</sub>, % | u(ε peak) | `--tcs-u-peak` | 5 |
+| `total_efficiency_percent`: u<sub>T</sub>, % | u(ε total) | `--tcs-u-total` | 10 |
+| `peak_total_correlation`: ρ, −1 … 1 | correlation | `--tcs-correlation` | 0 |
 | `enabled` | **Calculate u(C)** check box | `--no-tcs-uncertainty` turns it off | true |
-| `step_percent` — *h*, 0.1 … 10 % | — | — | 2 |
+| `step_percent`: *h*, 0.1 … 10 % | — | — | 2 |
 
 Example project section:
 
@@ -190,12 +190,12 @@ Bundled cylinder example, defaults (u<sub>P</sub> = 5 %, u<sub>T</sub> = 10 %,
 
 | Nuclide | E / keV | *C* | *S*<sub>P</sub> | *S*<sub>T</sub> | peak % | total % | num. % | **u(C) %** |
 |---|---|---|---|---|---|---|---|---|
-| Co-60 | 1173 | 1.0759 | 0.000 | +0.076 | 0.00 | 0.76 | 0.08 | **0.76** |
-| Co-60 | 1332 | 1.0784 | 0.000 | +0.078 | 0.00 | 0.78 | 0.08 | **0.79** |
-| Co-60 | 2159 | 0.92572 | −0.142 | +0.078 | 0.71 | 0.78 | 0.06 | **1.06** |
-| Co-60 | 2506 (sum peak) | 8.4·10⁻⁷ | −1.000 | 0.000 | 5.00 | 0.00 | 1.00 | **5.10** |
-| Cs-134 | 605 | 1.1122 | 0.000 | +0.111 | 0.00 | 1.11 | 0.11 | **1.11** |
-| Cs-134 | 1365 | 0.86379 | −0.209 | +0.090 | 1.05 | 0.90 | 0.12 | **1.38** |
+| Co-60 | 1173 | 1.0759 | 0.000 | +0.076 | 0.00 | 0.76 | 0.08 | 0.76 |
+| Co-60 | 1332 | 1.0784 | 0.000 | +0.078 | 0.00 | 0.78 | 0.08 | 0.79 |
+| Co-60 | 2159 | 0.92572 | −0.142 | +0.078 | 0.71 | 0.78 | 0.06 | 1.06 |
+| Co-60 | 2506 (sum peak) | 8.4·10⁻⁷ | −1.000 | 0.000 | 5.00 | 0.00 | 1.00 | 5.10 |
+| Cs-134 | 605 | 1.1122 | 0.000 | +0.111 | 0.00 | 1.11 | 0.11 | 1.11 |
+| Cs-134 | 1365 | 0.86379 | −0.209 | +0.090 | 1.05 | 0.90 | 0.12 | 1.38 |
 
 ### Using u(C) in an activity uncertainty budget
 

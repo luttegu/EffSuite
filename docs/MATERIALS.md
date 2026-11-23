@@ -2,8 +2,7 @@
 
 The original Material.xls takes up to ten chemical formulas, relative weights
 and a separately entered bulk density. Its Save action runs XCOM to create a
-mass-attenuation table, then stores the density/composition text. EffSuite now
-implements that complete workflow through one shared GUI/CLI service.
+mass-attenuation table, then stores the density/composition text. EffSuite implements the same workflow through one shared GUI/CLI service.
 
 You only need a new material when the **chemical composition** changes. To
 change only the **bulk density** of an existing matrix, for example soil or a
@@ -29,7 +28,7 @@ Every other material belongs to the user and is kept in **your data folder**,
 in its `Composition` and `Material` subfolders (one `<name>.txt` file in
 each). Materials are searched in this order, the first match wins:
 
-1. the project's own data folder (**📁 Data Folder…** in the GUI, `--data-dir` in the CLI);
+1. the project's own data folder (**Data folder…** in the GUI, `--data-dir` in the CLI);
 2. your default data folder;
 3. the legacy folder `Documents\EffSuite\Data` (read only, for older installations);
 4. the bundled original materials.
@@ -42,7 +41,7 @@ tables) are saved in the data folder in use, never in the program folder.
 `C:\GENIE2K\EffSuite\Data` (or `Documents\EffSuite\Data` when `C:\GENIE2K`
 cannot be written). To change it for every session:
 
-- GUI: **Tools → 📁 Default Data Folder…** (**↺ Reset Default Data Folder** goes back);
+- GUI: **Tools → Default data folder…** (**Reset default data folder** goes back);
 - CLI: `CLI.bat config --data-dir D:\Lab\EffSuite_Data` (`config` alone shows
   the folders in use, `config --reset-data-dir` goes back).
 
@@ -59,24 +58,24 @@ your models use them. `HeavyWater` is identical to the original `heavy`.
 
 ## GUI
 
-Open the Material Editor with **🧪 Materials…** on the Detector or Sample &
-Standard page, with **Tools → Material Editor…**, or with **✏️ Edit** next to a material field
+Open the Material Editor with **Materials…** on the Detector or Standard &
+Sample page, with **Tools → Material Editor…**, or with **Edit** next to a material field
 (which loads that material). The editor is a separate window: the Detector and
 Standard & Sample pages stay usable while it is open. Enter a new material name, density
 in g/cm³, and formulas such as H2O, NaCl, SiO2 or CaO with relative weights.
 The normalized mass fractions are displayed beside the inputs. Choose the
-output data folder (default: your data folder) and press **✔ Apply**. A new
+output data folder (default: your data folder) and press **Apply**. A new
 or empty folder gets `Composition` and `Material` subfolders; the bundled
 originals are not copied into it. Replacing an existing material, or using the
 name of an original material, asks for confirmation first. Save a modified
 material under a new name to keep the original.
 
-After successful generation, the selected data folder and material lists update
-at once. When the editor was opened with **✏️ Edit**, the new material is
+After successful generation, the selected data folder and material lists update.
+When the editor was opened with **Edit**, the new material is
 selected in that field (for a source matrix, its density is filled in too);
 otherwise choose it in the appropriate Detector, Sample or Standard field. Existing
-calculation results are cleared. **Store Definition JSON** saves an editable
-composition; **Load Composition / Excel** accepts that JSON, original
+calculation results are cleared. **Store JSON…** saves an editable
+composition; **Load composition / Excel…** accepts that JSON, original
 Composition/*.txt, the new workbook, or the original Material.xls layout.
 
 The material draft itself is saved separately from a detector/source project.

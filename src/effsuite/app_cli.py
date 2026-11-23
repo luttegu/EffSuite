@@ -62,66 +62,66 @@ def _add_common_calc_args(c):
     """Command-line options shared by the cylinder, marinelli and well commands."""
     c.add_argument("--detector", required=True, help="Detector model (.txt path or name in Data/Detector)")
     c.add_argument("--sample", required=True, help="Sample model (.txt path or name in Data/Sample or Data/Standard)")
-    c.add_argument("--sample-height", type=float, metavar="MM", help="Override sample filling height [mm] on the fly")
-    c.add_argument("--sample-diameter", type=float, metavar="MM", help="Override sample container outer diameter [mm] on the fly")
-    c.add_argument("--sample-gap", type=float, metavar="MM", help="Override sample-to-detector positioning gap [mm] on the fly")
-    c.add_argument("--sample-material", metavar="NAME", help="Override sample matrix material name on the fly")
+    c.add_argument("--sample-height", type=float, metavar="MM", help="Override sample filling height [mm]")
+    c.add_argument("--sample-diameter", type=float, metavar="MM", help="Override sample container outer diameter [mm]")
+    c.add_argument("--sample-gap", type=float, metavar="MM", help="Override sample-to-detector positioning gap [mm]")
+    c.add_argument("--sample-material", metavar="NAME", help="Override sample matrix material name")
     c.add_argument("--sample-density", type=float, metavar="G_CM3", help="Override sample matrix bulk density [g/cm³] (line 8 of the source model; attenuation is scaled by rho/rho0)")
-    c.add_argument("--container-material", metavar="NAME", help="Override sample container material name on the fly")
+    c.add_argument("--container-material", metavar="NAME", help="Override sample container material name")
     c.add_argument("--standard", help="Reference standard source model (.txt path or name in Data/Standard)")
-    c.add_argument("--calibration", type=Path, help="Reference efficiency .CAL, .txt or .csv (in Data/Calibration)")
+    c.add_argument("--calibration", type=Path, metavar="FILE", help="Reference efficiency .CAL, .EFT, .txt or .csv (in Data/Calibration)")
     c.add_argument("--export-cal", action="store_true", help="Export the transferred sample calibration: Genie .CAL or GammaVision .EFT (automatic when --calibration is a .CAL/.EFT file)")
-    c.add_argument("--cal-template", type=Path, help="Genie .CAL or GammaVision .EFT template when using a .txt/.csv calibration")
-    c.add_argument("--library", type=Path, help="Process a Genie Nuclide Library (.NLB) or GammaVision library (.LIB) and export a summing-corrected copy")
-    c.add_argument("--certificate", type=Path, help="Process a Genie Certificate (.CTF) and export a summing-corrected .CTF")
+    c.add_argument("--cal-template", type=Path, metavar="FILE", help="Genie .CAL or GammaVision .EFT template when using a .txt/.csv calibration")
+    c.add_argument("--library", type=Path, metavar="FILE", help="Genie nuclide library (.NLB) or GammaVision library (.LIB) to export with summing corrections")
+    c.add_argument("--certificate", type=Path, metavar="FILE", help="Genie certificate (.CTF) to export with summing corrections")
     c.add_argument("--nuclides", nargs="+", default=[], metavar="Co-60", help="One or more nuclides (comma or space separated)")
-    c.add_argument("--output-cal", type=Path, metavar="FILE.CAL", help="Copy the exported Sample .CAL directly to this file path")
-    c.add_argument("--output-nlb", type=Path, metavar="FILE.NLB", help="Copy the exported corrected .NLB directly to this file path")
-    c.add_argument("--output-ctf", type=Path, metavar="FILE.CTF", help="Copy the exported corrected .CTF directly to this file path")
-    c.add_argument("--plot-geometry", nargs="?", const="geometry.png", metavar="PNG_OR_PDF", help="Save CAD axial cross-section diagram with all dimensions (default: geometry.png in result folder)")
-    c.add_argument("--out", type=Path, help="Result folder (default: <EffSuite user folder>/Results/<timestamp>)")
-    c.add_argument("--save-project", type=Path, help="Save the resolved project JSON for one-command repeat")
-    c.add_argument("--workers", type=int, default=0, help="Worker processes: 0 = automatic, 1 = serial")
+    c.add_argument("--output-cal", type=Path, metavar="FILE.CAL", help="Also copy the exported Sample .CAL to this file")
+    c.add_argument("--output-nlb", type=Path, metavar="FILE.NLB", help="Also copy the exported corrected .NLB to this file")
+    c.add_argument("--output-ctf", type=Path, metavar="FILE.CTF", help="Also copy the exported corrected .CTF to this file")
+    c.add_argument("--plot-geometry", nargs="?", const="geometry.png", metavar="PNG_OR_PDF", help="Save the axial cross-section drawing with all dimensions (default: geometry.png in the result folder)")
+    c.add_argument("--out", type=Path, metavar="DIR", help="Result folder (default: <EffSuite user folder>/Results/<timestamp>)")
+    c.add_argument("--save-project", type=Path, metavar="FILE", help="Save the resolved project JSON, to repeat the run with 'effsuite run'")
+    c.add_argument("--workers", type=int, metavar="N", default=0, help="Worker processes: 0 = automatic, 1 = serial")
     c.add_argument("--software", choices=["genie", "gammavision"], help="Library software (default: auto-detect; .LIB = GammaVision)")
-    c.add_argument("--data-dir", type=Path, help="Data directory (default: your data folder, see 'config')")
-    c.add_argument("--verify-serial", action="store_true", help="Verify parallel coincidence results against serial execution")
+    c.add_argument("--data-dir", type=Path, metavar="DIR", help="Data directory (default: your data folder, see 'config')")
+    c.add_argument("--verify-serial", action="store_true", help="Check the parallel summing results against a serial run")
     _add_tcs_uncertainty_args(c)
 
 
 def parser():
     """The complete command-line definition (all commands and options)."""
     p = argparse.ArgumentParser(
-        description="EFFTRAN • MEFFTRAN • WEFFTRAN — CLI, Batch Runner, and Desktop Suite\nEffSuite built by ChatGPT & Gemini under the supervision of G. Lutter."
+        description="EffSuite: efficiency transfer and coincidence summing with EFFTRAN, MEFFTRAN and WEFFTRAN.\nBuilt by ChatGPT, Gemini and Claude under the supervision of G. Lutter."
     )
     p.add_argument("--version", action="version", version=f"EffSuite {VERSION} (built by ChatGPT & Gemini under the supervision of G. Lutter)")
     sub = p.add_subparsers(dest="command")
     sub.add_parser("gui", help="Open the desktop graphical interface")
     sub.add_parser("doctor", help="Check dependencies and bundled engines")
 
-    material = sub.add_parser("material", help="Create or update material composition & XCOM attenuation files")
-    material.add_argument("--input", type=Path, help="Composition JSON, original .txt, Material.xls or XLSX template")
+    material = sub.add_parser("material", help="Create or update material composition and XCOM attenuation files")
+    material.add_argument("--input", type=Path, metavar="FILE", help="Composition JSON, original .txt, Material.xls or XLSX template")
     material.add_argument("--name", help="Material name (e.g. Glucose, Salt_water)")
     material.add_argument("--density", type=float, help="Bulk density in g/cm³ (e.g. 1.346)")
     material.add_argument("--compound", action="append", default=[], metavar="H2O=90", help="Chemical formula and relative weight; repeat for mixtures")
     material.add_argument("--geometry", choices=("cylinder", "marinelli", "well"), default="cylinder")
-    material.add_argument("--library", type=Path, help="Output data folder (default: your data folder, see 'config')")
-    material.add_argument("--base-data", type=Path, help="Folder to copy into a new, empty output data folder (default: none)")
-    material.add_argument("--save-definition", type=Path, help="Also save the composition definition as JSON")
-    material.add_argument("--overwrite", action="store_true", help="Overwrite existing material & recalculate XCOM attenuation")
+    material.add_argument("--library", type=Path, metavar="DIR", help="Output data folder (default: your data folder, see 'config')")
+    material.add_argument("--base-data", type=Path, metavar="DIR", help="Folder to copy into a new, empty output data folder (default: none)")
+    material.add_argument("--save-definition", type=Path, metavar="FILE", help="Also save the composition definition as JSON")
+    material.add_argument("--overwrite", action="store_true", help="Overwrite an existing material and recalculate its XCOM attenuation")
 
     config = sub.add_parser("config", help="Show or change the default data folder (your own materials and models)")
     config_group = config.add_mutually_exclusive_group()
-    config_group.add_argument("--data-dir", type=Path, help="Save this folder as the default data folder (Composition and Material are created)")
+    config_group.add_argument("--data-dir", type=Path, metavar="DIR", help="Save this folder as the default data folder (Composition and Material are created)")
     config_group.add_argument("--reset-data-dir", action="store_true", help="Go back to the built-in default (<EffSuite root>/Data)")
 
-    examples = sub.add_parser("examples", help="List or run ready-to-use example projects")
+    examples = sub.add_parser("examples", help="List or run the built-in example projects")
     examples.add_argument("--run", choices=("cylinder", "marinelli", "well"))
 
     models = sub.add_parser("models", help="List available detector, sample, standard, and material names")
     models.add_argument("geometry", choices=("cylinder", "marinelli", "well"))
-    models.add_argument("--data-dir", type=Path, help="Data directory to inspect (default: your data folder, see 'config')")
+    models.add_argument("--data-dir", type=Path, metavar="DIR", help="Data directory to inspect (default: your data folder, see 'config')")
 
-    plot_cmd = sub.add_parser("plot-geometry", help="Render dimensioned axial cross-section diagram with all dimensions to PNG/PDF/SVG")
+    plot_cmd = sub.add_parser("plot-geometry", help="Save the axial cross-section drawing with all dimensions as PNG, PDF or SVG")
     plot_cmd.add_argument("--geometry", choices=("cylinder", "marinelli", "well", "cylindrical", "efftran", "mefftran", "wefftran"), default="cylinder")
     plot_cmd.add_argument("--detector", required=True, help="Detector model file or name")
     plot_cmd.add_argument("--sample", help="Sample model file or name")
@@ -129,16 +129,16 @@ def parser():
     plot_cmd.add_argument("--kind", choices=("Sample", "Standard", "Detector"), default="Sample")
     plot_cmd.add_argument("--sample-height", type=float, help="Override sample filling height [mm]")
     plot_cmd.add_argument("--sample-gap", type=float, help="Override positioning gap [mm]")
-    plot_cmd.add_argument("--data-dir", type=Path, help="Data directory")
-    plot_cmd.add_argument("--out", type=Path, required=True, help="Output image file (.png, .pdf, .svg)")
+    plot_cmd.add_argument("--data-dir", type=Path, metavar="DIR", help="Data directory")
+    plot_cmd.add_argument("--out", type=Path, metavar="FILE", required=True, help="Output image file (.png, .pdf, .svg)")
 
     batch_cmd = sub.add_parser("batch", help="Run batch calculations from a CSV or JSON table of samples")
     batch_cmd.add_argument("batch_file", nargs="?", type=Path, help="CSV or JSON file describing the batch jobs")
-    batch_cmd.add_argument("--template", type=Path, metavar="CSV_PATH", help="Generate a ready-to-fill batch CSV template and exit")
-    batch_cmd.add_argument("--out", type=Path, help="Master output folder for all batch jobs and batch_summary.csv/.json")
-    batch_cmd.add_argument("--workers", type=int, default=0, help="Worker processes per job (0 = automatic)")
-    batch_cmd.add_argument("--data-dir", type=Path, help="Default data directory for the batch")
-    batch_cmd.add_argument("--plot-geometry", action="store_true", help="Also save geometry.png with all dimensions for every sample in the batch")
+    batch_cmd.add_argument("--template", type=Path, metavar="CSV_PATH", help="Write a batch CSV template and exit")
+    batch_cmd.add_argument("--out", type=Path, metavar="DIR", help="Output folder for all batch jobs and batch_summary.csv/.json")
+    batch_cmd.add_argument("--workers", type=int, metavar="N", default=0, help="Worker processes per job (0 = automatic)")
+    batch_cmd.add_argument("--data-dir", type=Path, metavar="DIR", help="Default data directory for the batch")
+    batch_cmd.add_argument("--plot-geometry", action="store_true", help="Also save geometry.png with all dimensions for each sample")
 
     run = sub.add_parser("run", help="Execute a saved GUI/CLI project JSON (with optional CLI overrides)")
     run.add_argument("project", type=Path)
@@ -147,14 +147,14 @@ def parser():
     run.add_argument("--sample-height", type=float, metavar="MM", help="Override sample filling height [mm]")
     run.add_argument("--sample-material", metavar="NAME", help="Override sample matrix material")
     run.add_argument("--sample-density", type=float, metavar="G_CM3", help="Override sample bulk density [g/cm³]")
-    run.add_argument("--output-cal", type=Path, help="Copy exported Sample .CAL to this path")
-    run.add_argument("--output-nlb", type=Path, help="Copy exported corrected .NLB to this path")
-    run.add_argument("--output-ctf", type=Path, help="Copy exported corrected .CTF to this path")
-    run.add_argument("--plot-geometry", nargs="?", const="geometry.png", help="Save CAD cross-section diagram")
+    run.add_argument("--output-cal", type=Path, metavar="FILE", help="Copy exported Sample .CAL to this path")
+    run.add_argument("--output-nlb", type=Path, metavar="FILE", help="Copy exported corrected .NLB to this path")
+    run.add_argument("--output-ctf", type=Path, metavar="FILE", help="Copy exported corrected .CTF to this path")
+    run.add_argument("--plot-geometry", nargs="?", const="geometry.png", help="Save the cross-section drawing")
     _add_tcs_uncertainty_args(run)
 
     for name, aliases in [("cylinder", ["efftran"]), ("marinelli", ["mefftran"]), ("well", ["wefftran"])]:
-        c = sub.add_parser(name, aliases=aliases, help=f"Run {name} calculation from model files/names with inline overrides")
+        c = sub.add_parser(name, aliases=aliases, help=f"Run a {name} calculation from model files or names, with overrides")
         _add_common_calc_args(c)
     return p
 
@@ -449,12 +449,12 @@ def _run_batch(args, progress):
 def print_cli_banner():
     """Print clean guide banner for laboratory technicians."""
     print("=" * 72)
-    print("                 EFFSUITE — GAMMA SPECTROMETRY CLI")
-    print(f"       Efficiency Transfer & True Coincidence Summing (v{VERSION})")
-    print("       EFFTRAN (v4.8) • MEFFTRAN (v1.7) • WEFFTRAN • NIST XCOM")
+    print("                 EffSuite gamma spectrometry CLI")
+    print(f"       Efficiency transfer and true coincidence summing (v{VERSION})")
+    print("       EFFTRAN 5.0 • MEFFTRAN 1.9 • WEFFTRAN • NIST XCOM")
     print("=" * 72)
     print(" Supervisor : G. Lutter")
-    print(" Engineering: Pair-programmed with ChatGPT & Gemini")
+    print(" Built by   : ChatGPT, Gemini and Claude")
     print(" Disclaimer : Provided strictly AS-IS; users must verify analytical results.")
     print("=" * 72)
     print()
@@ -464,20 +464,20 @@ def _pause_if_interactive():
     """Keep console window open on Windows when launched interactively."""
     if sys.stdin.isatty():
         try:
-            input("\nPress Enter to continue...")
+            input("\nPress Enter to continue…")
         except (KeyboardInterrupt, EOFError):
             pass
 
 
 def _run_interactive_project(path: Path):
     """Interactive menu: run one project file and show where the results are."""
-    print(f"\n--- Loading and Executing Project: {path.name} ---")
+    print(f"\n--- Running project: {path.name} ---")
     progress = lambda s: print(s, file=sys.stderr, flush=True)
     out_dir = default_output()
     try:
         project = load_project(path)
         result = run_project(project, out_dir, progress=progress)
-        print(f"\n[SUCCESS] Calculation complete! Results saved to:\n  {result['output_directory']}")
+        print(f"\n[SUCCESS] Calculation complete. Results saved to:\n  {result['output_directory']}")
         print(f"  All reported factors valid: {result['all_reported_factors_valid']}")
     except Exception as exc:
         print(f"\n[ERROR] Calculation failed: {exc}", file=sys.stderr)
@@ -489,7 +489,7 @@ def _run_interactive_project(path: Path):
 
 def _run_interactive_batch(path: Path):
     """Interactive menu: run a batch file."""
-    print(f"\n--- Starting Batch Run: {path.name} ---")
+    print(f"\n--- Batch run: {path.name} ---")
     progress = lambda s: print(s, file=sys.stderr, flush=True)
     class BatchArgs:
         batch_file = path
@@ -512,7 +512,7 @@ def _run_interactive_batch(path: Path):
 def _run_interactive_example(name: str):
     """Interactive menu: run a built-in example."""
     ex_file = example_path(name)
-    print(f"\n--- Running Built-in Example: {name.title()} ({ex_file.name}) ---")
+    print(f"\n--- Built-in example: {name.title()} ({ex_file.name}) ---")
     return _run_interactive_project(ex_file)
 
 
@@ -520,13 +520,13 @@ def interactive_cli():
     """Interactive console menu when EffSuite_CLI is launched with no arguments."""
     print_cli_banner()
     while True:
-        print("Available Operations:")
-        print("  [1] Run a Saved Project (.json) — [or drag-and-drop a file here]")
-        print("  [2] Run Batch Calculations (.csv / .json table)")
-        print("  [3] Run a Built-in Validation Example (Cylinder / Marinelli / Well)")
-        print("  [4] Run System Diagnostics (doctor check)")
-        print("  [5] View Full CLI Command Line Help & Syntax (--help)")
-        print("  [6] Launch Graphical Desktop Interface (GUI)")
+        print("Operations:")
+        print("  [1] Run a saved project (.json), or drop a file here")
+        print("  [2] Run a batch (.csv / .json table)")
+        print("  [3] Run a built-in validation example (cylinder / Marinelli / well)")
+        print("  [4] Check dependencies and engines (doctor)")
+        print("  [5] Show command line help (--help)")
+        print("  [6] Open the desktop GUI")
         print("  [0] Exit")
         print()
         try:
@@ -551,7 +551,7 @@ def interactive_cli():
 
         if choice == "1":
             try:
-                p_in = input("Enter path to project .json file (or drag-and-drop here): ").strip().strip('"').strip("'")
+                p_in = input("Path to the project .json file (or drop it here): ").strip().strip('"').strip("'")
             except (KeyboardInterrupt, EOFError):
                 return 0
             if not p_in:
@@ -565,7 +565,7 @@ def interactive_cli():
 
         elif choice == "2":
             try:
-                b_in = input("Enter path to batch .csv or .json file: ").strip().strip('"').strip("'")
+                b_in = input("Path to the batch .csv or .json file: ").strip().strip('"').strip("'")
             except (KeyboardInterrupt, EOFError):
                 return 0
             if not b_in:
@@ -578,7 +578,7 @@ def interactive_cli():
             return _run_interactive_batch(path)
 
         elif choice == "3":
-            print("\nBuilt-in Validation Examples:")
+            print("\nBuilt-in validation examples:")
             print("  [c] Cylindrical sample on coaxial detector")
             print("  [m] Marinelli beaker geometry")
             print("  [w] Well-type detector geometry")
@@ -596,7 +596,7 @@ def interactive_cli():
             return _run_interactive_example(ex_name)
 
         elif choice == "4":
-            print("\nRunning EffSuite System Diagnostics...\n")
+            print("\nChecking dependencies and engines…\n")
             doc = doctor()
             print(json.dumps(doc, indent=2))
             _pause_if_interactive()
@@ -611,7 +611,7 @@ def interactive_cli():
             continue
 
         elif choice == "6":
-            print("\nLaunching Graphical Desktop Interface (GUI)...\n")
+            print("\nOpening the GUI…\n")
             from .gui import main as gui_main
             return gui_main()
 
@@ -620,7 +620,7 @@ def interactive_cli():
             return 0
 
         else:
-            print(f"Unknown option '{choice}'. Please select 0 to 6.\n")
+            print(f"Unknown option '{choice}'. Choose 0 to 6.\n")
 
 
 def _command_doctor(args):

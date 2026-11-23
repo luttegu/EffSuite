@@ -29,7 +29,7 @@ class ClassicGuiTests(unittest.TestCase):
             while self.window.thread is not None and time.monotonic()<deadline:QTest.qWait(10);time.sleep(.002)
         self.window.dirty=False;self.window.close();self.app.processEvents();self.temporary.cleanup()
     def test_original_tab_names_and_model_field_counts(self):
-        self.assertEqual([self.window.tabs.tabText(i) for i in range(self.window.tabs.count())],["Welcome","Detector","Standard && Sample","Efficiency","Certificate","Library"])
+        self.assertEqual([self.window.tabs.tabText(i) for i in range(self.window.tabs.count())],["Start","Detector","Standard && Sample","Efficiency","Certificate","Library"])
         from effsuite.app_cli import example_path
         for mode,count in [("cylinder",19),("marinelli",16),("well",7)]:
             self.window.apply_project(json.loads(example_path(mode).read_text()))
@@ -174,13 +174,13 @@ class ClassicGuiTests(unittest.TestCase):
         for live in (preview, w.diagram.live_widget):
             self.assertFalse(live.source.model().item(live.source.findText('Standard')).isEnabled())
         self.assertIn("Standard not needed", w._banners["source"][0].text())
-        self.assertEqual(w._nav_next["detector"].text(), "Next: Sample ▶")
+        self.assertEqual(w._nav_next["detector"].text(), "Next: Sample")
         self.assertFalse([m for m in w.missing_items() if "Standard" in m[1]])
         # Back to complete analysis: the standard (with its values) returns.
         w._workflow_radios["both"].setChecked(True)
         self.assertFalse(standard.isHidden())
         self.assertTrue(standard.text())
-        self.assertEqual(w._nav_next["detector"].text(), "Next: Standard && Sample ▶")
+        self.assertEqual(w._nav_next["detector"].text(), "Next: Standard && Sample")
         self.assertTrue(w._nav_next["detector"].shortcut().isEmpty())
     def test_guided_workflow_choice_and_summing_source(self):
         w=self.window
@@ -198,11 +198,11 @@ class ClassicGuiTests(unittest.TestCase):
         w._workflow_radios["summing"].setChecked(True)
         self.assertEqual(w.visible_steps(),["welcome","detector","source","nlb"])
         self.assertFalse(w.tabs.isTabVisible(3))
-        self.assertIn("Run Coincidence Summing",w._nav_next["nlb"].text())
+        self.assertIn("Run coincidence summing",w._nav_next["nlb"].text())
         # Transfer only: no summing step
         w._workflow_radios["transfer"].setChecked(True)
         self.assertEqual(w.visible_steps(),["welcome","detector","source","efficiency"])
-        self.assertIn("Run Efficiency Transfer",w._nav_next["efficiency"].text())
+        self.assertIn("Run efficiency transfer",w._nav_next["efficiency"].text())
         # Next navigation skips hidden steps
         w.tabs.setCurrentIndex(2);w.go_step(1);self.assertEqual(w.tabs.currentIndex(),3)
         # Running with missing inputs points to the first incomplete step
