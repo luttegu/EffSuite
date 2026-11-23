@@ -4,6 +4,11 @@
 
 The engines and all results are unchanged.
 
+- **User folder on PCs without Genie 2000.** EffSuite no longer creates `C:\GENIE2K` on machines that do not have it.
+  - `C:\GENIE2K\EffSuite` is used only when it already exists or when Genie 2000 is installed (`C:\GENIE2K` exists). Existing `C:\GENIE2K\EffSuite` folders are kept, with or without Genie 2000.
+  - Otherwise the user folder is `Documents\EffSuite`, or `%USERPROFILE%\EffSuite` when Documents is synchronised by OneDrive and `Documents\EffSuite` does not exist yet.
+  - Installer: without Genie 2000, the program goes to `%LOCALAPPDATA%\Programs\EffSuite` and `EFFSUITE_ROOT` is no longer set, so Data and Results are no longer created inside the program folder. Installations where an earlier version already set `EFFSUITE_ROOT` to the program folder keep it.
+  - **Help → About EffSuite** shows the user folder in use. `EFFSUITE_ROOT` still overrides the choice.
 - **Plainer GUI text.** Buttons, menus, tabs and group titles use sentence case without emoji; buttons for open, save, folder, run, stop, next, refresh, apply and clear show an icon. Some labels changed:
   - The first tab is **Start** (was Welcome). **Check Transfer Only** / **Check Summing Only** are now **Calculate transfer only** / **Calculate summing only**. The geometry preview's **Full-Screen / All Quotes…** is now **Large view…**, and its "Detector Only" choice is **Detector only**.
   - Help menu: **Workflow guide**, **Materials and density guide**, **Command line and batch guide**, **Disclaimer…**, **About EffSuite**.

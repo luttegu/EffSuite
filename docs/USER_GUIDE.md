@@ -181,9 +181,18 @@ CLI.bat run your_project.effsuite.json --out your_new_result_folder
 Genie templates and a custom data folder are stored as paths, so keep those
 files when moving a project to another PC.
 
-**User folder.** `C:\GENIE2K\EffSuite`, or `Documents\EffSuite` when that
-location cannot be written. The `EFFSUITE_ROOT` environment variable
-overrides both.
+**User folder.** Chosen on first start, in this order:
+
+1. `C:\GENIE2K\EffSuite` if it already exists, or if Genie 2000 is installed
+   (`C:\GENIE2K` exists). EffSuite never creates `C:\GENIE2K` itself.
+2. `Documents\EffSuite`. When Documents is synchronised by OneDrive and this
+   folder does not exist yet, `%USERPROFILE%\EffSuite` is used instead, so
+   engine runs are not disturbed by cloud synchronisation.
+3. `%LOCALAPPDATA%\EffSuite`, then the temp folder, if the folders above
+   cannot be written.
+
+The `EFFSUITE_ROOT` environment variable overrides this choice. **Help →
+About EffSuite** shows the folder in use.
 
 | Folder | Contents |
 |---|---|

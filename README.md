@@ -94,7 +94,8 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 1. Download or compile the installer (`installer/EffSuite.iss`).
 2. Run the installer. It installs per-user without requiring Administrator rights to:
    ```text
-   C:\GENIE2K\EffSuite\          (or %LOCALAPPDATA%\Programs\EffSuite\)
+   C:\GENIE2K\EffSuite\          (Genie 2000 installed: program, Data and Results together)
+   %LOCALAPPDATA%\Programs\EffSuite\   (otherwise; Data and Results go to Documents\EffSuite\)
    ```
 3. Launch **EffSuite GUI** from the Start Menu or desktop shortcut.
 

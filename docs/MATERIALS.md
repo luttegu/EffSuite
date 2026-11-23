@@ -38,8 +38,9 @@ user. New materials (Material Editor, `CLI.bat material`, automatic XCOM
 tables) are saved in the data folder in use, never in the program folder.
 
 **Default data folder.** `<EffSuite user folder>\Data`, that is
-`C:\GENIE2K\EffSuite\Data` (or `Documents\EffSuite\Data` when `C:\GENIE2K`
-cannot be written). To change it for every session:
+`C:\GENIE2K\EffSuite\Data` on a Genie 2000 workstation and
+`Documents\EffSuite\Data` otherwise (see "User folder" in the User Guide). To
+change it for every session:
 
 - GUI: **Tools → Default data folder…** (**Reset default data folder** goes back);
 - CLI: `CLI.bat config --data-dir D:\Lab\EffSuite_Data` (`config` alone shows

@@ -1624,6 +1624,7 @@ class MainWindow(QMainWindow):
         QMessageBox.warning(self, "EffSuite", str(message))
     def show_help_dialog(self, topic="workflow", *unused):
         """The built-in user guide."""
+        from .paths import get_effsuite_root
         dialog = QDialog(self)
         dialog.setWindowTitle("EffSuite help")
         dialog.resize(820, 620)
@@ -1696,7 +1697,8 @@ class MainWindow(QMainWindow):
              + gammavision_note +
              "<p><b>Physics engines:</b> EFFTRAN 5.0 and MEFFTRAN 1.9 (2026), and WEFFTRAN (2018), by Tim Vidmar (<a href='https://efftran.github.io/'>https://efftran.github.io/</a>), with NIST XCOM photon cross-sections.</p>"
              "<p><b>Additions:</b> coincidence summing factors for all library nuclides in one pass, computed in parallel worker processes; spatial quadrature integration for well detectors.</p>"
-             "<p><b>Default installation folder:</b> <code>C:\\GENIE2K\\EffSuite</code></p>"
+             f"<p><b>User folder (data and results):</b> <code>{get_effsuite_root()}</code><br>"
+             "Default: <code>C:\\GENIE2K\\EffSuite</code> when Genie 2000 is installed, otherwise <code>Documents\\EffSuite</code>.</p>"
              "<p><b>Qualification:</b> beta version, for evaluation and qualification. When you set up or change a detector or sample model, check the models and transfer factors against reference standards.</p>"
              "<p style='color:"+theme.TEXT_SECONDARY+";font-size:8.5pt;'>EFFTRAN copyright &copy;"
              " 2005–2026 Tim Vidmar. Permission to use, copy, modify, distribute and sell this software and its documentation for any purpose is hereby granted without fee, provided that copyright and permission notices appear in supporting documentation.</p>"),

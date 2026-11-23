@@ -1,8 +1,11 @@
 r"""Centralized path resolution for EffSuite.
 
-Default installation & workspace: C:\GENIE2K\EffSuite
-Avoids OneDrive synchronization latency, file locking, cloud placeholders,
-and foreign language / redirected user profile folder naming (e.g. 'Dokumenter').
+User folder (data and results): C:\GENIE2K\EffSuite when Genie 2000 is
+installed or that folder already exists, otherwise Documents\EffSuite, or
+%USERPROFILE%\EffSuite when Documents is synchronised by OneDrive (sync
+latency, file locking and cloud placeholders disturb the engine runs).
+Redirected and localised Documents folders (e.g. 'Dokumenter') are resolved
+from the registry.
 """
 
 from __future__ import annotations
@@ -41,15 +44,53 @@ def get_real_documents_dir() -> Path:
     return Path.home()
 
 
-def get_effsuite_root() -> Path:
-    r"""Return the primary root directory for EffSuite data and results.
+# Genie 2000 installation folder. C:\GENIE2K is never created by EffSuite: its
+# presence is how a Genie 2000 workstation is recognised.
+GENIE2K_DIR = Path("C:/GENIE2K")
 
-    Priority:
-    1. EFFSUITE_ROOT environment variable (if explicitly set)
-    2. C:\GENIE2K\EffSuite (standard production location)
-    3. Real Documents/EffSuite (taking into account OneDrive/Dokumenter)
-    4. LocalAppData/EffSuite
-    5. Temp fallback
+
+def is_onedrive_path(path: Path) -> bool:
+    """True when ``path`` lies in a OneDrive-synchronised folder."""
+    roots = [os.environ.get(name) for name in ("OneDrive", "OneDriveCommercial", "OneDriveConsumer")]
+    folder = Path(str(path).lower())
+    for root in filter(None, roots):
+        root = Path(root.lower())
+        if folder == root or root in folder.parents:
+            return True
+    return any(part.lower().startswith("onedrive") for part in path.parts)
+
+
+def root_candidates() -> list[tuple[Path, bool]]:
+    r"""User folder candidates in order, each with "may create its parent folder".
+
+    1. C:\GENIE2K\EffSuite if it already exists (kept, even without Genie 2000,
+       so data written there by earlier versions stays in use)
+    2. C:\GENIE2K\EffSuite if C:\GENIE2K exists (Genie 2000 installed)
+    3. Documents\EffSuite, unless Documents is synchronised by OneDrive and
+       the folder does not exist yet
+    4. %USERPROFILE%\EffSuite
+    5. %LOCALAPPDATA%\EffSuite, then the temp folder
+    """
+    out: list[tuple[Path, bool]] = []
+    genie_root = GENIE2K_DIR / "EffSuite"
+    if genie_root.is_dir() or GENIE2K_DIR.is_dir():
+        out.append((genie_root, False))
+    documents = get_real_documents_dir()
+    if documents != Path.home() and ((documents / "EffSuite").is_dir() or not is_onedrive_path(documents)):
+        out.append((documents / "EffSuite", True))
+    out.append((Path.home() / "EffSuite", True))
+    local_app_data = os.environ.get("LOCALAPPDATA")
+    if local_app_data:
+        out.append((Path(local_app_data) / "EffSuite", True))
+    out.append((Path(tempfile.gettempdir()) / "EffSuite", True))
+    return out
+
+
+def get_effsuite_root() -> Path:
+    r"""Return the user folder for EffSuite data and results.
+
+    EFFSUITE_ROOT wins when set; otherwise the first writable folder of
+    root_candidates().
     """
     return _find_effsuite_root(os.environ.get("EFFSUITE_ROOT"))
 
@@ -63,18 +104,9 @@ def _find_effsuite_root(env_root: str | None) -> Path:
     if env_root:
         return Path(env_root)
 
-    candidates: list[Path] = [
-        Path("C:/GENIE2K/EffSuite"),
-        get_real_documents_dir() / "EffSuite",
-    ]
-    local_app_data = os.environ.get("LOCALAPPDATA")
-    if local_app_data:
-        candidates.append(Path(local_app_data) / "EffSuite")
-    candidates.append(Path(tempfile.gettempdir()) / "EffSuite")
-
-    for cand in candidates:
+    for cand, parents in root_candidates():
         try:
-            cand.mkdir(parents=True, exist_ok=True)
+            cand.mkdir(parents=parents, exist_ok=True)
             test = cand / ".write_test"
             test.touch()
             test.unlink()

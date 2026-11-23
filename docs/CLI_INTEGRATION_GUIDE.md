@@ -186,7 +186,7 @@ Run any command with `--help` for its full option list.
 | `--sample-material`| String | Overrides the matrix material name (must exist in `Composition` of the `--data-dir`, of your data folder, or among the bundled original materials). |
 | `--sample-diameter`| Float (mm) | Overrides the outer container diameter [mm]. |
 | `--sample-gap` | Float (mm) | Overrides the sample-to-detector positioning gap [mm]. |
-| `--out` | String (directory) | Destination directory for audit manifests, tables, and logs. Default: `<user folder>\Results\<timestamp>`, where the user folder is `C:\GENIE2K\EffSuite`, or `Documents\EffSuite` when that cannot be written (`EFFSUITE_ROOT` overrides both). |
+| `--out` | String (directory) | Destination directory for audit manifests, tables, and logs. Default: `<user folder>\Results\<timestamp>`, where the user folder is `C:\GENIE2K\EffSuite` when Genie 2000 is installed, otherwise `Documents\EffSuite` (`EFFSUITE_ROOT` overrides both; see "User folder" in the User Guide). |
 | `--workers` | Integer | Number of worker processes: `0` = automatic (number of CPUs minus 2, at least 1), `1` = serial single-process. |
 | `--plot-geometry`| Flag or file path | Generates a CAD axial cross-section diagram with all dimensions as PNG/PDF. |
 | `--verify-serial`| Flag | Cross-verifies parallel outputs against a serial reference run for audit validation. |

@@ -79,11 +79,14 @@ Name: "addtopath"; Description: "Add EffSuite installation folder to System PATH
 
 [Dirs]
 Name: "{app}"
-Name: "{app}\Data"
+; Data and results live next to the program only in the Genie 2000 layout
+; (C:\GENIE2K\EffSuite) or when an earlier installation already set EFFSUITE_ROOT
+; to this folder. Otherwise EffSuite chooses Documents\EffSuite on first start.
+Name: "{app}\Data"; Check: UsesAppAsRoot
 ; The user's own materials (only the original EFFTRAN / MEFFTRAN materials are bundled)
-Name: "{app}\Data\Composition"
-Name: "{app}\Data\Material"
-Name: "{app}\Results"
+Name: "{app}\Data\Composition"; Check: UsesAppAsRoot
+Name: "{app}\Data\Material"; Check: UsesAppAsRoot
+Name: "{app}\Results"; Check: UsesAppAsRoot
 
 [Files]
 ; Main application binaries and dependencies from PyInstaller bundle
@@ -103,8 +106,8 @@ Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{a
 Name: "{group}\EffSuite Command Line (CLI)"; Filename: "{cmd}"; Parameters: "/k """"{app}\{#MyAppCliName}"""" --help"; WorkingDir: "{app}"; IconFilename: "{app}\{#MyAppExeName}"
 
 ; Workspace & Folder Shortcuts
-Name: "{group}\Folders\Data Library"; Filename: "{app}\Data"
-Name: "{group}\Folders\Calculation Results"; Filename: "{app}\Results"
+Name: "{group}\Folders\Data Library"; Filename: "{app}\Data"; Check: UsesAppAsRoot
+Name: "{group}\Folders\Calculation Results"; Filename: "{app}\Results"; Check: UsesAppAsRoot
 Name: "{group}\Folders\Application Directory"; Filename: "{app}"
 
 ; Technical Documentation Shortcuts
@@ -127,7 +130,7 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\App Paths\{#MyApp
 Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\App Paths\{#MyAppCliName}"; ValueType: string; ValueName: "Path"; ValueData: "{app}"; Flags: uninsdeletekey noerror
 
 ; EffSuite standard environment pointer
-Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "EFFSUITE_ROOT"; ValueData: "{app}"; Flags: uninsdeletevalue noerror
+Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "EFFSUITE_ROOT"; ValueData: "{app}"; Flags: uninsdeletevalue noerror; Check: UsesAppAsRoot
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
@@ -140,6 +143,17 @@ begin
     Result := 'C:\GENIE2K\EffSuite'
   else
     Result := ExpandConstant('{autopf}\EffSuite');
+end;
+
+function UsesAppAsRoot: Boolean;
+{ True for the Genie 2000 layout, or when EFFSUITE_ROOT already points to the
+  installation folder (installed by an earlier version: keep its data there). }
+var
+  Existing: string;
+begin
+  Result := CompareText(Copy(AddBackslash(ExpandConstant('{app}')), 1, 11), 'C:\GENIE2K\') = 0;
+  if (not Result) and RegQueryStringValue(HKCU, 'Environment', 'EFFSUITE_ROOT', Existing) then
+    Result := CompareText(RemoveBackslashUnlessRoot(Existing), RemoveBackslashUnlessRoot(ExpandConstant('{app}'))) = 0;
 end;
 
 function GetEnvRootKey: Integer;
