@@ -1,4 +1,4 @@
-# EffSuite User Guide — v0.3.3
+# EffSuite User Guide — v0.4.0
 
 > **Spectrometry software.** EffSuite reads and writes **Canberra / Mirion
 > Genie 2000** files (`.CAL`, `.NLB`, `.CTF`) and **ORTEC GammaVision** files
@@ -22,10 +22,11 @@ On the **Start** page, choose what to calculate:
 | **Efficiency transfer only** | detector, standard and sample, reference calibration | transferred sample calibration (`.CAL` / `.EFT`) |
 | **True coincidence summing only** | detector, sample, nuclides or a library | summing factors and a corrected `.NLB` / `.CTF` / `.LIB` |
 
-At the top of the window, choose the application: `EFFTRAN` 5.0 (cylinder),
-`MEFFTRAN` 1.9 (Marinelli) or `WEFFTRAN` (well). There you also set the
-software (Genie or GammaVision, detected automatically by default), the
-number of workers (Auto = number of CPUs minus 2), and the data folder.
+At the top of the window, set **Geometry** (EFFTRAN 5.0 for cylinders,
+MEFFTRAN 1.9 for Marinelli beakers, WEFFTRAN for well detectors),
+**Software** (Auto by default: GammaVision for `.EFT` / `.LIB`, Genie 2000 for
+`.CAL` / `.NLB` / `.CTF`), **Workers** (Auto = number of CPUs minus 2) and the
+data folder (**Data folder…**).
 
 Then go through the tabs with **Start guided setup** and **Next**:
 **Detector → Standard & Sample → Efficiency → Library / Certificate**. New
@@ -33,6 +34,35 @@ materials are created in the **Material Editor** window (section 7).
 **Load built-in example** fills
 every tab with a working example, and **Open project…** opens a saved
 project.
+
+### Software updates
+
+**Help → Check for updates…** asks GitHub for the newest release. When a newer
+version exists, a dialog shows its release notes with three choices:
+
+- **Download and install**: downloads `EffSuite_<version>_Setup.exe`, checks its
+  size and SHA-256 against the values published on GitHub, closes EffSuite (it
+  asks first if the project has unsaved changes) and runs the installer. The
+  update installs over the current version in the same folder; data, results
+  and settings are kept. In a folder you can write to, the installer runs
+  without questions and EffSuite restarts when it is finished. If the
+  installation folder needs administrator rights (an all-users installation),
+  the installer wizard opens, Windows asks for permission, and the last wizard
+  page offers to start EffSuite.
+- **Remind me later**: asks again at the next daily check.
+- **Skip this version**: no reminder at startup for this version. A manual
+  check still offers it.
+
+EffSuite also checks once a day at startup, a few seconds after the window
+opens. The offer waits until no dialog is open and no calculation runs. Turn
+this off with **Help → Check for updates at startup**. The check only reads the
+public release list on GitHub; nothing is sent except the EffSuite version in
+the request header. Without internet access the startup check fails silently.
+
+The update check exists from version 0.4.0; older versions are updated
+by running the new installer by hand. A copy run from source (not installed) opens the release page instead of
+installing; update it with `git pull`. Releases:
+<https://github.com/luttegu/EffSuite/releases>.
 
 ## 2. Detector and source models
 
@@ -186,8 +216,9 @@ files when moving a project to another PC.
 1. `C:\GENIE2K\EffSuite` if it already exists, or if Genie 2000 is installed
    (`C:\GENIE2K` exists). EffSuite never creates `C:\GENIE2K` itself.
 2. `Documents\EffSuite`. When Documents is synchronised by OneDrive and this
-   folder does not exist yet, `%USERPROFILE%\EffSuite` is used instead, so
-   engine runs are not disturbed by cloud synchronisation.
+   folder does not exist yet, or Documents cannot be written,
+   `%USERPROFILE%\EffSuite` is used instead, so engine runs are not disturbed
+   by cloud synchronisation.
 3. `%LOCALAPPDATA%\EffSuite`, then the temp folder, if the folders above
    cannot be written.
 
@@ -196,12 +227,12 @@ About EffSuite** shows the folder in use.
 
 | Folder | Contents |
 |---|---|
-| Data | your data folder, default location for all inputs: Calibration, Composition, Detector, Material, Sample, Standard, NuclideLibrary |
+| Data | your data folder, default location for all inputs: Calibration, Composition, Detector, Material, Sample, Standard, NuclideLibrary, Certificates |
 | Projects | default Save/Open project location |
 | Results | one new folder per calculation |
 | Export | default CSV/Genie export location |
 | Recovery | `last_project.json`, saved before each calculation |
-| Logs | GUI start-up error log |
+| Logs | GUI start-up error log (`gui_startup.log`) |
 
 **Your data folder.** Only the original EFFTRAN / MEFFTRAN materials are
 bundled; your own materials (`Composition`, `Material`) and models
@@ -214,7 +245,7 @@ project only. The top bar shows the folder in use. See
 **Recovery.** After a crash, open `Recovery\last_project.json` with
 **Open project…**. It holds the inputs of the last calculation; it is not a
 continuous autosave. Save your project before loading another example or
-changing the application.
+changing the geometry.
 
 ## 6. Genie 2000 and GammaVision export
 
@@ -281,14 +312,15 @@ The Material Editor window, the editable Excel workbook and `CLI.bat material` a
 described in [MATERIALS.md](MATERIALS.md). Open the window with
 **Materials…** on the Detector or Standard & Sample page, with
 **Tools → Material Editor…**, or with **Edit** next to a material field. It
-does not block the main window. **Apply** creates the material and updates
+does not block the main window. **Apply: create material and XCOM table**
+creates the material and updates
 the material lists. Generated data folders can be used
 for efficiency transfer and summing in all three applications. A density
 change alone needs no new material: edit `Source density [g/cm³]`.
 
 ## 8. Reproducing an original EFFTRAN / MEFFTRAN / WEFFTRAN case
 
-1. Choose the matching application. Load the original detector file in
+1. Choose the matching **Geometry**. Load the original detector file in
    **Detector**, and the original standard and sample files in **Standard & Sample**.
    Cylinder, Marinelli and well formats differ and are checked separately.
 2. Select your original installation's data folder with **Data folder…**

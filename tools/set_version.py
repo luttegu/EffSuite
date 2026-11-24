@@ -6,7 +6,7 @@ Usage:
     python tools/set_version.py --show
 
 Examples:
-    python tools/set_version.py 0.1.1-beta
+    python tools/set_version.py 0.4.1
     python tools/set_version.py 1.0.0
 """
 
@@ -80,7 +80,7 @@ def set_version(new_version: str) -> None:
 
 def main():
     parser = argparse.ArgumentParser(description="EffSuite Version Management Utility")
-    parser.add_argument("version", nargs="?", help="New version string, e.g., '0.1.1-beta' or '1.0.0'")
+    parser.add_argument("version", nargs="?", help="New version string, digits and dots only, e.g. '0.4.1' (the updater and Inno Setup need this form)")
     parser.add_argument("--show", action="store_true", help="Show current version")
 
     args = parser.parse_args()

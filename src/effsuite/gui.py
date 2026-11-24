@@ -1,4 +1,4 @@
-"""EFFTRAN-style desktop: original tabs and forms, shared executable workflows."""
+"""Desktop GUI (PySide6): guided workflow over the Start, Detector, Standard & Sample, Efficiency and Library / Certificate pages."""
 from __future__ import annotations
 from functools import partial
 import os
@@ -12,13 +12,14 @@ import time
 from PySide6.QtCore import QObject, QThread, Signal, Slot, Qt, QTimer, QRect, QSize, QPointF
 from PySide6.QtGui import QAction, QFont, QPainter, QPen, QColor, QIcon
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget,
-                               QVBoxLayout, QHBoxLayout, QGridLayout, QFormLayout, QGroupBox, QLabel, QLineEdit, QComboBox, QPushButton, QTabWidget, QTableWidget, QTableWidgetItem, QHeaderView, QFileDialog, QMessageBox, QPlainTextEdit, QSpinBox, QDoubleSpinBox, QCheckBox, QSplitter, QScrollArea, QStyledItemDelegate, QFrame, QRadioButton, QButtonGroup, QDialog, QListView, QSizePolicy)
+                               QVBoxLayout, QHBoxLayout, QGridLayout, QFormLayout, QGroupBox, QLabel, QLineEdit, QComboBox, QPushButton, QTabWidget, QTableWidget, QTableWidgetItem, QHeaderView, QFileDialog, QMessageBox, QPlainTextEdit, QSpinBox, QDoubleSpinBox, QCheckBox, QSplitter, QScrollArea, QStyledItemDelegate, QFrame, QRadioButton, QButtonGroup, QDialog, QListView, QSizePolicy, QProgressDialog, QTextBrowser)
 
 from .model_io import (COMMON_DATA, MODES, fields, read_model, model_bytes, calibration_rows, normalize_nuclides, default_material_density,
                        find_material_file, material_names)
 from .suite import VERSION, run_project, validate_project
 from .parallel_coincidence import CalculationCancelled, CoincidenceError
 from . import tcs_uncertainty
+from . import updater
 from .qt_icons import icon, with_icon, OPEN, SAVE, FOLDER, RUN, STOP, NEXT, CLEAR, INFO, WARNING
 from . import gui_theme as theme
 from .gui_theme import app_stylesheet, set_role, set_size
@@ -565,6 +566,15 @@ def get_app_icon() -> QIcon:
     return QIcon()
 
 
+class UpdateSignals(QObject):
+    """Results of the update check and download, sent from their worker threads."""
+    checked = Signal(object, bool)        # Release or None, manual check
+    check_failed = Signal(str, bool)
+    progress = Signal(int, int)           # bytes received, total
+    downloaded = Signal(object)           # installer path
+    download_failed = Signal(str)
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         """Build the main window: top bar, tabs, log panel and status bar."""
@@ -593,6 +603,16 @@ class MainWindow(QMainWindow):
         self.tcs_inputs = {}
         self._tcs_note_shown = False   # log the "result folder keeps old u(C)" note once per result
         self.btn_export_sum_on_eff = None
+        self.update_signals = UpdateSignals(self)
+        self.update_signals.checked.connect(self._update_checked)
+        self.update_signals.check_failed.connect(self._update_check_failed)
+        self.update_signals.progress.connect(self._update_progress)
+        self.update_signals.downloaded.connect(self._update_downloaded)
+        self.update_signals.download_failed.connect(self._update_download_failed)
+        self._update_busy = False
+        self._pending_release = None
+        self._download_dialog = None
+        self._download_cancel = None
         self.setWindowTitle(f"EffSuite v{VERSION} — EFFTRAN / MEFFTRAN / WEFFTRAN")
         screen = QApplication.primaryScreen()
         avail = screen.availableGeometry() if screen else None
@@ -739,7 +759,7 @@ class MainWindow(QMainWindow):
         self.splitter.setSizes([760, 110])
         outer.addWidget(self.splitter, 1)
     def _build_menus(self):
-        """The File and Help menus."""
+        """The File, Tools and Help menus."""
         menu = self.menuBar().addMenu("File")
         for label, slot in [
             ("New project", self.new_project),
@@ -779,6 +799,15 @@ class MainWindow(QMainWindow):
                 with_icon(action, pixmap)
             action.triggered.connect(topic)
             help_menu.addAction(action)
+        help_menu.addSeparator()
+        action = QAction("Check for updates…", self)
+        action.triggered.connect(lambda:self.check_for_updates(manual=True))
+        help_menu.addAction(action)
+        from .paths import load_settings
+        action = QAction("Check for updates at startup", self, checkable=True)
+        action.setChecked(bool(load_settings().get(updater.SETTING_AUTO, True)))
+        action.toggled.connect(self._set_auto_update_check)
+        help_menu.addAction(action)
         self.mode.currentIndexChanged.connect(self.change_mode)
 
     def check_first_run_disclaimer(self):
@@ -879,7 +908,7 @@ class MainWindow(QMainWindow):
             outer_layout.addWidget(body, 1)
         return outer, layout
     def _attach_footer(self, page, row_layout):
-        """Add the Back / Next navigation bar at the bottom of a page."""
+        """Add the Previous step / Next navigation bar at the bottom of a page."""
         foot = QFrame()
         foot.setObjectName("PageFooter")
         fl = QHBoxLayout(foot)
@@ -924,7 +953,7 @@ class MainWindow(QMainWindow):
                 fl.addWidget(w)
         return frame
     def _nav_row(self, key, extra_btn=None):
-        """Back / Next buttons for a step page."""
+        """Previous step / Next buttons for a step page."""
         row = QHBoxLayout()
         row.setContentsMargins(0, 0, 0, 0)
         back = QPushButton("Previous step")
@@ -1578,7 +1607,7 @@ class MainWindow(QMainWindow):
             if comp_file is not None:
                 try:
                     editor.set_definition(load_composition(comp_file))
-                    editor.status.setText(f"Loaded '{mat_name}'. Adjust density [g/cm³] or formula, then click Apply.")
+                    editor.status.setText(f"Loaded '{mat_name}'. Adjust density [g/cm³] or formula, then click \"Apply: create material and XCOM table\".")
                 except Exception as exc:
                     editor.status.setText("")
                     editor.error(f"Could not load composition for '{mat_name}': {exc}")
@@ -1586,7 +1615,7 @@ class MainWindow(QMainWindow):
                 editor.clear()
                 if mat_name:
                     editor.name.setText(mat_name)
-                editor.status.setText(f"Define the composition of '{mat_name or 'new material'}', then click Apply.")
+                editor.status.setText(f"Define the composition of '{mat_name or 'new material'}', then click \"Apply: create material and XCOM table\".")
         editor.set_busy(self.thread is not None)
         editor.show()
         editor.raise_()
@@ -1653,14 +1682,15 @@ class MainWindow(QMainWindow):
              "<h3>Material composition and bulk density</h3>"
              "<p>Self-attenuation in gamma-ray spectrometry depends on the <b>chemical composition</b> (mass attenuation coefficient <i>μ/ρ</i>) and on the <b>bulk density</b> <i>ρ</i> [g/cm³] of the sample matrix: <i>μ = (μ/ρ) · ρ</i>.</p>"
              "<ul>"
-             "<li><b>Source density</b> (EFFTRAN 4.9 and later, MEFFTRAN 1.8 and later): enter the apparent bulk density <i>ρ</i> [g/cm³] in the <b>Source density [g/cm³]</b> field of the Standard &amp; Sample page. No separate material file is needed. The engine scales the linear attenuation coefficient by <i>ρ / ρ<sub>0</sub></i>.</li>"
+             "<li><b>Source density</b>: enter the apparent bulk density <i>ρ</i> [g/cm³] in the <b>Source density [g/cm³]</b> field of the Standard &amp; Sample page. No separate material file is needed. The engine scales the linear attenuation coefficient by <i>ρ / ρ<sub>0</sub></i>.</li>"
              "<li><b>XCOM tables</b>: if a material is in <code>Composition/</code> but not in <code>Material/</code>, EffSuite runs NIST XCOM to generate its photon attenuation table before the calculation.</li>"
-             "<li><b>New materials</b>: click <b>Edit</b> next to a material, <b>Materials…</b> on the Detector and Standard &amp; Sample pages, or <b>Tools → Material Editor</b>. The Material Editor opens in its own window, so the other pages stay usable. Enter the chemical formulas and the nominal density [g/cm³], then click <b>Apply</b>: the attenuation table is generated and the material appears in the Detector and Standard &amp; Sample material lists. When the editor was opened with <b>Edit</b>, the material is also selected in that field.</li>"
+             "<li><b>New materials</b>: click <b>Edit</b> next to a material, <b>Materials…</b> on the Detector and Standard &amp; Sample pages, or <b>Tools → Material Editor</b>. The Material Editor opens in its own window, so the other pages stay usable. Enter the chemical formulas and the nominal density [g/cm³], then click <b>Apply: create material and XCOM table</b>: the attenuation table is generated and the material appears in the Detector and Standard &amp; Sample material lists. When the editor was opened with <b>Edit</b>, the material is also selected in that field.</li>"
              "<li><b>Formulas</b>: up to 10 compounds (e.g. <code>H2O</code>, <code>C6H12O6</code>, <code>SiO2</code>, <code>CaCO3</code>) with relative weights by mass, normalized to 100%.</li>"
              "</ul>"),
             ("cli", "Command line",
              "<h3>Command line and batch runs</h3>"
              "<p>The GUI calculations can also run from the command line or from batch scripts, with <b>Genie 2000</b> (<code>.CAL</code> / <code>.NLB</code> / <code>.CTF</code>) or <b>GammaVision</b> (<code>.EFT</code> / <code>.LIB</code>) files.</p>"
+             "<p>In the installed program run <code>EffSuite_CLI.exe</code> in place of <code>effsuite</code>; in a source checkout use <code>CLI.bat</code>.</p>"
              "<p><b>1a. Genie 2000, one sample, with overrides</b></p>"
              + pre +
              "effsuite cylinder --detector High-energy --standard Solution --sample Water \\\n"
@@ -2327,6 +2357,217 @@ class MainWindow(QMainWindow):
                                          str(default_dir/(Path(source).stem+"_corrected"+extension)), extension, description)
         if path is not None:
             self._copy_verified(self.summing_result, kind, path)
+    # Software update. The check and the download run in daemon threads (not
+    # self.thread, which means "calculation running") and report through
+    # UpdateSignals, so the window never waits on the network.
+    def _set_auto_update_check(self, enabled):
+        from .paths import load_settings, save_settings
+        settings = load_settings()
+        settings[updater.SETTING_AUTO] = bool(enabled)
+        try:
+            save_settings(settings)
+        except OSError as exc:
+            self.append_log(f"[WARN] Could not save settings: {exc}")
+
+    def auto_check_for_updates(self):
+        """Check GitHub once a day at startup, unless turned off in the Help menu."""
+        from .paths import load_settings
+        if updater.should_check_automatically(load_settings()):
+            self.check_for_updates(manual=False)
+
+    def check_for_updates(self, manual=True):
+        """Ask GitHub for the newest release in the background."""
+        if self._update_busy:
+            return
+        self._update_busy = True
+        if manual:
+            self.status.setText("Checking GitHub for updates…")
+        signals = self.update_signals
+        def run():
+            try:
+                result, error = updater.check_for_update(), None
+            except updater.UpdateError as exc:
+                result, error = None, str(exc)
+            except Exception as exc:
+                result, error = None, f"Update check failed: {exc}"
+            try:
+                if error is None:
+                    signals.checked.emit(result, manual)
+                else:
+                    signals.check_failed.emit(error, manual)
+            except RuntimeError:
+                pass   # window already closed
+        threading.Thread(target=run, name="update-check", daemon=True).start()
+
+    def _update_checked(self, release, manual):
+        from .paths import load_settings, save_settings
+        self._update_busy = False
+        settings = load_settings()
+        settings[updater.SETTING_LAST] = time.time()
+        try:
+            save_settings(settings)
+        except OSError:
+            pass
+        if release is None:
+            if manual:
+                self.status.setText(f"EffSuite {VERSION} is the latest version")
+                QMessageBox.information(self, "Software update", f"EffSuite {VERSION} is the latest version.")
+            return
+        if not manual and settings.get(updater.SETTING_SKIPPED) == release.version:
+            return
+        self.append_log(f"[INFO] EffSuite {release.version} is available (installed: {VERSION}). Help > Check for updates")
+        if manual:
+            self.status.setText(f"EffSuite {release.version} is available")
+            self.show_update_dialog(release)
+        else:
+            self._pending_release = release
+            self._offer_pending_update()
+
+    def _offer_pending_update(self):
+        """Show the startup update offer once no dialog is open and no calculation runs."""
+        if self._pending_release is None:
+            return
+        if QApplication.activeModalWidget() is not None or self.thread is not None:
+            QTimer.singleShot(5000, self._offer_pending_update)
+            return
+        release, self._pending_release = self._pending_release, None
+        self.show_update_dialog(release)
+
+    def _update_check_failed(self, message, manual):
+        self._update_busy = False
+        if manual:
+            self.status.setText("Update check failed")
+            QMessageBox.warning(self, "Software update", f"{message}\n\nReleases: {updater.RELEASES_PAGE}")
+
+    def show_update_dialog(self, release):
+        """Release notes of a newer version, with install / later / skip choices."""
+        from PySide6.QtGui import QDesktopServices
+        from PySide6.QtCore import QUrl
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Software update")
+        dialog.setMinimumSize(600, 440)
+        vl = QVBoxLayout(dialog)
+        vl.setContentsMargins(18, 16, 18, 16)
+        vl.setSpacing(10)
+        title = QLabel(f"<b>EffSuite {release.version}</b> is available. Installed version: {VERSION}.")
+        title.setStyleSheet("font-size:12pt;")
+        title.setWordWrap(True)
+        vl.addWidget(title)
+        if not updater.can_install():
+            note = QLabel("This copy runs from source: update it with git, or download the installer from the release page.")
+            note.setWordWrap(True)
+            set_role(note, "secondary")
+            vl.addWidget(note)
+        notes = QTextBrowser()
+        notes.setOpenExternalLinks(True)
+        notes.setMarkdown(release.notes.strip() or "No release notes.")
+        vl.addWidget(notes, 1)
+        row = QHBoxLayout()
+        skip = QPushButton("Skip this version")
+        later = QPushButton("Remind me later")
+        main = set_role(QPushButton("Download and install" if updater.can_install() else "Open release page"), "primary")
+        main.setDefault(True)
+        row.addWidget(skip)
+        row.addStretch(1)
+        row.addWidget(later)
+        row.addWidget(main)
+        vl.addLayout(row)
+        choice = []
+        for button, name in ((skip, "skip"), (later, "later"), (main, "install")):
+            button.clicked.connect(lambda checked=False, n=name: (choice.append(n), dialog.accept()))
+        dialog.exec()
+        if choice == ["skip"]:
+            from .paths import load_settings, save_settings
+            settings = load_settings()
+            settings[updater.SETTING_SKIPPED] = release.version
+            try:
+                save_settings(settings)
+            except OSError:
+                pass
+            self.append_log(f"[INFO] EffSuite {release.version} skipped; Help > Check for updates still offers it")
+        elif choice == ["install"]:
+            if updater.can_install():
+                self.download_update(release)
+            else:
+                QDesktopServices.openUrl(QUrl(release.page_url))
+
+    def download_update(self, release):
+        """Download the installer with a progress dialog; install when it is verified."""
+        if self.thread is not None:
+            QMessageBox.information(self, "Software update", "A calculation is running. Install the update when it has finished.")
+            return
+        progress = QProgressDialog(f"Downloading {release.asset_name}…", "Cancel", 0, 100, self)
+        progress.setWindowTitle("Software update")
+        progress.setWindowModality(Qt.WindowModality.WindowModal)
+        progress.setMinimumDuration(0)
+        progress.setAutoClose(False)
+        progress.setAutoReset(False)
+        progress.setMinimumWidth(420)
+        cancel = threading.Event()
+        self._download_cancel = cancel
+        progress.canceled.connect(cancel.set)
+        self._download_dialog = progress
+        progress.show()
+        signals = self.update_signals
+        def emit(signal, *values):
+            try:
+                signal.emit(*values)
+            except RuntimeError:
+                pass   # window already closed
+        def run():
+            try:
+                path = updater.download_installer(release, progress=lambda done, total: emit(signals.progress, done, total), cancel=cancel)
+                emit(signals.downloaded, path)
+            except updater.UpdateError as exc:
+                emit(signals.download_failed, str(exc))
+            except Exception as exc:
+                emit(signals.download_failed, f"Download failed: {exc}")
+        threading.Thread(target=run, name="update-download", daemon=True).start()
+
+    def _close_download_dialog(self):
+        if self._download_dialog is not None:
+            self._download_dialog.close()
+            self._download_dialog.deleteLater()
+            self._download_dialog = None
+
+    def _update_progress(self, received, total):
+        dialog = self._download_dialog
+        if dialog is None or not total:
+            return
+        dialog.setValue(min(100, int(received * 100 / total)))
+        dialog.setLabelText(f"Downloading… {received / 1e6:.1f} of {total / 1e6:.1f} MB")
+
+    def _update_download_failed(self, message):
+        self._close_download_dialog()
+        if message != "Download cancelled.":
+            QMessageBox.warning(self, "Software update", f"{message}\n\nReleases: {updater.RELEASES_PAGE}")
+
+    def _update_downloaded(self, path):
+        """Close EffSuite (unsaved-project prompt included), then start the installer."""
+        self._close_download_dialog()
+        if self._download_cancel is not None and self._download_cancel.is_set():
+            return   # Cancel pressed while the last chunk arrived
+        writable = updater.install_folder_writable()
+        detail = ("EffSuite restarts when the installation is finished." if writable else
+                  "The installation folder needs administrator rights: Windows will ask for permission.")
+        if QMessageBox.question(self, "Software update",
+                                f"EffSuite will close to install the update.\n{detail}\n\nContinue?") != QMessageBox.StandardButton.Yes:
+            self.append_log(f"[INFO] Installer saved: {path}")
+            return
+        if self.thread is not None:
+            QMessageBox.information(self, "Software update", f"A calculation is running. The installer is saved in:\n{path}")
+            return
+        # Close first: closeEvent may still be refused (unsaved project). Starting
+        # the installer before that would let it close EffSuite under the user.
+        if not self.close():
+            self.append_log(f"[INFO] Installer saved: {path}")
+            return
+        try:
+            updater.launch_installer(path, writable)
+        except OSError as exc:
+            QMessageBox.critical(None, "Software update", f"Could not start the installer: {exc}\n{path}")
+        QApplication.quit()
+
     def open_results(self, *unused):
         """Open the results folder in Windows Explorer."""
         from PySide6.QtGui import QDesktopServices
@@ -2363,6 +2604,8 @@ def main():
     app.setWindowIcon(get_app_icon())
     window = MainWindow()
     window.show()
+    # Started from main(), not MainWindow.__init__, so tests never reach the network.
+    QTimer.singleShot(3000, window.auto_check_for_updates)
     return app.exec()
 
 

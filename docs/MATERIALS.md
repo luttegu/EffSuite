@@ -1,4 +1,4 @@
-# Materials and XCOM — EffSuite v0.3.3
+# Materials and XCOM — EffSuite v0.4.0
 
 The original Material.xls takes up to ten chemical formulas, relative weights
 and a separately entered bulk density. Its Save action runs XCOM to create a
@@ -37,9 +37,10 @@ A user file with the same name as an original therefore replaces it for that
 user. New materials (Material Editor, `CLI.bat material`, automatic XCOM
 tables) are saved in the data folder in use, never in the program folder.
 
-**Default data folder.** `<EffSuite user folder>\Data`, that is
+**Default data folder.** `<EffSuite user folder>\Data`, for example
 `C:\GENIE2K\EffSuite\Data` on a Genie 2000 workstation and
-`Documents\EffSuite\Data` otherwise (see "User folder" in the User Guide). To
+`Documents\EffSuite\Data` otherwise (`%USERPROFILE%\EffSuite\Data` when
+Documents is synchronised by OneDrive; see "User folder" in the User Guide). To
 change it for every session:
 
 - GUI: **Tools → Default data folder…** (**Reset default data folder** goes back);
@@ -80,7 +81,7 @@ composition; **Load composition / Excel…** accepts that JSON, original
 Composition/*.txt, the new workbook, or the original Material.xls layout.
 
 The material draft itself is saved separately from a detector/source project.
-Save its JSON before switching application mode. A calculation project records
+Save its JSON before changing the geometry. A calculation project records
 its selected data-folder path; retain that folder when moving to another PC.
 
 ## Excel

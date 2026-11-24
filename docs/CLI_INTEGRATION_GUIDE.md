@@ -135,14 +135,14 @@ EffSuite_CLI.exe doctor
 Prints a machine-readable JSON object. The exit code is 0 when every engine program, XCOM and the required Python packages (NumPy, Matplotlib, xlrd) are present, otherwise 1:
 ```json
 {
-  "version": "0.3.3",
+  "version": "0.4.0",
   "python": "3.14.10 (...)",
   "interpreter": "C:\\...\\python.exe",
   "dependencies": { "numpy": true, "matplotlib": true, "xlrd": true, "PySide6": true },
   "engines": {
     "EFFTRAN": { "mine": true, "energy": true, "total": true, "scatter": true, "buildup": true, "eta": true, "ptt": true, "efficiency": true, "transfer": true, "coincidence": true },
-    "MEFFTRAN": { ... },
-    "WEFFTRAN": { ... }
+    "MEFFTRAN": { "...": "same keys as EFFTRAN" },
+    "WEFFTRAN": { "...": "same keys, without coincidence" }
   },
   "materials": { "xcom": true, "excel_template": true, "element_data": true },
   "qualification": "Beta Build; experimental qualification pending. Verify installation against reference data"
@@ -159,6 +159,7 @@ Prints a machine-readable JSON object. The exit code is 0 when every engine prog
 | `plot-geometry --geometry … --detector … --sample … --out FILE` | Draw the dimensioned cross-section (PNG/PDF/SVG). |
 | `material …` | Create a material and its XCOM attenuation table (see [MATERIALS.md](MATERIALS.md)). |
 | `config [--data-dir DIR \| --reset-data-dir]` | Show the data folders in use, or save / reset the default data folder (your own materials and models). The `EFFSUITE_DATA` environment variable takes precedence. |
+| `check-update` | Report whether a newer release is on GitHub, with its release page and installer URL. Exit code 0 when the check worked (up to date or newer release found), 2 when GitHub could not be reached. Installs nothing. |
 | `gui` | Open the desktop interface. |
 
 Run any command with `--help` for its full option list.
@@ -171,22 +172,26 @@ Run any command with `--help` for its full option list.
 | :--- | :--- | :--- |
 | `--data-dir` | String (path) | Data folder for this run (materials and models); searched before your default data folder (see `config`) and the bundled originals. |
 | `--detector` | String (path or name) | Detector model file path (`.txt`) or name matching a file in `Data/Detector`. |
-| `--sample` | String (path or name) | Sample geometry file path (`.txt`) or name in `Data/Sample`. |
+| `--sample` | String (path or name) | Sample geometry file path (`.txt`) or name in `Data/Sample` or `Data/Standard`. |
 | `--standard` | String (path or name) | Standard reference geometry file path (`.txt`) or name in `Data/Standard`. Needed, together with `--calibration`, for an efficiency transfer. |
 | `--calibration` | String (path) | Reference efficiency calibration file (Genie `.CAL`, GammaVision `.EFT`, `.txt`, or `.csv`). |
 | `--library` | String (path) | Genie 2000 Nuclide Library (`.NLB`) or GammaVision library (`.LIB`) to apply cascade summing corrections to. |
 | `--software` | `genie` \| `gammavision` | Force the vendor backend. Default: auto-detect from the extension (`.LIB`/`.EFT` = GammaVision). **GammaVision is untested** (see README). |
 | `--certificate` | String (path) | Genie 2000 Certificate File (`.CTF`) to apply cascade summing corrections to. |
 | `--nuclides` | Space- or comma-separated | Specific nuclides to calculate (e.g. `--nuclides "Co-60,Cs-134,Eu-152"`). If omitted, all library nuclides are computed. |
+| `--export-cal` | Flag | Export the transferred sample calibration (Genie `.CAL` or GammaVision `.EFT`). Automatic when `--calibration` is a `.CAL` / `.EFT` file. |
+| `--cal-template` | String (path) | Genie `.CAL` or GammaVision `.EFT` template, needed to export when `--calibration` is a `.txt` / `.csv` file. |
 | `--output-cal` | String (path) | Target file path for the transferred sample calibration (Genie `.CAL` or GammaVision `.EFT`). |
 | `--output-nlb` | String (path) | Target file path for the summing-corrected nuclide library (Genie `.NLB` or GammaVision `.LIB`). |
 | `--output-ctf` | String (path) | Target file path for the summing-corrected Genie certificate (`.CTF`). |
 | `--sample-height` | Float (mm) | Overrides the sample filling height [mm]. |
 | `--sample-density`| Float (g/cm³) | Overrides the sample bulk density. Sets line 8 of the source model (`rho`); the engines scale the attenuation $\mu(E)$ by $\rho / \rho_0$. `Composition/*.txt` files are not changed. |
 | `--sample-material`| String | Overrides the matrix material name (must exist in `Composition` of the `--data-dir`, of your data folder, or among the bundled original materials). |
+| `--container-material` | String | Overrides the sample container material name. |
 | `--sample-diameter`| Float (mm) | Overrides the outer container diameter [mm]. |
 | `--sample-gap` | Float (mm) | Overrides the sample-to-detector positioning gap [mm]. |
-| `--out` | String (directory) | Destination directory for audit manifests, tables, and logs. Default: `<user folder>\Results\<timestamp>`, where the user folder is `C:\GENIE2K\EffSuite` when Genie 2000 is installed, otherwise `Documents\EffSuite` (`EFFSUITE_ROOT` overrides both; see "User folder" in the User Guide). |
+| `--out` | String (directory) | Destination directory for audit manifests, tables, and logs. Default: `<user folder>\Results\<timestamp>`, where the user folder is `C:\GENIE2K\EffSuite` when that folder exists or Genie 2000 is installed (`C:\GENIE2K` exists), otherwise `Documents\EffSuite` (`%USERPROFILE%\EffSuite` when Documents is synchronised by OneDrive); `EFFSUITE_ROOT` overrides all of these (see "User folder" in the User Guide). |
+| `--save-project` | String (path) | Saves the resolved project JSON, to repeat the run with `run`. |
 | `--workers` | Integer | Number of worker processes: `0` = automatic (number of CPUs minus 2, at least 1), `1` = serial single-process. |
 | `--plot-geometry`| Flag or file path | Generates a CAD axial cross-section diagram with all dimensions as PNG/PDF. |
 | `--verify-serial`| Flag | Cross-verifies parallel outputs against a serial reference run for audit validation. |

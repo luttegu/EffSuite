@@ -1,4 +1,4 @@
-# Validation Evidence — EffSuite 0.3.3
+# Validation Evidence — EffSuite 0.4.0
 
 > **This release is not qualified for routine laboratory use.** The evidence
 > below supports evaluation. It does not replace a laboratory's own
@@ -6,8 +6,8 @@
 
 ## Automated tests
 
-`tools/run_tests.py` (or `Run_Tests_Windows.bat`) runs 17 test modules with
-166 tests in parallel. All pass on Windows 11 x86-64 (CPython 3.11+, NumPy,
+`tools/run_tests.py` (or `Run_Tests_Windows.bat`) runs 19 test modules with
+195 tests in parallel. All pass on Windows 11 x86-64 (CPython 3.11+, NumPy,
 Matplotlib, PySide6) and on Linux x86-64. They use the real bundled native
 programs and the real XCOM, and cover:
 
@@ -60,6 +60,9 @@ programs and the real XCOM, and cover:
 - **Laboratory comparison tool.** Evidence hashes, matching input sets,
   missing or empty lines, pre-declared tolerance failures, and covariance
   requirements.
+- **Update check.** Version comparison, release and installer selection,
+  size and SHA-256 check of the download, and the startup offer in the GUI,
+  with simulated GitHub responses (`test_updater.py`).
 
 Real Genie 2000 CAM round trips (`.NLB`, `.CTF`, `.CAL`) were also executed
 on Windows 11 with the installed CamDatasource component.

@@ -4,7 +4,13 @@ if __name__=="__main__":
     import faulthandler
     from pathlib import Path
     import traceback
-    path=Path.home()/"Documents/EffSuite/Logs";path.mkdir(parents=True,exist_ok=True)
+    try:
+        from effsuite.paths import get_effsuite_root
+        path=get_effsuite_root()/"Logs"
+    except Exception:
+        # This log must also record a failed import of the package itself.
+        path=Path.home()/"Documents/EffSuite/Logs"
+    path.mkdir(parents=True,exist_ok=True)
     with (path/"gui_startup.log").open("a",encoding="utf-8",buffering=1) as log:
         faulthandler.enable(log)
         try:

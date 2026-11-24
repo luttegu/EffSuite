@@ -1,6 +1,6 @@
 # Well Detectors: Spatial Summing Model
 
-*EffSuite v0.3.3. Reference for the WEFFTRAN (well detector) summing
+*EffSuite v0.4.0. Reference for the WEFFTRAN (well detector) summing
 calculation. The GUI and the main CLI use it automatically; this page also
 covers the lower-level `effsuite-well-spatial` command.*
 

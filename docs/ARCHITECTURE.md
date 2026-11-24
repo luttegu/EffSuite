@@ -1,4 +1,4 @@
-# EffSuite Architecture — v0.3.3
+# EffSuite Architecture — v0.4.0
 
 *For developers. The physics is described in
 [CHANGES_FROM_ORIGINALS.md](CHANGES_FROM_ORIGINALS.md), and the well model in
@@ -72,8 +72,11 @@ cancellation, time limits and SHA-256 hashes recorded in `results.json`.
 | `lab_comparison.py` | controlled comparison with archived reference outputs (`effsuite-compare-lab`, `Compare_Lab.bat`) |
 | `geometry_view.py` | dimensioned cross-section drawings |
 | `gui.py` | Qt desktop. A QObject worker in a QThread supervises jobs; widgets are updated only in the GUI thread. A recovery snapshot precedes each calculation. |
-| `app_cli.py` | command line, batch runner, interactive mode |
-| `paths.py` | user folder, data and results locations |
+| `app_cli.py` | command line (`cylinder`, `marinelli`, `well`, `run`, `batch`, `config`, `check-update`, …), batch runner, interactive mode |
+| `paths.py` | user folder (`C:\GENIE2K\EffSuite\` if it exists or Genie 2000 is installed, else `Documents\EffSuite\`; `EFFSUITE_ROOT` overrides), data and results locations, `settings.json` |
+| `updater.py` | update check: newest GitHub release, installer download with size and SHA-256 check, silent in-place install (standard library only) |
+| `gui_theme.py` | colours, radii and the stylesheet of the desktop GUI (roles set with `set_role`) |
+| `qt_icons.py` | line icons for buttons and menu actions, drawn with QPainter |
 
 ## Repository layout
 
@@ -93,6 +96,7 @@ EffSuite/
 ├── tests/                        # automated tests (tools/run_tests.py)
 ├── tools/                        # build, validation and release utilities
 ├── examples/                     # validation evidence (JSON) and example inputs
+├── Validation/                   # laboratory reference data and results
 ├── comparison/                   # templates for the laboratory comparison tool
 ├── installer/                    # Inno Setup script
 ├── third_party/                  # original notices and licences
@@ -117,5 +121,5 @@ Setup_Windows.bat                          :: create .venv and install dependenc
 .venv\Scripts\python.exe tools\run_tests.py :: all test modules in parallel (or Run_Tests_Windows.bat)
 Build_Windows.bat                          :: PyInstaller: dist\EffSuite\EffSuite_GUI.exe and EffSuite_CLI.exe
 Build_Installer.bat                        :: Inno Setup installer (installer\EffSuite.iss)
-python tools\set_version.py 0.3.3          :: set the version everywhere
+python tools\set_version.py 0.4.0          :: set the version everywhere
 ```

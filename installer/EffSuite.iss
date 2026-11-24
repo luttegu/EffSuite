@@ -1,10 +1,10 @@
 ; =====================================================================
-; EffSuite - Enterprise Inno Setup Script
+; EffSuite - Inno Setup script
 ; Gamma-Ray Spectrometry Efficiency Transfer & True Coincidence Summing
 ; =====================================================================
 
 #define MyAppName "EffSuite"
-#define MyAppVersion "0.3.3"
+#define MyAppVersion "0.4.0"
 #define MyAppPublisher "GL"
 #define MyAppURL "https://github.com/luttegu/EffSuite"
 #define MyAppExeName "EffSuite_GUI.exe"
@@ -50,7 +50,7 @@ Compression=lzma2/ultra64
 SolidCompression=yes
 LZMANumBlockThreads=12
 
-; --- Modern UI Appearance ---
+; --- Setup appearance ---
 SetupIconFile=..\src\effsuite\assets\icon.ico
 WizardStyle=modern
 WizardImageStretch=no
@@ -75,7 +75,7 @@ Name: "german"; MessagesFile: "compiler:Languages\German.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}:"; Flags: unchecked
-Name: "addtopath"; Description: "Add EffSuite installation folder to System PATH (enables CLI batch commands from any terminal)"; GroupDescription: "System Integration:"; Flags: unchecked
+Name: "addtopath"; Description: "Add the EffSuite folder to the user PATH (run EffSuite_CLI.exe from any terminal)"; GroupDescription: "System Integration:"; Flags: unchecked
 
 [Dirs]
 Name: "{app}"
@@ -100,7 +100,7 @@ Source: "..\LICENSE"; DestDir: "{app}"; DestName: "LICENSE.txt"; Flags: ignoreve
 Source: "..\src\effsuite\assets\templates\Material_Composition.xlsx"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-; Primary Desktop and Start Menu Shortcuts
+; Desktop and Start Menu shortcuts
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon; WorkingDir: "{app}"
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"
 Name: "{group}\EffSuite Command Line (CLI)"; Filename: "{cmd}"; Parameters: "/k """"{app}\{#MyAppCliName}"""" --help"; WorkingDir: "{app}"; IconFilename: "{app}\{#MyAppExeName}"
@@ -135,6 +135,8 @@ Root: HKCU; Subkey: "Environment"; ValueType: expandsz; ValueName: "EFFSUITE_ROO
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
 Filename: "{app}\docs\USER_GUIDE.md"; Description: "Open the EffSuite User Guide"; Flags: postinstall shellexec skipifsilent unchecked
+; Silent upgrade started by the in-app updater (/RELAUNCH=1): restart EffSuite.
+Filename: "{app}\{#MyAppExeName}"; Flags: nowait skipifnotsilent runasoriginaluser; Check: RelaunchRequested
 
 [Code]
 function GetDefaultInstallDir(Param: string): string;
@@ -143,6 +145,11 @@ begin
     Result := 'C:\GENIE2K\EffSuite'
   else
     Result := ExpandConstant('{autopf}\EffSuite');
+end;
+
+function RelaunchRequested: Boolean;
+begin
+  Result := ExpandConstant('{param:RELAUNCH|0}') = '1';
 end;
 
 function UsesAppAsRoot: Boolean;

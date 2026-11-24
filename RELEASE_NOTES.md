@@ -1,6 +1,6 @@
 # Release Notes
 
-## Unreleased
+## EffSuite 0.4.0 (November 2026)
 
 The engines and all results are unchanged.
 
@@ -9,6 +9,14 @@ The engines and all results are unchanged.
   - Otherwise the user folder is `Documents\EffSuite`, or `%USERPROFILE%\EffSuite` when Documents is synchronised by OneDrive and `Documents\EffSuite` does not exist yet.
   - Installer: without Genie 2000, the program goes to `%LOCALAPPDATA%\Programs\EffSuite` and `EFFSUITE_ROOT` is no longer set, so Data and Results are no longer created inside the program folder. Installations where an earlier version already set `EFFSUITE_ROOT` to the program folder keep it.
   - **Help → About EffSuite** shows the user folder in use. `EFFSUITE_ROOT` still overrides the choice.
+  - The GUI start-up error log `gui_startup.log` is written to `Logs` in the user folder (it was always `Documents\EffSuite\Logs`).
+- **Software update check.** **Help → Check for updates…** compares the installed version with the newest GitHub release (pre-releases included) and shows its release notes.
+  - **Download and install** downloads the installer, verifies its size and SHA-256 against GitHub, closes EffSuite after the unsaved-project prompt and runs the installer in place. Data, results and settings are kept. **Remind me later** and **Skip this version** are also offered.
+  - EffSuite checks once a day at startup; turn it off with **Help → Check for updates at startup**. Settings are stored in `%APPDATA%\EffSuite\settings.json` (`update_check_at_startup`, `update_last_check`, `update_skipped_version`).
+  - Installer: a silent upgrade started with `/RELAUNCH=1` restarts EffSuite when it finishes.
+  - EffSuite 0.3.3 and older have no update check: install this release once by hand; later releases can then be installed from **Help → Check for updates…**.
+  - New CLI command `check-update` reports the newest release without installing it.
+  - A copy run from source opens the release page instead of installing.
 - **Plainer GUI text.** Buttons, menus, tabs and group titles use sentence case without emoji; buttons for open, save, folder, run, stop, next, refresh, apply and clear show an icon. Some labels changed:
   - The first tab is **Start** (was Welcome). **Check Transfer Only** / **Check Summing Only** are now **Calculate transfer only** / **Calculate summing only**. The geometry preview's **Full-Screen / All Quotes…** is now **Large view…**, and its "Detector Only" choice is **Detector only**.
   - Help menu: **Workflow guide**, **Materials and density guide**, **Command line and batch guide**, **Disclaimer…**, **About EffSuite**.
@@ -20,7 +28,7 @@ The engines and all results are unchanged.
   - Page margins and spacing are slightly larger. The exports dialog after a complete analysis is wider (720 px), so its labels and buttons are no longer cut off, and the disclaimer and exports dialogs fit their content height.
   - Colours, radii and the stylesheet are defined once, in `src/effsuite/gui_theme.py`. Behaviour and calculations are unchanged.
 - **Built-in help corrected.** It now names the bundled engines as EFFTRAN 5.0 and MEFFTRAN 1.9 (it said 4.9 and 1.8). The two different GammaVision notices are merged into one. The credit line matches the README. The CLI start-up banner also showed EFFTRAN 4.8 / MEFFTRAN 1.7; it now shows 5.0 / 1.9.
-- **CLI help.** Shorter option descriptions, `FILE` / `DIR` / `N` metavars, and `--calibration` now lists `.EFT`.
+- **CLI help.** Shorter option descriptions, `FILE` / `DIR` / `N` metavars, `--calibration` now lists `.EFT`, and `--output-cal` / `--output-nlb` name the GammaVision `.EFT` / `.LIB` files they also accept. `--version` credits Claude, as the banner does.
 - **Documentation.** Plainer prose across the user and technical documents, with GUI label references updated.
 
 ## EffSuite 0.3.3 (November 2026)

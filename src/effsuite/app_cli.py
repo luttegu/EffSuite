@@ -1,4 +1,4 @@
-"""Easy CLI & Batch Runner: effsuite gui; effsuite cylinder/marinelli/well; effsuite batch; effsuite plot-geometry."""
+"""Command-line interface: calculations (cylinder, marinelli, well, run, batch), plot-geometry, material, models, examples, config, doctor, check-update, gui."""
 from __future__ import annotations
 import argparse
 import csv
@@ -75,8 +75,8 @@ def _add_common_calc_args(c):
     c.add_argument("--library", type=Path, metavar="FILE", help="Genie nuclide library (.NLB) or GammaVision library (.LIB) to export with summing corrections")
     c.add_argument("--certificate", type=Path, metavar="FILE", help="Genie certificate (.CTF) to export with summing corrections")
     c.add_argument("--nuclides", nargs="+", default=[], metavar="Co-60", help="One or more nuclides (comma or space separated)")
-    c.add_argument("--output-cal", type=Path, metavar="FILE.CAL", help="Also copy the exported Sample .CAL to this file")
-    c.add_argument("--output-nlb", type=Path, metavar="FILE.NLB", help="Also copy the exported corrected .NLB to this file")
+    c.add_argument("--output-cal", type=Path, metavar="FILE", help="Also copy the exported sample .CAL / .EFT to this file")
+    c.add_argument("--output-nlb", type=Path, metavar="FILE", help="Also copy the exported corrected .NLB / .LIB to this file")
     c.add_argument("--output-ctf", type=Path, metavar="FILE.CTF", help="Also copy the exported corrected .CTF to this file")
     c.add_argument("--plot-geometry", nargs="?", const="geometry.png", metavar="PNG_OR_PDF", help="Save the axial cross-section drawing with all dimensions (default: geometry.png in the result folder)")
     c.add_argument("--out", type=Path, metavar="DIR", help="Result folder (default: <EffSuite user folder>/Results/<timestamp>)")
@@ -93,10 +93,11 @@ def parser():
     p = argparse.ArgumentParser(
         description="EffSuite: efficiency transfer and coincidence summing with EFFTRAN, MEFFTRAN and WEFFTRAN.\nBuilt by ChatGPT, Gemini and Claude under the supervision of G. Lutter."
     )
-    p.add_argument("--version", action="version", version=f"EffSuite {VERSION} (built by ChatGPT & Gemini under the supervision of G. Lutter)")
+    p.add_argument("--version", action="version", version=f"EffSuite {VERSION} (built by ChatGPT, Gemini and Claude under the supervision of G. Lutter)")
     sub = p.add_subparsers(dest="command")
     sub.add_parser("gui", help="Open the desktop graphical interface")
     sub.add_parser("doctor", help="Check dependencies and bundled engines")
+    sub.add_parser("check-update", help="Report whether a newer release is on GitHub")
 
     material = sub.add_parser("material", help="Create or update material composition and XCOM attenuation files")
     material.add_argument("--input", type=Path, metavar="FILE", help="Composition JSON, original .txt, Material.xls or XLSX template")
@@ -447,7 +448,7 @@ def _run_batch(args, progress):
 
 
 def print_cli_banner():
-    """Print clean guide banner for laboratory technicians."""
+    """Print the program banner (name, version, engines, disclaimer)."""
     print("=" * 72)
     print("                 EffSuite gamma spectrometry CLI")
     print(f"       Efficiency transfer and true coincidence summing (v{VERSION})")
@@ -538,7 +539,6 @@ def interactive_cli():
         if not choice:
             continue
 
-        # Check if the user entered/dragged a file directly
         candidate_path = Path(choice)
         if candidate_path.is_file():
             if candidate_path.suffix.lower() == ".json":
@@ -673,6 +673,23 @@ def _command_models(args):
     return 0
 
 
+def _command_check_update(args):
+    """check-update: compare the installed version with the newest GitHub release."""
+    from . import updater
+    try:
+        release = updater.check_for_update()
+    except updater.UpdateError as exc:
+        print(f"[ERROR] {exc}", file=sys.stderr)
+        return 2
+    if release is None:
+        print(f"[INFO] EffSuite {VERSION} is the latest version")
+    else:
+        print(f"[INFO] EffSuite {release.version} is available (installed: {VERSION})")
+        print(f"[INFO] Release page: {release.page_url}")
+        print(f"[INFO] Installer:    {release.asset_url}")
+    return 0
+
+
 def _command_config(args):
     """config: show or change the default data folder."""
     from .paths import builtin_data_dir, data_dir_source, legacy_data_dirs, set_data_dir, settings_file
@@ -756,7 +773,7 @@ def main(argv=None):
     """Command-line entry point; returns the exit code (0 = success)."""
     argv = list(sys.argv[1:] if argv is None else argv)
 
-    # If user passed a single file without a subcommand (e.g. drag & drop onto CLI.exe):
+    # A single file argument (drag and drop onto EffSuite_CLI.exe) runs a .json project or a .csv batch.
     if len(argv) == 1 and not argv[0].startswith("-"):
         candidate = Path(argv[0].strip('"').strip("'"))
         if candidate.is_file():
@@ -765,7 +782,6 @@ def main(argv=None):
             elif candidate.suffix.lower() == ".csv":
                 argv = ["batch", str(candidate)]
 
-    # If no parameters are provided:
     if not argv:
         if sys.stdin.isatty():
             return interactive_cli()
@@ -796,6 +812,8 @@ def main(argv=None):
             return _command_examples(args, progress)
         if args.command=="config":
             return _command_config(args)
+        if args.command=="check-update":
+            return _command_check_update(args)
         return _command_calculation(args, progress)
     except (CoincidenceError, OSError, ValueError) as exc:
         print(f"EffSuite: {exc}", file=sys.stderr)

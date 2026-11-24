@@ -1,7 +1,7 @@
 # EffSuite — Gamma Spectrometry Efficiency Transfer & Summing Suite
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-0.3.3-yellow.svg" alt="Version 0.3.3" />
+  <img src="https://img.shields.io/badge/Version-0.4.0-yellow.svg" alt="Version 0.4.0" />
   <img src="https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue.svg" alt="Python Version" />
   <img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011%20(x64)-0078D6.svg" alt="Windows Platform" />
   <img src="https://img.shields.io/badge/Genie%202000-CAM%20%7C%20CAL%20%7C%20NLB%20%7C%20CTF-8A2BE2.svg" alt="Genie 2000 Integration" />
@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/License-GPL--3.0%20%2F%20Vidmar%20Attribution-orange.svg" alt="License" />
 </p>
 
-*EffSuite (v0.3.3) built by ChatGPT, Gemini and Claude under the supervision of G. Lutter.*
+*EffSuite (v0.4.0) built by ChatGPT, Gemini and Claude under the supervision of G. Lutter.*
 
 ---
 
@@ -79,9 +79,10 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 2. **Desktop GUI (Qt)**: the original workbook tabs as forms, with automatic 1080p/4K scaling, a dimensioned cross-section, efficiency charts and a calculation log.
 3. **Parallel coincidence summing**: summing correction factors *C* for every nuclide of a library in one run, on all CPU cores (`workers = 0`: number of CPUs minus 2).
 4. **Summing-factor uncertainty**: a relative standard uncertainty u(C) for every factor, which the original programs do not provide ([details](docs/TCS_UNCERTAINTY.md)).
-5. **Genie 2000 and GammaVision**: reads `.CAL` efficiency calibrations, `.NLB` nuclide libraries and `.CTF` certificates, and writes verified corrected copies (file dialogs open in `C:\GENIE2K\CAMFILES`). GammaVision `.LIB` and `.EFT` files are handled in pure Python.
+5. **Genie 2000 and GammaVision**: reads `.CAL` efficiency calibrations, `.NLB` nuclide libraries and `.CTF` certificates, and writes verified corrected copies (the library dialog opens in `C:\GENIE2K\CAMFILES` when that folder exists). GammaVision `.LIB` and `.EFT` files are handled in pure Python.
 6. **NIST XCOM materials**: composition editor and automatic XCOM 3.1 attenuation tables; the 20 original EFFTRAN / MEFFTRAN materials are bundled; your own materials live in your data folder (changeable with **Tools → Default data folder…** or `CLI.bat config --data-dir`).
 7. **Command line**: `EffSuite_CLI.exe` (or `python -m effsuite.app_cli`) for scripts, LIMS integration and batch runs.
+8. **Update check**: **Help → Check for updates…** (or `CLI.bat check-update`) compares the installed version with the newest GitHub release and can download, verify and run its installer; data, results and settings are kept. A daily check at startup can be turned off.
 
 > [!IMPORTANT]
 > **GammaVision has been implemented as EFFTRAN is doing it, but I cannot test it because I do not have the software. Volunteers are welcome to test it and provide feedback.**
@@ -95,7 +96,8 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 2. Run the installer. It installs per-user without requiring Administrator rights to:
    ```text
    C:\GENIE2K\EffSuite\          (Genie 2000 installed: program, Data and Results together)
-   %LOCALAPPDATA%\Programs\EffSuite\   (otherwise; Data and Results go to Documents\EffSuite\)
+   %LOCALAPPDATA%\Programs\EffSuite\   (otherwise; Data and Results go to Documents\EffSuite\,
+                                      or %USERPROFILE%\EffSuite\ when Documents is synchronised by OneDrive)
    ```
 3. Launch **EffSuite GUI** from the Start Menu or desktop shortcut.
 
@@ -131,6 +133,7 @@ The GUI tabs follow the order of a gamma spectrometry analysis:
 * **Library / Certificate**: open a Genie `.NLB` / `.CTF` or a GammaVision `.LIB`, or type nuclides (`Co-60, Cs-134, Eu-152`). Calculates the summing factors *C* and their uncertainty u(C), and exports corrected Genie or GammaVision (`.LIB` + `_gv.txt`) files.
 * **Material Editor** (separate window, opened with **Materials…** or **Edit** on the Detector and Standard & Sample pages): create materials from chemical formulas and a density; **Apply** generates the XCOM attenuation table and updates the material lists, while the other pages stay usable.
 * **Log**: engine stages, warnings and convergence diagnostics as the calculation runs.
+* **Menus**: File (projects, result folder), Tools (Material Editor…, Default data folder…), Help (guides, Disclaimer…, About EffSuite, Check for updates…, Check for updates at startup).
 
 Step-by-step instructions: [User Guide](docs/USER_GUIDE.md).
 
@@ -176,6 +179,8 @@ CLI.bat well ^
   --nuclides Eu-152 ^
   --out "C:\MyLab\Results_Well"
 ```
+
+Other commands: `gui`, `doctor`, `check-update` (reports the newest GitHub release, installs nothing), `config`, `material`, `models`, `examples`, `plot-geometry`, `batch`.
 
 ### CLI Exit Codes
 | Exit Code | Status | Meaning |
@@ -237,9 +242,11 @@ EffSuite/
 ├── tests/           # automated tests
 ├── tools/           # build, validation and release utilities
 ├── examples/        # validation evidence and example inputs
+├── Validation/      # laboratory reference data
+├── comparison/      # templates for the laboratory comparison tool
 ├── installer/       # Inno Setup script
 ├── third_party/     # original notices and licences
-└── *.bat            # Setup_Windows, Start_GUI, CLI, Run_Tests_Windows, Build_Windows, Build_Installer
+└── *.bat            # Setup_Windows, Start_GUI, CLI, Run_Tests_Windows, Compare_Lab, Set_Version, Build_Windows, Build_Installer
 ```
 
 Module-level details: [Architecture](docs/ARCHITECTURE.md).
@@ -279,4 +286,4 @@ Build_Installer.bat
 * **NIST XCOM**: Photon cross-sections database developed by M.J. Berger and J.H. Hubbell, National Institute of Standards and Technology (NIST). Its program notice grants permission for **non-commercial use only**.
 * **Qt / PySide6** (LGPL-3.0), **libquadmath** (LGPL-2.1) and the Python packages: see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-*EffSuite (v0.3.3) built by ChatGPT, Gemini and Claude under the supervision of G. Lutter.*
+*EffSuite (v0.4.0) built by ChatGPT, Gemini and Claude under the supervision of G. Lutter.*

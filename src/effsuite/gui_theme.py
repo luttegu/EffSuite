@@ -7,7 +7,8 @@ colour, radius and spacing value is defined once here.
 from __future__ import annotations
 
 # Light palette. Grey window, white cards, one blue accent; green is kept for
-# the final "Run" action and red for cancel/error only.
+# the final Run button and the Material Editor Apply button, red for
+# cancel/error only.
 WINDOW = "#f5f5f7"
 SURFACE = "#ffffff"
 SURFACE_ALT = "#fafafc"       # alternate table rows, footers

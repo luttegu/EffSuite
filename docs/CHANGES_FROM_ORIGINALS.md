@@ -1,6 +1,6 @@
 # EffSuite Compared with the Original EFFTRAN, MEFFTRAN and WEFFTRAN
 
-*EffSuite v0.3.3 (November 2026). For the original author (Dr. Tim Vidmar), maintainers and scientific reviewers.*
+*EffSuite v0.4.0 (November 2026). For the original author (Dr. Tim Vidmar), maintainers and scientific reviewers.*
 
 > **Disclaimer:** Provided strictly on an AS-IS basis. G. Lutter accepts NO responsibility or liability under any circumstances for incorrect calculations, inaccurate analytical results, or damages resulting from software use. Users must independently verify all results.
 
