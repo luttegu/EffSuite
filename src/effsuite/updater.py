@@ -16,7 +16,6 @@ import subprocess
 import sys
 import tempfile
 import threading
-import time
 from typing import Callable
 import urllib.error
 import urllib.request
@@ -27,11 +26,9 @@ REPOSITORY = "luttegu/EffSuite"
 RELEASES_API = f"https://api.github.com/repos/{REPOSITORY}/releases"
 RELEASES_PAGE = f"https://github.com/{REPOSITORY}/releases"
 DOWNLOAD_PREFIX = f"https://github.com/{REPOSITORY}/releases/download/"
-CHECK_INTERVAL_S = 24 * 3600
 
 # Keys in settings.json (see paths.load_settings).
 SETTING_AUTO = "update_check_at_startup"
-SETTING_LAST = "update_last_check"
 SETTING_SKIPPED = "update_skipped_version"
 
 _VERSION_RE = re.compile(r"^v?(\d+(?:\.\d+)*)$")
@@ -144,16 +141,9 @@ def check_for_update(current: str = VERSION,
     return release if release and is_newer(release.version, current) else None
 
 
-def should_check_automatically(settings: dict, now: float | None = None) -> bool:
-    """True when startup checks are on and the last check is more than a day old."""
-    if not settings.get(SETTING_AUTO, True):
-        return False
-    try:
-        last = float(settings.get(SETTING_LAST, 0))
-    except (TypeError, ValueError):
-        last = 0.0
-    now = time.time() if now is None else now
-    return not (0 <= now - last < CHECK_INTERVAL_S)
+def should_check_automatically(settings: dict) -> bool:
+    """True unless startup checks were turned off in the Help menu."""
+    return bool(settings.get(SETTING_AUTO, True))
 
 
 def download_installer(release: Release, folder: Path | str | None = None,

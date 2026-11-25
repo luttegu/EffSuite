@@ -808,6 +808,7 @@ class MainWindow(QMainWindow):
         action.setChecked(bool(load_settings().get(updater.SETTING_AUTO, True)))
         action.toggled.connect(self._set_auto_update_check)
         help_menu.addAction(action)
+        self.auto_update_action = action
         self.mode.currentIndexChanged.connect(self.change_mode)
 
     def check_first_run_disclaimer(self):
@@ -2370,7 +2371,7 @@ class MainWindow(QMainWindow):
             self.append_log(f"[WARN] Could not save settings: {exc}")
 
     def auto_check_for_updates(self):
-        """Check GitHub once a day at startup, unless turned off in the Help menu."""
+        """Check GitHub at startup, unless turned off in the Help menu."""
         from .paths import load_settings
         if updater.should_check_automatically(load_settings()):
             self.check_for_updates(manual=False)
@@ -2400,14 +2401,9 @@ class MainWindow(QMainWindow):
         threading.Thread(target=run, name="update-check", daemon=True).start()
 
     def _update_checked(self, release, manual):
-        from .paths import load_settings, save_settings
+        from .paths import load_settings
         self._update_busy = False
         settings = load_settings()
-        settings[updater.SETTING_LAST] = time.time()
-        try:
-            save_settings(settings)
-        except OSError:
-            pass
         if release is None:
             if manual:
                 self.status.setText(f"EffSuite {VERSION} is the latest version")
@@ -2487,19 +2483,25 @@ class MainWindow(QMainWindow):
         vl.addSpacing(12)
         row = QHBoxLayout()
         skip = QPushButton("Skip this version")
+        never = QPushButton("Don't ask again")
+        never.setToolTip("Turn off the update check at startup. Turn it back on with Help > Check for updates at startup.")
         later = QPushButton("Remind me later")
         main = set_role(QPushButton("Download and install" if updater.can_install() else "Open release page"), "primary")
         main.setDefault(True)
         row.addWidget(skip)
+        row.addWidget(never)
         row.addStretch(1)
         row.addWidget(later)
         row.addWidget(main)
         vl.addLayout(row)
         choice = []
-        for button, name in ((skip, "skip"), (later, "later"), (main, "install")):
+        for button, name in ((skip, "skip"), (never, "never"), (later, "later"), (main, "install")):
             button.clicked.connect(lambda checked=False, n=name: (choice.append(n), dialog.accept()))
         dialog.exec()
-        if choice == ["skip"]:
+        if choice == ["never"]:
+            self.auto_update_action.setChecked(False)
+            self.append_log("[INFO] Update check at startup turned off; turn it on with Help > Check for updates at startup")
+        elif choice == ["skip"]:
             from .paths import load_settings, save_settings
             settings = load_settings()
             settings[updater.SETTING_SKIPPED] = release.version

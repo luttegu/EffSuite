@@ -76,16 +76,12 @@ class ReleaseSelectionTests(unittest.TestCase):
 
 
 class ScheduleTests(unittest.TestCase):
-    def test_daily_check(self):
-        now = 1_000_000.0
-        self.assertTrue(updater.should_check_automatically({}, now))
-        self.assertFalse(updater.should_check_automatically({updater.SETTING_LAST: now - 3600}, now))
-        self.assertTrue(updater.should_check_automatically({updater.SETTING_LAST: now - 2 * 86400}, now))
-        self.assertTrue(updater.should_check_automatically({updater.SETTING_LAST: now + 3600}, now))   # clock moved back
-        self.assertTrue(updater.should_check_automatically({updater.SETTING_LAST: "bad"}, now))
+    def test_every_startup(self):
+        self.assertTrue(updater.should_check_automatically({}))
+        self.assertTrue(updater.should_check_automatically({"update_last_check": 1e12}))   # 0.5.1 and older key, ignored
 
     def test_disabled(self):
-        self.assertFalse(updater.should_check_automatically({updater.SETTING_AUTO: False}, 0))
+        self.assertFalse(updater.should_check_automatically({updater.SETTING_AUTO: False}))
 
 
 class DownloadTests(unittest.TestCase):
@@ -183,11 +179,23 @@ class GuiUpdateTests(unittest.TestCase):
             p.stop()
         self.tmp.cleanup()
 
-    def test_startup_offer_and_last_check_saved(self):
+    def test_startup_offer_checks_again_next_start(self):
         from effsuite.paths import load_settings
         release = updater.release_from_json(release_item("v99.0.0"))
         self.window._update_checked(release, False)
         self.assertEqual(self.offered, [release])
+        self.assertTrue(updater.should_check_automatically(load_settings()))
+
+    def test_dont_ask_again_turns_off_startup_check(self):
+        from effsuite.paths import load_settings
+        from PySide6.QtWidgets import QDialog, QPushButton
+        release = updater.release_from_json(release_item("v99.0.0"))
+        def press(dialog):
+            next(b for b in dialog.findChildren(QPushButton) if b.text() == "Don't ask again").click()
+            return 0
+        with patch.object(QDialog, "exec", press):
+            MainWindow.show_update_dialog(self.window, release)
+        self.assertFalse(self.window.auto_update_action.isChecked())
         self.assertFalse(updater.should_check_automatically(load_settings()))
 
     def test_skipped_version_not_offered_at_startup_but_on_manual_check(self):

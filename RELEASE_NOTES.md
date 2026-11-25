@@ -1,5 +1,13 @@
 # Release Notes
 
+## EffSuite 0.5.2 (November 2026)
+
+Update check at every start. The engines and all results are identical to 0.5.0.
+
+- **Update check at every start.** EffSuite checked at startup only once a day, and any check, including **Help → Check for updates…**, reset that day. After a check or **Remind me later**, a restart showed nothing until the next day. EffSuite now checks at every start; **Remind me later** asks again at the next start. The `update_last_check` setting is no longer used.
+- **Don't ask again** button in the update window: turns off the check at startup, as **Help → Check for updates at startup** does. A manual check still works.
+- **Users of 0.4.0 and 0.5.0 must install by hand** (see 0.5.1).
+
 ## EffSuite 0.5.1 (November 2026)
 
 Software update fixes. The engines and all results are identical to 0.5.0.

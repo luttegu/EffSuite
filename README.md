@@ -1,7 +1,7 @@
 # EffSuite — Gamma Spectrometry Efficiency Transfer & Summing Suite
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-0.5.1-yellow.svg" alt="Version 0.5.1" />
+  <img src="https://img.shields.io/badge/Version-0.5.2-yellow.svg" alt="Version 0.5.2" />
   <img src="https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue.svg" alt="Python Version" />
   <img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011%20(x64)-0078D6.svg" alt="Windows Platform" />
   <img src="https://img.shields.io/badge/Genie%202000-CAM%20%7C%20CAL%20%7C%20NLB%20%7C%20CTF-8A2BE2.svg" alt="Genie 2000 Integration" />
@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/License-GPL--3.0%20%2F%20Vidmar%20Attribution-orange.svg" alt="License" />
 </p>
 
-*EffSuite (v0.5.1) built by ChatGPT, Gemini and Claude under the supervision of G. Lutter.*
+*EffSuite (v0.5.2) built by ChatGPT, Gemini and Claude under the supervision of G. Lutter.*
 
 ---
 
@@ -82,7 +82,7 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 5. **Genie 2000 and GammaVision**: reads `.CAL` efficiency calibrations, `.NLB` nuclide libraries and `.CTF` certificates, and writes verified corrected copies (the library dialog opens in `C:\GENIE2K\CAMFILES` when that folder exists). GammaVision `.LIB` and `.EFT` files are handled in pure Python.
 6. **NIST XCOM materials**: composition editor and automatic XCOM 3.1 attenuation tables; the 19 original EFFTRAN / MEFFTRAN materials are bundled; your own materials live in your data folder (changeable with **Tools → Default data folder…** or `CLI.bat config --data-dir`).
 7. **Command line**: `EffSuite_CLI.exe` (or `python -m effsuite.app_cli`) for scripts, LIMS integration and batch runs.
-8. **Update check**: **Help → Check for updates…** (or `CLI.bat check-update`) compares the installed version with the newest GitHub release and can download, verify and run its installer; data, results and settings are kept. A daily check at startup can be turned off.
+8. **Update check**: **Help → Check for updates…** (or `CLI.bat check-update`) compares the installed version with the newest GitHub release and can download, verify and run its installer; data, results and settings are kept. A check at every start can be turned off.
 
 > [!IMPORTANT]
 > **GammaVision has been implemented as EFFTRAN is doing it, but I cannot test it because I do not have the software. Volunteers are welcome to test it and provide feedback.**
@@ -286,4 +286,4 @@ Build_Installer.bat
 * **NIST XCOM**: Photon cross-sections database developed by M.J. Berger and J.H. Hubbell, National Institute of Standards and Technology (NIST). Its program notice grants permission for **non-commercial use only**.
 * **Qt / PySide6** (LGPL-3.0), **libquadmath** (LGPL-2.1) and the Python packages: see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-*EffSuite (v0.5.1) built by ChatGPT, Gemini and Claude under the supervision of G. Lutter.*
+*EffSuite (v0.5.2) built by ChatGPT, Gemini and Claude under the supervision of G. Lutter.*

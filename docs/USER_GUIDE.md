@@ -1,4 +1,4 @@
-# EffSuite User Guide — v0.5.1
+# EffSuite User Guide — v0.5.2
 
 > **Spectrometry software.** EffSuite reads and writes **Canberra / Mirion
 > Genie 2000** files (`.CAL`, `.NLB`, `.CTF`) and **ORTEC GammaVision** files
@@ -38,7 +38,7 @@ project.
 ### Software updates
 
 **Help → Check for updates…** asks GitHub for the newest release. When a newer
-version exists, a dialog shows its release notes with three choices:
+version exists, a dialog shows its release notes with four choices:
 
 - **Download and install**: downloads `EffSuite_<version>_Setup.exe`, checks its
   size and SHA-256 against the values published on GitHub, closes EffSuite (it
@@ -49,11 +49,14 @@ version exists, a dialog shows its release notes with three choices:
   installation folder needs administrator rights (an all-users installation),
   the installer wizard opens, Windows asks for permission, and the last wizard
   page offers to start EffSuite.
-- **Remind me later**: asks again at the next daily check.
+- **Remind me later**: asks again at the next start.
 - **Skip this version**: no reminder at startup for this version. A manual
   check still offers it.
+- **Don't ask again**: turns off the check at startup. A manual check still
+  works; turn the startup check back on with **Help → Check for updates at
+  startup**.
 
-EffSuite also checks once a day at startup, a few seconds after the window
+EffSuite also checks at every start, a few seconds after the window
 opens. The offer waits until no dialog is open and no calculation runs. Turn
 this off with **Help → Check for updates at startup**. The check only reads the
 public release list on GitHub; nothing is sent except the EffSuite version in
