@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011%20(x64)-0078D6.svg" alt="Windows Platform" />
   <img src="https://img.shields.io/badge/Genie%202000-CAM%20%7C%20CAL%20%7C%20NLB%20%7C%20CTF-8A2BE2.svg" alt="Genie 2000 Integration" />
   <img src="https://img.shields.io/badge/GammaVision-EFT%20%7C%20LIB%20(Untested)-008080.svg" alt="GammaVision Integration (Untested)" />
-  <img src="https://img.shields.io/badge/Physics%20Engines-EFFTRAN%205.0%20%7C%20MEFFTRAN%201.9%20%7C%20WEFFTRAN-2ea44f.svg" alt="Physics Engines" />
+  <img src="https://img.shields.io/badge/Physics%20Engines-EFFTRAN%205.1%20%7C%20MEFFTRAN%202.0%20%7C%20WEFFTRAN-2ea44f.svg" alt="Physics Engines" />
   <img src="https://img.shields.io/badge/License-GPL--3.0%20%2F%20Vidmar%20Attribution-orange.svg" alt="License" />
 </p>
 
