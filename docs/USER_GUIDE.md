@@ -1,4 +1,4 @@
-# EffSuite User Guide — v0.5.0
+# EffSuite User Guide — v0.5.1
 
 > **Spectrometry software.** EffSuite reads and writes **Canberra / Mirion
 > Genie 2000** files (`.CAL`, `.NLB`, `.CTF`) and **ORTEC GammaVision** files
@@ -60,7 +60,9 @@ public release list on GitHub; nothing is sent except the EffSuite version in
 the request header. Without internet access the startup check fails silently.
 
 The update check exists from version 0.4.0; older versions are updated
-by running the new installer by hand. A copy run from source (not installed) opens the release page instead of
+by running the new installer by hand. In 0.4.0 and 0.5.0, **Download and
+install** downloads the installer but does not start it: install 0.5.1 or
+later by hand once. Updates from the Help menu work from 0.5.1 on. A copy run from source (not installed) opens the release page instead of
 installing; update it with `git pull`. Releases:
 <https://github.com/luttegu/EffSuite/releases>.
 

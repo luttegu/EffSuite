@@ -1,5 +1,16 @@
 # Release Notes
 
+## EffSuite 0.5.1 (November 2026)
+
+Software update fixes. The engines and all results are identical to 0.5.0.
+
+- **Download and install did not install.** In 0.4.0 and 0.5.0, **Help → Check for updates… → Download and install** downloaded and verified the installer, then stopped without starting it. Closing the download progress window was treated as pressing **Cancel**. The installer now starts after the download.
+  - **Users of 0.4.0 and 0.5.0 must install 0.5.1 by hand**: download `EffSuite_0.5.1_Setup.exe` from the release page and run it. Data, results and settings are kept. Updates from the Help menu work from 0.5.1 on.
+  - An installer already downloaded by 0.4.0 or 0.5.0 is in `%TEMP%\EffSuite_update` and can be run from there.
+- **Release notes readable in Windows dark mode.** The update window showed dark text on a dark background. EffSuite now always uses its light colours, whatever the Windows colour mode.
+- **Update window layout.** Title with the new version, a line with the installed version and download size, a white panel for the release notes, and code names in Cascadia Mono or Consolas.
+- README engines badge names EFFTRAN 5.1 and MEFFTRAN 2.0.
+
 ## EffSuite 0.5.0 (November 2026)
 
 Engines updated to EFFTRAN 5.1 and MEFFTRAN 2.0 (November 2026). Cylinder results are unchanged, except transferred efficiencies in the last printed digit. Marinelli peak efficiencies and P/T ratios change by up to about 0.4 %, summing factors by up to 0.0006.

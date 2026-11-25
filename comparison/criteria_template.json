@@ -14,7 +14,7 @@
     },
     "candidate": {
       "name": "EffSuite",
-      "version": "0.5.0",
+      "version": "0.5.1",
       "build_id": "SET-CANDIDATE-BUILD-HASH"
     }
   },
