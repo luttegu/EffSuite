@@ -10,7 +10,7 @@ import threading
 import time
 
 from PySide6.QtCore import QObject, QThread, Signal, Slot, Qt, QTimer, QRect, QSize, QPointF
-from PySide6.QtGui import QAction, QFont, QPainter, QPen, QColor, QIcon
+from PySide6.QtGui import QAction, QFont, QPainter, QPen, QColor, QIcon, QTextCharFormat, QTextCursor
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget,
                                QVBoxLayout, QHBoxLayout, QGridLayout, QFormLayout, QGroupBox, QLabel, QLineEdit, QComboBox, QPushButton, QTabWidget, QTableWidget, QTableWidgetItem, QHeaderView, QFileDialog, QMessageBox, QPlainTextEdit, QSpinBox, QDoubleSpinBox, QCheckBox, QSplitter, QScrollArea, QStyledItemDelegate, QFrame, QRadioButton, QButtonGroup, QDialog, QListView, QSizePolicy, QProgressDialog, QTextBrowser)
 
@@ -2445,14 +2445,16 @@ class MainWindow(QMainWindow):
         from PySide6.QtCore import QUrl
         dialog = QDialog(self)
         dialog.setWindowTitle("Software update")
-        dialog.setMinimumSize(600, 440)
+        dialog.setMinimumSize(640, 480)
         vl = QVBoxLayout(dialog)
-        vl.setContentsMargins(18, 16, 18, 16)
-        vl.setSpacing(10)
-        title = QLabel(f"<b>EffSuite {release.version}</b> is available. Installed version: {VERSION}.")
-        title.setStyleSheet("font-size:12pt;")
-        title.setWordWrap(True)
-        vl.addWidget(title)
+        vl.setContentsMargins(20, 18, 20, 18)
+        vl.setSpacing(4)
+        vl.addWidget(set_role(QLabel(f"EffSuite {release.version} is available"), "title"))
+        details = f"Installed version: {VERSION}"
+        if release.asset_size:
+            details += f"  ·  Download: {release.asset_size / 1e6:.0f} MB"
+        vl.addWidget(set_role(QLabel(details), "secondary"))
+        vl.addSpacing(10)
         if not updater.can_install():
             note = QLabel("This copy runs from source: update it with git, or download the installer from the release page.")
             note.setWordWrap(True)
@@ -2460,8 +2462,29 @@ class MainWindow(QMainWindow):
             vl.addWidget(note)
         notes = QTextBrowser()
         notes.setOpenExternalLinks(True)
+        notes.document().setIndentWidth(18)
         notes.setMarkdown(release.notes.strip() or "No release notes.")
+        # Qt renders Markdown code spans in the system fixed font (Courier New on Windows).
+        spans = []
+        block = notes.document().begin()
+        while block.isValid():
+            it = block.begin()
+            while not it.atEnd():
+                fragment = it.fragment()
+                if fragment.charFormat().fontFixedPitch():
+                    spans.append((fragment.position(), fragment.length()))
+                it += 1
+            block = block.next()
+        code = QTextCharFormat()
+        code.setFontFamilies(["Cascadia Mono", "Consolas"])
+        code.setFontPointSize(9)
+        cursor = QTextCursor(notes.document())
+        for start, length in spans:
+            cursor.setPosition(start)
+            cursor.setPosition(start + length, QTextCursor.MoveMode.KeepAnchor)
+            cursor.mergeCharFormat(code)
         vl.addWidget(notes, 1)
+        vl.addSpacing(12)
         row = QHBoxLayout()
         skip = QPushButton("Skip this version")
         later = QPushButton("Remind me later")
@@ -2600,6 +2623,9 @@ def main():
         except Exception:
             pass
     app = QApplication.instance() or QApplication([])
+    # The stylesheet is light-only. In Windows dark mode Qt would give unstyled
+    # widgets a dark palette, leaving dark text on a dark background.
+    app.styleHints().setColorScheme(Qt.ColorScheme.Light)
     app.setFont(QFont("Segoe UI", 10))
     app.setWindowIcon(get_app_icon())
     window = MainWindow()

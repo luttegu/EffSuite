@@ -553,6 +553,14 @@ QPlainTextEdit {{
     font-size: 9.5pt;
     selection-background-color: #3a5f99;
 }}
+/* Rich text (release notes) */
+QTextBrowser {{
+    background-color: {SURFACE};
+    color: {TEXT};
+    border: 1px solid {HAIRLINE};
+    border-radius: {RADIUS_CARD}px;
+    padding: 6px 4px;
+}}
 QSplitter::handle:vertical {{
     background: transparent;
     height: 8px;
@@ -655,6 +663,10 @@ QLabel[role="stepTitle"] {{
 }}
 QLabel[role="secondary"] {{
     color: {TEXT_SECONDARY};
+}}
+QLabel[role="title"] {{
+    font-size: 13pt;
+    font-weight: 600;
 }}
 QLabel[role="caption"] {{
     color: {TEXT_SECONDARY};
