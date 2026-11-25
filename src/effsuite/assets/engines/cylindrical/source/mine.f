@@ -33,9 +33,8 @@
       real wd,crl,crr,hol,dist,bt,tt
       real ar,at
 
-      real sr,st,pbt,pst,sdist
+      real sr,st,pbt,pst,sdist,rho,rho0
       real e1,e2,emin,acc
-      real rho,rho0
 
       character*70 dmat,wmat,cmat,hmat,smat,bmat,airmat,amat
 

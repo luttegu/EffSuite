@@ -2,6 +2,7 @@
 import copy
 import json
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -105,7 +106,12 @@ class SuiteTests(unittest.TestCase):
 
     def test_source_density_scaling_matches_heavywater_across_all_three_geometries(self):
         # Verify EFFTRAN 4.9 / MEFFTRAN 1.8 / WEFFTRAN 8th-line density scaling:
-        # 'water' (rho0=1.0) with sample[7]=2.0 must match 'heavy' (rho0=2.0) with sample[7]=2.0
+        # 'water' (rho0=1.0) with sample[7]=2.0 must match 'heavy' (rho0=2.0) with sample[7]=2.0.
+        # heavy.txt is a MEFFTRAN 1.9 material, no longer bundled: load it from the test fixtures.
+        data_dir = self.root / "Data"
+        for folder in ("Composition", "Material"):
+            (data_dir / folder).mkdir(parents=True)
+            shutil.copyfile(Path(__file__).parent / "data" / "materials" / folder / "heavy.txt", data_dir / folder / "heavy.txt")
         for name in ["cylinder", "marinelli", "well"]:
             with self.subTest(name=name):
                 cal = [
@@ -119,6 +125,7 @@ class SuiteTests(unittest.TestCase):
                 p_water2["standard"][7] = 1.0
                 p_water2["sample"][5] = "water"
                 p_water2["sample"][7] = 2.0
+                p_water2["data_directory"] = str(data_dir)
 
                 p_heavy = copy.deepcopy(p_water2)
                 p_heavy["sample"][5] = "heavy"
@@ -159,9 +166,9 @@ class SuiteTests(unittest.TestCase):
         vals = read_model("cylindrical", "sample", legacy_txt)
         self.assertEqual(len(vals), 8)
         self.assertAlmostEqual(vals[7], 1.4, places=4)
-        vals_json = validate_model("marinelli", "sample", [100.0, 80.0, 90.0, 2.0, 2.0, "heavy", "plexiglass"])
+        vals_json = validate_model("marinelli", "sample", [100.0, 80.0, 90.0, 2.0, 2.0, "aluminium", "plexiglass"])
         self.assertEqual(len(vals_json), 8)
-        self.assertAlmostEqual(vals_json[7], 2.0, places=4)
+        self.assertAlmostEqual(vals_json[7], 2.7, places=4)
 
 
 class ReportWithoutSvgBackendTests(unittest.TestCase):

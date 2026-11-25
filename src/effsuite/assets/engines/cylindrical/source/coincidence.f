@@ -137,7 +137,9 @@
 
 	do i=2,3000
 	  s1(i)=s1(i)+s(i)
-          if (s(i).gt.0.) write(9,77) oldnuc,i,s(i)/s1(i)
+          if (s(i).gt.0.) then
+            write(9,77) oldnuc,i,s(i)/s1(i)
+          endif
         enddo
 77      format(a10,i10,f15.3)
 
@@ -320,7 +322,9 @@ c emissions 2
 	
         do i=2,3000
 	  s1(i)=s1(i)+s(i)
-          if (s(i).gt.0.) write(9,77) oldnuc,i,s(i)/s1(i)
+          if (s(i).gt.0.) then
+            write(9,77) oldnuc,i,s(i)/s1(i)
+          endif
         enddo
 
 	close(7)

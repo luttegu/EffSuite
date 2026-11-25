@@ -8,9 +8,9 @@ from unittest.mock import patch
 from effsuite import paths
 from effsuite.model_io import COMMON_DATA, default_material_density, find_material_file, material_names
 
-# Union of the EFFTRAN 5.0 and MEFFTRAN 1.9 distributions.
+# Union of the EFFTRAN 5.1 and MEFFTRAN 2.0 distributions.
 ORIGINAL_MATERIALS = {"CLYC", "CZT", "CsI", "Ge", "LaBr3", "NaI", "air", "aluminium", "beryllium", "cellulose",
-                      "copper", "heavy", "iron", "lead", "plexiglass", "polystyrene", "silica", "soil", "vacuum", "water"}
+                      "copper", "iron", "lead", "plexiglass", "polystyrene", "silica", "soil", "vacuum", "water"}
 
 
 class BundledMaterials(unittest.TestCase):

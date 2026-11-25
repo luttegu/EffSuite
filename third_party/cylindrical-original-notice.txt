@@ -1,6 +1,6 @@
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 C                                                                       C
-C  EFFTRAN (version 5.0 2026)                                           C
+C  EFFTRAN (version 5.1 2026)                                           C
 C  Copyright (c) 2005-2026                                              C
 C  Tim Vidmar                                                           C
 C                                                                       C
@@ -14,7 +14,7 @@ C  purpose. It is provided 'as is' without express or implied warranty. C
 C                                                                       C
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
--- Only Material, Efficiency Transfer and Coincidence Summing modules
+-- ActiveX Controls replaced with Form Controls.
 
 EFFTRAN website is located at https://efftran.github.io/.
 

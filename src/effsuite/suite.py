@@ -507,7 +507,7 @@ def _run_transfer(mode: str, project: dict, work: Path, stop, progress, result: 
 
     if mode in ("cylindrical", "marinelli"):
         result["warnings"].append("Cylindrical and Marinelli transfer uncertainties add the Monte Carlo statistical uncertainty "
-                                  "of the standard and sample efficiencies (EFFTRAN 5.0 / MEFFTRAN 1.9); well transfers retain "
+                                  "of the standard and sample efficiencies (EFFTRAN 5.1 / MEFFTRAN 2.0); well transfers retain "
                                   "the original hard-coded 0.5% standard/sample contributions; no complete uncertainty budget is claimed")
     else:
         result["warnings"].append("Well transfer uncertainties retain the original hard-coded 0.5% standard/sample "

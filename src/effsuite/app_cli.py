@@ -452,7 +452,7 @@ def print_cli_banner():
     print("=" * 72)
     print("                 EffSuite gamma spectrometry CLI")
     print(f"       Efficiency transfer and true coincidence summing (v{VERSION})")
-    print("       EFFTRAN 5.0 • MEFFTRAN 1.9 • WEFFTRAN • NIST XCOM")
+    print("       EFFTRAN 5.1 • MEFFTRAN 2.0 • WEFFTRAN • NIST XCOM")
     print("=" * 72)
     print(" Supervisor : G. Lutter")
     print(" Built by   : ChatGPT, Gemini and Claude")

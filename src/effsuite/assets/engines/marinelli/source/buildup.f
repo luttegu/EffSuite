@@ -3,14 +3,14 @@
 
       implicit none
 
-      double precision e(1000),eps(1000),eps2(1000)
-      double precision sca(1000),epsn(1000),b(1000)
-      double precision eps1,sca1,add,sc,esc
+      real e(1000),eps(1000),eps2(1000)
+      real sca(1000),epsn(1000),b(1000)
+      real eps1,sca1,add,sc,esc
       integer ne
       character*30 fname
       integer i,j
       
-      double precision ecbar
+      real ecbar
       external ecbar
 
       fname='total.txt'
@@ -57,9 +57,9 @@
 
       subroutine readin(fname,n,e,mu)
       implicit none
-      character*(30) fname
+      character*(*) fname
       integer n
-      double precision e(1000),mu(1000)
+      real e(1000),mu(1000)
       integer left,right
       integer l,r
       n=1
@@ -82,7 +82,7 @@
       subroutine inter(n,e,mu,xe,xmu)
       implicit none
       integer n,j
-      double precision e(1000),mu(1000),xe,xmu
+      real e(1000),mu(1000),xe,xmu
       j=1.
       do while(e(j).lt.xe.and.j.lt.n)
          j=j+1
@@ -94,9 +94,9 @@
       return
       end
 
-      double precision function ecbar(e)
-      double precision e
-      double precision u,g,y
+      real function ecbar(e)
+      real e
+      real u,g,y
       g=e/511.
       y=log(1.+2.*g)
       u=(-6.*g-30.*g**2-36.*g**3+12.*g**4+32.*g**5+
@@ -110,7 +110,7 @@
       implicit none
       integer n,l
       character blank
-      character*(30) s
+      character*(*) s
       blank=' '
       l=len(s)
       n=1
@@ -125,7 +125,7 @@
       implicit none
       integer n
       character blank
-      character*(30) s
+      character*(*) s
       blank=' '
       n=len(s)
       do while (s(n:n).eq.blank.and.n.gt.1)

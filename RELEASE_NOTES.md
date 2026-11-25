@@ -1,5 +1,21 @@
 # Release Notes
 
+## EffSuite 0.5.0 (November 2026)
+
+Engines updated to EFFTRAN 5.1 and MEFFTRAN 2.0 (November 2026). Cylinder results are unchanged, except transferred efficiencies in the last printed digit. Marinelli peak efficiencies and P/T ratios change by up to about 0.4 %, summing factors by up to 0.0006.
+
+- **Marinelli: MEFFTRAN 2.0 routines.** EffSuite now uses the MEFFTRAN 2.0 sources, including their precision: `buildup.f`, `efficiency.f`, `eta.f` and `scatter.f` compute in single precision (`real`), and `total.f` keeps double precision for the geometry but accumulates the Monte Carlo tallies in single precision. The previous EffSuite sources used double precision throughout these routines. The EffSuite safeguards (density fallback, variance and logarithm guards, `e23.15` summing output) are applied as before.
+  - On the example of the MEFFTRAN 2.0 distribution, EffSuite now gives the same `total.txt`, `scatter.txt`, `buildup.txt`, `eta.txt`, `efficiency.txt` and `ptt.txt` as the upstream programs, and the same `coin.txt` to its 3 decimals. Compared with the previous build: total efficiency changes by 2·10⁻⁵ (relative), peak efficiency by up to 0.35 %, P/T by up to 0.43 %, and *C* by up to 0.0006 (0.2 %).
+  - Windows and Linux Marinelli programs rebuilt; the Linux ones with GNU Fortran 14.4.
+  - MEFFTRAN 2.0 reads a 16-line detector file in every stage, which fixes the MEFFTRAN 1.9 format defect. EffSuite still opens 19-line files written by MEFFTRAN 1.9.
+- **Cylinder: EFFTRAN 5.1.** The stages EffSuite runs are unchanged from 5.0, so cylinder results are unchanged, except `transfer` (next item). The sources are now the 5.1 files with the EffSuite safeguards (text differences only), and the Windows programs give byte-identical output to the previous build. The 5.1 change is in the Excel workbooks (Form controls instead of ActiveX).
+- **`transfer.f` in single precision.** EffSuite's stage-isolated `transfer.f` (cylinder and Marinelli) now computes in single precision, in the order of operations of EFFTRAN 5.1 and MEFFTRAN 2.0; it used double precision. On the transfer examples of both distributions, its 16 efficiencies equal those of the upstream `transfer.exe`. Windows and Linux programs rebuilt.
+- **Linux engines were out of date.** The Linux cylinder and Marinelli programs were still the v0.1.1 builds, without bulk density and without the uncertainty column of `total.txt`. All 20 are rebuilt with GNU Fortran 14.4 from the current sources; their output files equal the Windows ones, except a few summing factors that differ by 2·10⁻⁷ (relative). The Linux well programs `mine`, `total`, `scatter` and `efficiency` were also v0.1.1 builds, without density scaling and the path-length fix for tall samples; they are rebuilt from the unchanged sources and now give the same output files as the Windows programs.
+- **Data.** `kordaten.txt`, the materials and the Detector, Sample and Standard models are unchanged in 5.1/2.0 (upstream only moved the Nb-94 record). EffSuite keeps W-187, which upstream still lacks.
+- **`heavy` is no longer bundled.** MEFFTRAN 2.0 no longer ships `heavy.txt` (H₂O at ρ₀ = 2.0 g/cm³), so the bundled materials are now the 19 of EFFTRAN 5.1 and MEFFTRAN 2.0. A project or source model that uses `heavy` stops with a missing-material error. Use `water` with a bulk density of 2.0 g/cm³ on line 8 of the source model, which gives the same results, or copy `heavy.txt` from a 0.4.0 installation (`assets\common\Composition` and `Material`) into your data folder.
+- **Engine build.** `tools/build_engines.py` puts the compiler's folder first on `PATH`, so that another MinGW on `PATH` (for example EGSnrc's) cannot supply an older `ld.exe` that produces programs Windows refuses to start.
+- READMEs, notices, About box, CLI banner and documentation name EFFTRAN 5.1 and MEFFTRAN 2.0. Details in [CHANGES_FROM_ORIGINALS.md](docs/CHANGES_FROM_ORIGINALS.md), section 1.9.
+
 ## EffSuite 0.4.0 (November 2026)
 
 The engines and all results are unchanged.

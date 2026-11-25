@@ -1,7 +1,7 @@
 # EffSuite — Gamma Spectrometry Efficiency Transfer & Summing Suite
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-0.4.0-yellow.svg" alt="Version 0.4.0" />
+  <img src="https://img.shields.io/badge/Version-0.5.0-yellow.svg" alt="Version 0.5.0" />
   <img src="https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue.svg" alt="Python Version" />
   <img src="https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011%20(x64)-0078D6.svg" alt="Windows Platform" />
   <img src="https://img.shields.io/badge/Genie%202000-CAM%20%7C%20CAL%20%7C%20NLB%20%7C%20CTF-8A2BE2.svg" alt="Genie 2000 Integration" />
@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/License-GPL--3.0%20%2F%20Vidmar%20Attribution-orange.svg" alt="License" />
 </p>
 
-*EffSuite (v0.4.0) built by ChatGPT, Gemini and Claude under the supervision of G. Lutter.*
+*EffSuite (v0.5.0) built by ChatGPT, Gemini and Claude under the supervision of G. Lutter.*
 
 ---
 
@@ -45,8 +45,8 @@
 
 EffSuite combines and extends the efficiency transfer and true coincidence summing codes written by **Dr. Tim Vidmar**:
 
-- **EFFTRAN** (version 5.0 2026): cylindrical geometry
-- **MEFFTRAN** (version 1.9): Marinelli beaker geometry
+- **EFFTRAN** (version 5.1 2026): cylindrical geometry
+- **MEFFTRAN** (version 2.0 2026): Marinelli beaker geometry
 - **WEFFTRAN**: well-type detector geometry
 
 Official EFFTRAN Project Website: **https://efftran.github.io/**
@@ -54,7 +54,7 @@ Official EFFTRAN Project Website: **https://efftran.github.io/**
 ```text
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 C                                                                       C
-C  EFFTRAN (version 5.0 2026)                                           C
+C  EFFTRAN (version 5.1 2026)                                           C
 C  Copyright (c) 2005-2026                                              C
 C  Tim Vidmar                                                           C
 C                                                                       C
@@ -75,12 +75,12 @@ CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
 **EffSuite** runs EFFTRAN, MEFFTRAN, and WEFFTRAN from one program, for high-resolution gamma-ray spectrometry (HPGe) laboratories:
 
-1. **Original Fortran physics**: the EFFTRAN 5.0 and MEFFTRAN 1.9 engines run unchanged apart from small numerical safeguards and a higher-precision output format. Wells use a new spatial summing model that fixes the original's tall-sample failure.
+1. **Original Fortran physics**: the EFFTRAN 5.1 and MEFFTRAN 2.0 engines run unchanged apart from small numerical safeguards and a higher-precision output format. Wells use a new spatial summing model that fixes the original's tall-sample failure.
 2. **Desktop GUI (Qt)**: the original workbook tabs as forms, with automatic 1080p/4K scaling, a dimensioned cross-section, efficiency charts and a calculation log.
 3. **Parallel coincidence summing**: summing correction factors *C* for every nuclide of a library in one run, on all CPU cores (`workers = 0`: number of CPUs minus 2).
 4. **Summing-factor uncertainty**: a relative standard uncertainty u(C) for every factor, which the original programs do not provide ([details](docs/TCS_UNCERTAINTY.md)).
 5. **Genie 2000 and GammaVision**: reads `.CAL` efficiency calibrations, `.NLB` nuclide libraries and `.CTF` certificates, and writes verified corrected copies (the library dialog opens in `C:\GENIE2K\CAMFILES` when that folder exists). GammaVision `.LIB` and `.EFT` files are handled in pure Python.
-6. **NIST XCOM materials**: composition editor and automatic XCOM 3.1 attenuation tables; the 20 original EFFTRAN / MEFFTRAN materials are bundled; your own materials live in your data folder (changeable with **Tools → Default data folder…** or `CLI.bat config --data-dir`).
+6. **NIST XCOM materials**: composition editor and automatic XCOM 3.1 attenuation tables; the 19 original EFFTRAN / MEFFTRAN materials are bundled; your own materials live in your data folder (changeable with **Tools → Default data folder…** or `CLI.bat config --data-dir`).
 7. **Command line**: `EffSuite_CLI.exe` (or `python -m effsuite.app_cli`) for scripts, LIMS integration and batch runs.
 8. **Update check**: **Help → Check for updates…** (or `CLI.bat check-update`) compares the installed version with the newest GitHub release and can download, verify and run its installer; data, results and settings are kept. A daily check at startup can be turned off.
 
@@ -201,7 +201,7 @@ Every difference from the original programs is documented in [CHANGES_FROM_ORIGI
 | Feature | Original Implementation | EffSuite Modernization |
 | :--- | :--- | :--- |
 | **Sample bulk density (`rho`)** | Added in EFFTRAN 4.9–5.0 / MEFFTRAN 1.8–1.9 (absent in WEFFTRAN) | 8-line source density scaling ($\rho / \rho_0$) across Cylindrical, Marinelli, and Well (`WEFFTRAN`) with validated loop bounds, `Point.txt` guard, and GUI auto-fill |
-| **Transfer uncertainty** | Fixed 0.5% standard/sample placeholders in older versions | Monte Carlo propagation ($u = \sqrt{u_{\mathrm{ref}}^2 + (100 s_{\mathrm{std}})^2 + (100 s_{\mathrm{sample}})^2}$) for Cylindrical (EFFTRAN 5.0) and Marinelli (MEFFTRAN 1.9); wells keep the original 0.5% terms |
+| **Transfer uncertainty** | Fixed 0.5% standard/sample placeholders in older versions | Monte Carlo propagation ($u = \sqrt{u_{\mathrm{ref}}^2 + (100 s_{\mathrm{std}})^2 + (100 s_{\mathrm{sample}})^2}$) for Cylindrical (EFFTRAN 5.1) and Marinelli (MEFFTRAN 2.0); wells keep the original 0.5% terms |
 | **Summing factor uncertainty** | None: factors are given without uncertainty | Relative standard uncertainty u(C) for every factor, propagated from the peak and total efficiency uncertainties through engine-computed sensitivity coefficients, plus the engine's numerical uncertainty (see [TCS_UNCERTAINTY.md](docs/TCS_UNCERTAINTY.md)) |
 | **Coincidence summing** | One nuclide at a time, run from Excel | All library nuclides in one run, in parallel native processes (unchanged Fortran cascade calculation) |
 | **Numerical format** | 3-decimal fixed format (`f15.3`) in `coin.txt` | Scientific format (`e23.15`) to preserve small positive summing factors |
@@ -286,4 +286,4 @@ Build_Installer.bat
 * **NIST XCOM**: Photon cross-sections database developed by M.J. Berger and J.H. Hubbell, National Institute of Standards and Technology (NIST). Its program notice grants permission for **non-commercial use only**.
 * **Qt / PySide6** (LGPL-3.0), **libquadmath** (LGPL-2.1) and the Python packages: see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-*EffSuite (v0.4.0) built by ChatGPT, Gemini and Claude under the supervision of G. Lutter.*
+*EffSuite (v0.5.0) built by ChatGPT, Gemini and Claude under the supervision of G. Lutter.*

@@ -23,26 +23,25 @@
       integer ne,nge,nc,nw,nh,ns,np
 
       common/detector/ cr,ct,dl,dr,ddt,dds,wt,bul,
-     +                  wd,crl,crr,hol,dist,bt,tt,ar,at
+     +                  wd,crl,crr,hol,dist,bt,tt
       common /sample/ t,pt
 
       real cr,ct,dl,dr,ddt,dds,wt,bul
       real wd,crl,crr,hol,dist,bt,tt
-      real ar,at
 
-      real sr,st,sx,sh,pt,t
+      real sr,st,sx,sh,pt,t,rho,rho0
       real e1,e2,emin,acc
-      real rho,rho0
 
       character*70 dmat,wmat,cmat,hmat,smat,bmat,airmat,amat
 
       real rtbis
       external rtbis
-
+     
       external left,right
       integer left,right
 
       integer j,l,r
+
 
       open(7,file='detector.txt',status='old')
       read(7,*) cr
@@ -67,7 +66,6 @@
       cr=cr/2.
       dr=dr/2.
       crr=crr/2.
-      ar=ar/2.
 
       open(7,file='source.txt',status='old')
       read(7,*) sr
@@ -146,13 +144,12 @@ c      if (emin.lt.10.) emin=10.
       integer ne,nge,nc,nw,nh,ns,np
 
       common/detector/ cr,ct,dl,dr,ddt,dds,wt,bul,
-     +                 wd,crl,crr,hol,dist,bt,tt,ar,at
+     +                 wd,crl,crr,hol,dist,bt,tt
 
       common /sample/ t,pt
 
       real cr,ct,dl,dr,ddt,dds,wt,bul
       real wd,crl,crr,hol,dist,bt,tt
-      real ar,at
 
       real t,pt
 
@@ -192,7 +189,7 @@ c      if (emin.lt.10.) emin=10.
 
       integer n
       integer left,right
-      integer l,r
+      integer j,l,r
       integer kode
 
       real e(1000),mu(1000)

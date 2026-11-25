@@ -1,10 +1,9 @@
 NOTICE for the Fortran source files in this folder
 ===================================================
 
-The following notice is quoted from the MEFFTRAN 1.9 README (../README.txt,
-whose header still reads "version 1.8"):
+The following notice is quoted from the MEFFTRAN 2.0 README (../README.txt):
 
-MEFFTRAN (version 1.8 2026)
+MEFFTRAN (version 2.0 2026)
 Copyright (c) 2005-2026
 Tim Vidmar
 
@@ -15,7 +14,7 @@ notice and this permission notice appear in all supporting documentation.
 Tim Vidmar makes no representations about the suitability of this software
 for any purpose. It is provided 'as is' without express or implied warranty.
 
-The .f files in this folder are based on the MEFFTRAN 1.9 sources distributed
+The .f files in this folder are based on the MEFFTRAN 2.0 sources distributed
 by the EFFTRAN project (https://efftran.github.io/), with the EffSuite changes
 listed in docs/CHANGES_FROM_ORIGINALS.md (section 1). The source files do not
 carry the notice themselves, so it is given here and in ../README.txt.

@@ -47,7 +47,7 @@
       real rho,rho0
 
       real u1(1000),u2(1000)
-      real t(1000),t2(1000),sig(1000),s(1000)
+      real t(1000),sig(1000),s(1000),t2(1000)
       real smax,unc
 
       real pi,u

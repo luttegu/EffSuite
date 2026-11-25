@@ -1,6 +1,6 @@
 """Standard uncertainty of the true coincidence summing (TCS) correction factors.
 
-The original EFFTRAN 5.0, MEFFTRAN 1.9 and WEFFTRAN programs give each summing
+The original EFFTRAN 5.1, MEFFTRAN 2.0 and WEFFTRAN programs give each summing
 correction factor C as a single value with no uncertainty. EffSuite adds one,
 without changing the physics engines:
 
@@ -231,7 +231,7 @@ def line_uncertainty(s_peak: float | None, s_total: float | None, settings: dict
 def monte_carlo_uncertainty(total_txt: bytes) -> float | None:
     """Largest relative Monte Carlo uncertainty (fraction) in column 4 of total.txt.
 
-    EFFTRAN 5.0 / MEFFTRAN 1.9 total.f writes it; older 3-column files give None.
+    EFFTRAN 5.1 / MEFFTRAN 2.0 total.f writes it; older 3-column files give None.
     """
     values = []
     for line in total_txt.splitlines():

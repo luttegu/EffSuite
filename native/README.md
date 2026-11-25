@@ -1,7 +1,7 @@
 # native/ — historical WEFFTRAN geometry work
 
 This folder is **not** used by the calculations. The engines EffSuite runs,
-EFFTRAN 5.0, MEFFTRAN 1.9 and WEFFTRAN with their sources, Windows/Linux
+EFFTRAN 5.1, MEFFTRAN 2.0 and WEFFTRAN with their sources, Windows/Linux
 programs and build manifests, are in `src/effsuite/assets/engines/`. They run
 as separate processes in private working folders.
 

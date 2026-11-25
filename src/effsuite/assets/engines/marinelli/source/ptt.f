@@ -287,7 +287,7 @@
 
       implicit none
 
-      character*(70) fname
+      character*(*) fname
       character*(132) line
 
       integer n

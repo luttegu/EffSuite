@@ -6,10 +6,10 @@
     {
       "geometry": "cylindrical",
       "stage": "mine",
-      "source_sha256": "e4751408d8333c9290c4e6652ab57298897c007c1d1eaab6f03eb61af2d065dc",
-      "compiled_source_sha256": "e4751408d8333c9290c4e6652ab57298897c007c1d1eaab6f03eb61af2d065dc",
+      "source_sha256": "aa87da081c5b1a6ca2ee485e89db5841c2ba2170f2efa638e3dbe98f9075d683",
+      "compiled_source_sha256": "aa87da081c5b1a6ca2ee485e89db5841c2ba2170f2efa638e3dbe98f9075d683",
       "output_format_change": null,
-      "binary_sha256": "14df2465bf791858a449d55785d7a01e4e318d5379d829af2b6418e9bdfd7fa6",
+      "binary_sha256": "e0149b7fb4475fdfb27f901551ce80408cad69a94b16fefea7803d1659276228",
       "command": [
         "C:\\GENIE2K\\EFFTRAN2026\\w64devkit\\bin\\gfortran.exe",
         "-O2",
@@ -54,8 +54,8 @@
     {
       "geometry": "cylindrical",
       "stage": "total",
-      "source_sha256": "f99cf15c651eaaa3aca1bedf4a06c021e20f42eb4507b2d643193463d06a3436",
-      "compiled_source_sha256": "f99cf15c651eaaa3aca1bedf4a06c021e20f42eb4507b2d643193463d06a3436",
+      "source_sha256": "ffc337c703d7a099318c0e2dcc32e0014196e19a60e3203d5a9f0d690bd88f3b",
+      "compiled_source_sha256": "ffc337c703d7a099318c0e2dcc32e0014196e19a60e3203d5a9f0d690bd88f3b",
       "output_format_change": null,
       "binary_sha256": "1ad4d9a06fbcd2a1f778c1ded1ff147d3937f170a8260ae2da15cca4f01ac6da",
       "command": [
@@ -78,10 +78,10 @@
     {
       "geometry": "cylindrical",
       "stage": "scatter",
-      "source_sha256": "fe008a13ae4bb78a2d6d756438585a2f62c69d00e6e376eab608dd9b3716151c",
-      "compiled_source_sha256": "fe008a13ae4bb78a2d6d756438585a2f62c69d00e6e376eab608dd9b3716151c",
+      "source_sha256": "fe78b2629004d6367babd740bd6a3a90b6001be7c8def2e1b6f72ee12b537db7",
+      "compiled_source_sha256": "fe78b2629004d6367babd740bd6a3a90b6001be7c8def2e1b6f72ee12b537db7",
       "output_format_change": null,
-      "binary_sha256": "c6f8876022174c55949ee8251364aeebee073fc685ea1ea8e046db3618071705",
+      "binary_sha256": "f633d21df97fb397e915605f7242637e12a91203f78a6bfd661c3c2eab11887f",
       "command": [
         "C:\\GENIE2K\\EFFTRAN2026\\w64devkit\\bin\\gfortran.exe",
         "-O2",
@@ -198,10 +198,10 @@
     {
       "geometry": "cylindrical",
       "stage": "transfer",
-      "source_sha256": "b40084755bc79d2b41ced3d80dc5ccc8dbff65bd38153d512cb150f407a023f4",
-      "compiled_source_sha256": "b40084755bc79d2b41ced3d80dc5ccc8dbff65bd38153d512cb150f407a023f4",
+      "source_sha256": "693e817d9fe218186e060901ec13b4712fffcceb3cb8f62b4dbca55e5b3114c2",
+      "compiled_source_sha256": "693e817d9fe218186e060901ec13b4712fffcceb3cb8f62b4dbca55e5b3114c2",
       "output_format_change": null,
-      "binary_sha256": "f24dff70fca4a6c15a451cc7aa5d0fadd1d890a23609786b5fef7d79bac51693",
+      "binary_sha256": "45f602e1b103b92c484f1228d220a3a07553a9cb8e439d984ab3ee0c7ab3a688",
       "command": [
         "C:\\GENIE2K\\EFFTRAN2026\\w64devkit\\bin\\gfortran.exe",
         "-O2",
@@ -222,10 +222,10 @@
     {
       "geometry": "cylindrical",
       "stage": "coincidence",
-      "source_sha256": "79a011108ea56bed4f05c7e2eb9c11400e191cea91756a6feeeaf9114fc8ac3a",
-      "compiled_source_sha256": "f94f04f698761f4714b9299f4cecbe00e05ca7d59b07ebca035d80839ef75812",
+      "source_sha256": "e04ac4c4e1fa90720e9d659edc9a7838f36f778ee944568954680dd1fdf701a3",
+      "compiled_source_sha256": "82b16d75911c7b6d4e29a6d667669bcb78b0081128b69f3c20f9889a676974be",
       "output_format_change": "Text output F15.3 -> E23.15; scientific arithmetic is unchanged",
-      "binary_sha256": "4e46056a15371548edb6380c670ccca3c75dd9e00efd373639e8e9e085672028",
+      "binary_sha256": "2900b2c9d4feb3f4e71bf474ecee8122606fcc5afc6dc1a1c07d8a79352515a0",
       "command": [
         "C:\\GENIE2K\\EFFTRAN2026\\w64devkit\\bin\\gfortran.exe",
         "-O2",
@@ -246,10 +246,10 @@
     {
       "geometry": "marinelli",
       "stage": "mine",
-      "source_sha256": "a479b775875efac65f9d4086ba0205c58cbe916021e02c860d30033e283fc90c",
-      "compiled_source_sha256": "a479b775875efac65f9d4086ba0205c58cbe916021e02c860d30033e283fc90c",
+      "source_sha256": "01571a6dc522b2649cde6f982dd39c53ad2f74e126f0df074f3f13bdfd837f79",
+      "compiled_source_sha256": "01571a6dc522b2649cde6f982dd39c53ad2f74e126f0df074f3f13bdfd837f79",
       "output_format_change": null,
-      "binary_sha256": "c864bea5fe98a09095db95b0b6d2fdf91d516cad0deeea20b145d2938f500c97",
+      "binary_sha256": "9ec8d846c23fb009df34651099a821a09570de0ce20e0710b0dc334102641307",
       "command": [
         "C:\\GENIE2K\\EFFTRAN2026\\w64devkit\\bin\\gfortran.exe",
         "-O2",
@@ -294,10 +294,10 @@
     {
       "geometry": "marinelli",
       "stage": "total",
-      "source_sha256": "fa7c0ca078566c4418e061644202b966acabfd746ea845b5cd46835de70643ba",
-      "compiled_source_sha256": "fa7c0ca078566c4418e061644202b966acabfd746ea845b5cd46835de70643ba",
+      "source_sha256": "e62f065d71b06b339de5a96435db219f2e5de662948dc67e952bb17e1941fbf5",
+      "compiled_source_sha256": "e62f065d71b06b339de5a96435db219f2e5de662948dc67e952bb17e1941fbf5",
       "output_format_change": null,
-      "binary_sha256": "9a75575835e34274641e542225fe4da4f17537bb92a83c46b7325a7cd28e89af",
+      "binary_sha256": "3a5f51a3155cd34a88d92f46ecf2986f5bbe3fe12e6dcae0e2c015e7d83539e5",
       "command": [
         "C:\\GENIE2K\\EFFTRAN2026\\w64devkit\\bin\\gfortran.exe",
         "-O2",
@@ -318,10 +318,10 @@
     {
       "geometry": "marinelli",
       "stage": "scatter",
-      "source_sha256": "a6db7ffa344e5de9898e809fd6594dc9f3db9c6a60bc2b05d926321a463cd381",
-      "compiled_source_sha256": "a6db7ffa344e5de9898e809fd6594dc9f3db9c6a60bc2b05d926321a463cd381",
+      "source_sha256": "1c314a447b385ccaf878a32561d03c3477cc254fd082a594773aca387b1dda9a",
+      "compiled_source_sha256": "1c314a447b385ccaf878a32561d03c3477cc254fd082a594773aca387b1dda9a",
       "output_format_change": null,
-      "binary_sha256": "89406a7b1a23ef6876d69d7b664991fc1fcd859bead2ea1df9d76922ff8b05bd",
+      "binary_sha256": "2b96c79908bcd7492ad5cc43d5def5c7aadc61e38a4a933714fecb593bb50443",
       "command": [
         "C:\\GENIE2K\\EFFTRAN2026\\w64devkit\\bin\\gfortran.exe",
         "-O2",
@@ -342,10 +342,10 @@
     {
       "geometry": "marinelli",
       "stage": "buildup",
-      "source_sha256": "2f4e3c447995be019790ebac7f77393394e4f0724f74ffdb09dc660a9f98e13d",
-      "compiled_source_sha256": "2f4e3c447995be019790ebac7f77393394e4f0724f74ffdb09dc660a9f98e13d",
+      "source_sha256": "4805c3b7762f2b4213d61b9e55426b69663e956ee4d393e6bb3ab0df1aa178dd",
+      "compiled_source_sha256": "4805c3b7762f2b4213d61b9e55426b69663e956ee4d393e6bb3ab0df1aa178dd",
       "output_format_change": null,
-      "binary_sha256": "5c38374b5facc1854d83f82d3d9301e648efef594195870aa42581d3981f8a78",
+      "binary_sha256": "28123b51a2550eeef1b0d6fa7824a2c6f3d2decdc825a7911d6e282941259621",
       "command": [
         "C:\\GENIE2K\\EFFTRAN2026\\w64devkit\\bin\\gfortran.exe",
         "-O2",
@@ -366,10 +366,10 @@
     {
       "geometry": "marinelli",
       "stage": "eta",
-      "source_sha256": "66e3ca172345a43810e4556756b8519a02887a36760c61d1932d0c5968ba19f9",
-      "compiled_source_sha256": "66e3ca172345a43810e4556756b8519a02887a36760c61d1932d0c5968ba19f9",
+      "source_sha256": "d04d13513012d457d4073c26b54783f21b79930caabc7b7123a43304162296be",
+      "compiled_source_sha256": "d04d13513012d457d4073c26b54783f21b79930caabc7b7123a43304162296be",
       "output_format_change": null,
-      "binary_sha256": "994b777692ca75b8e411d0de6a8ee8c8a02fd20da9f92e116a5390f03701584e",
+      "binary_sha256": "d6607b88b8f6e5967f4f0366174bdf714f139cf7e1a7ef4f51333c274fbe2d63",
       "command": [
         "C:\\GENIE2K\\EFFTRAN2026\\w64devkit\\bin\\gfortran.exe",
         "-O2",
@@ -390,10 +390,10 @@
     {
       "geometry": "marinelli",
       "stage": "ptt",
-      "source_sha256": "55b7e44b9295f61b889e7aff602ec9c19fae2632340155c788d15f8235c3553d",
-      "compiled_source_sha256": "55b7e44b9295f61b889e7aff602ec9c19fae2632340155c788d15f8235c3553d",
+      "source_sha256": "8745f15696668e50ba6025e4c6b7cc9be1982472636a647915699bc911cc9ae4",
+      "compiled_source_sha256": "8745f15696668e50ba6025e4c6b7cc9be1982472636a647915699bc911cc9ae4",
       "output_format_change": null,
-      "binary_sha256": "365371d2b30edd75bcc96813d9c9b1e18c67b1e43811d914809de53f2925696e",
+      "binary_sha256": "cea3fbdbf19b70af152ed4fc668a0fc71680b9350854978b6216be2c89303db1",
       "command": [
         "C:\\GENIE2K\\EFFTRAN2026\\w64devkit\\bin\\gfortran.exe",
         "-O2",
@@ -414,10 +414,10 @@
     {
       "geometry": "marinelli",
       "stage": "efficiency",
-      "source_sha256": "1586a8ab99920e152360fb9b56948feda153e133134f90fac27d83d567f707f3",
-      "compiled_source_sha256": "1586a8ab99920e152360fb9b56948feda153e133134f90fac27d83d567f707f3",
+      "source_sha256": "474f7d7b559e42a81601011dca07a1abfec43d677c62fe4132a4e25dc3d1428e",
+      "compiled_source_sha256": "474f7d7b559e42a81601011dca07a1abfec43d677c62fe4132a4e25dc3d1428e",
       "output_format_change": null,
-      "binary_sha256": "963bda968ebf149b9d69cbdd9f06fdc6515b5ef598e8d11f54545b5d7c553f84",
+      "binary_sha256": "13c77ecac2ec957027c4020114c8ced75f41ae2d94f188ae3b51b8821a8e3b31",
       "command": [
         "C:\\GENIE2K\\EFFTRAN2026\\w64devkit\\bin\\gfortran.exe",
         "-O2",
@@ -438,10 +438,10 @@
     {
       "geometry": "marinelli",
       "stage": "transfer",
-      "source_sha256": "8d1f0e9598d3d9ba41d2179e53ee53e34299ab3d3856d4bdd4723039e47df486",
-      "compiled_source_sha256": "8d1f0e9598d3d9ba41d2179e53ee53e34299ab3d3856d4bdd4723039e47df486",
+      "source_sha256": "f86e94c39a781b7ec602b1aca8cbab4fd41f6904f6c9007a32b641ee856924b4",
+      "compiled_source_sha256": "f86e94c39a781b7ec602b1aca8cbab4fd41f6904f6c9007a32b641ee856924b4",
       "output_format_change": null,
-      "binary_sha256": "8589b2fc9c4d78b8c5dc157c2a3a84b80439059bcdcaa628e53de1cc192f8823",
+      "binary_sha256": "0bd988bf28d01e0b64fd1797e528d39d359433ff3065e31e3339e29b98a88a60",
       "command": [
         "C:\\GENIE2K\\EFFTRAN2026\\w64devkit\\bin\\gfortran.exe",
         "-O2",
@@ -462,10 +462,10 @@
     {
       "geometry": "marinelli",
       "stage": "coincidence",
-      "source_sha256": "79a011108ea56bed4f05c7e2eb9c11400e191cea91756a6feeeaf9114fc8ac3a",
-      "compiled_source_sha256": "f94f04f698761f4714b9299f4cecbe00e05ca7d59b07ebca035d80839ef75812",
+      "source_sha256": "e04ac4c4e1fa90720e9d659edc9a7838f36f778ee944568954680dd1fdf701a3",
+      "compiled_source_sha256": "82b16d75911c7b6d4e29a6d667669bcb78b0081128b69f3c20f9889a676974be",
       "output_format_change": "Text output F15.3 -> E23.15; scientific arithmetic is unchanged",
-      "binary_sha256": "5f6f6a81c9514992ca3868e578261c16a6863651d810426a7bc8b9de86a714cb",
+      "binary_sha256": "6775ca298b48b70cb6b8784370a81a6e8722f38801a52ace8be05a8360139661",
       "command": [
         "C:\\GENIE2K\\EFFTRAN2026\\w64devkit\\bin\\gfortran.exe",
         "-O2",

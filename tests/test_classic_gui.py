@@ -345,10 +345,10 @@ class ClassicGuiTests(unittest.TestCase):
             mat_combo.setCurrentText("soil")
             QApplication.processEvents()
             self.assertAlmostEqual(self.window.source_form.values("sample")[7], 1.4, places=4)
-            # Selecting 'heavy' (H2O at 2 g/cm³) auto-fills nominal density 2.0 g/cm³
-            mat_combo.setCurrentText("heavy")
+            # Selecting 'aluminium' auto-fills nominal density 2.7 g/cm³
+            mat_combo.setCurrentText("aluminium")
             QApplication.processEvents()
-            self.assertAlmostEqual(self.window.source_form.values("sample")[7], 2.0, places=4)
+            self.assertAlmostEqual(self.window.source_form.values("sample")[7], 2.7, places=4)
             # Loading a source model with a custom density (e.g., water at 1.35 g/cm³) preserves 1.35
             custom = list(self.window.source_form.values("sample"))
             custom[5] = "water"

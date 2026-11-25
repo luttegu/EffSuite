@@ -1725,7 +1725,7 @@ class MainWindow(QMainWindow):
              "'>Provided strictly on an AS-IS basis. G. Lutter accepts NO responsibility or liability under any circumstances for incorrect calculations, inaccurate analytical results, or damages resulting from software use. Users must independently verify all results.</span>"
              "</div>"
              + gammavision_note +
-             "<p><b>Physics engines:</b> EFFTRAN 5.0 and MEFFTRAN 1.9 (2026), and WEFFTRAN (2018), by Tim Vidmar (<a href='https://efftran.github.io/'>https://efftran.github.io/</a>), with NIST XCOM photon cross-sections.</p>"
+             "<p><b>Physics engines:</b> EFFTRAN 5.1 and MEFFTRAN 2.0 (2026), and WEFFTRAN (2018), by Tim Vidmar (<a href='https://efftran.github.io/'>https://efftran.github.io/</a>), with NIST XCOM photon cross-sections.</p>"
              "<p><b>Additions:</b> coincidence summing factors for all library nuclides in one pass, computed in parallel worker processes; spatial quadrature integration for well detectors.</p>"
              f"<p><b>User folder (data and results):</b> <code>{get_effsuite_root()}</code><br>"
              "Default: <code>C:\\GENIE2K\\EffSuite</code> when Genie 2000 is installed, otherwise <code>Documents\\EffSuite</code>.</p>"

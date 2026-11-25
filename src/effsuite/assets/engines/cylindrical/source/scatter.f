@@ -10,13 +10,12 @@
       real e(1000)
 
       real se(1000),smu(1000),smuc(1000)
-      real mus,musc
+      real mus,musc,rho,rho0
       integer ne,ns
 
       real rs,zls,zus,ds,rs2
       real sr,st,sden
       real cb,cs
-      real rho,rho0
       real dist,u,pi
       real t(1000),sig(1000),rat,ratmax,unc
 

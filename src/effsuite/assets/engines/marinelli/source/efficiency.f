@@ -3,8 +3,8 @@
 
       implicit none
 
-      double precision e,x,peak,peak2,tot,tot2
-      double precision ptt(3000)
+      real e,x,peak,peak2,tot,tot2
+      real ptt(3000)
       integer n
 
       open(7,file='ptt.txt',status='old')
@@ -19,8 +19,8 @@
       read(7,*,end=44) e,tot,tot2
       n=e+0.5
       x=ptt(n)
-      peak=max(1.d-15,tot*x)
-      peak2=max(1.d-15,tot2*x)
+      peak=max(1.e-15,tot*x)
+      peak2=max(1.e-15,tot2*x)
       write(9,77) e,peak,peak2
 77    format(3e15.5)
       goto 33

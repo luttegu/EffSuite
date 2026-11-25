@@ -3,31 +3,30 @@
 
       implicit none
 
-      double precision costh,sinth,fi
-      double precision tx,ty,tz
-      double precision x0,z0
-      double precision x(4)
-      double precision e(1000)
+      real costh,sinth,fi
+      real tx,ty,tz
+      real x0,z0
+      real x(4)
+      real e(1000)
 
-      double precision se(1000),smu(1000),smuc(1000)
-      double precision mus,musc
+      real se(1000),smu(1000),smuc(1000)
+      real mus,musc,rho,rho0
       integer ne,ns
 
-      double precision rs,zls,zus,ds,rs2
-      double precision rx,zlx,zux,dx,rx2
+      real rs,zls,zus,ds,rs2
+      real rx,zlx,zux,dx,rx2
 
-      double precision sr,st,sx,sh,pt
-      double precision rho,rho0
+      real sr,st,sx,sh,pt
 
-      double precision dist,u,pi
-      double precision t(1000),sig(1000),rat,ratmax,unc
+      real dist,u,pi
+      real t(1000),sig(1000),rat,ratmax,unc
 
       character*60 smat
 
       external left,right
       integer left,right
 
-      integer i,j,n,l,r
+      integer i,j,l,r,n
 
       ne=1
       open(7,file='total.txt',status='old')
@@ -49,7 +48,7 @@
       read(7,*) pt
       read(7,55) smat
       read(7,*)
-      rho=0.d0
+      rho=0.
       read(7,*,end=88,err=88) rho
 88    continue
       close(7)
@@ -70,14 +69,14 @@
       read(7,*) rho0
       close(7)
 
-      if (rho.le.0.d0) rho=rho0
-      if (rho0.le.0.d0) rho0=1.d-15
+      if (rho.le.0.) rho=rho0
+      if (rho0.le.0.) rho0=1.e-15
 
       do j=1,ns
         smu(j)=smu(j)+log(rho/rho0)
         smuc(j)=smuc(j)+log(rho/rho0)
       enddo
-
+      
       zls=0
       zus=zls+st-pt
       rs=sr-pt
@@ -141,7 +140,7 @@
         sig(j)=(n-1)*sig(j)+u*u
         sig(j)=sig(j)/n
         rat=0.
-        if (t(j).gt.0.) rat=sqrt(max(0.d0,(sig(j)-t(j)*t(j))/n))/t(j)
+        if (t(j).gt.0.) rat=sqrt(max(0.,(sig(j)-t(j)*t(j))/n))/t(j)
         if (rat.gt.ratmax) ratmax=rat
       enddo
       
@@ -168,9 +167,9 @@
       integer l,r
       integer kode
 
-      double precision e(1000),mu(1000),muc(1000)
-      double precision ene,rayl,comp,phot,pair,pair1,tot,tot1
-      double precision den
+      real e(1000),mu(1000),muc(1000)
+      real ene,rayl,comp,phot,pair,pair1,tot,tot1
+      real den
 
       l=left(fname)
       r=right(fname)
@@ -238,7 +237,7 @@
       subroutine inter(n,e,mu,xe,xmu)
       implicit none
       integer n,j
-      double precision e(1000),mu(1000),xe,xmu
+      real e(1000),mu(1000),xe,xmu
       j=1.
       do while(e(j).lt.xe.and.j.lt.n)
          j=j+1
@@ -252,11 +251,11 @@
 
       subroutine path(zlo,zup,r2,x0,z0,tx,ty,tz,d)
       implicit none
-      double precision zlo,zup,r2,x0,z0,tx,ty,tz
-      double precision k1,k2,k
-      double precision za,zb
-      double precision a,b,c,det,q,sgn
-      double precision d
+      real zlo,zup,r2,x0,z0,tx,ty,tz
+      real k1,k2,k
+      real za,zb
+      real a,b,c,det,q,sgn
+      real d
       d=0.
       a=tx*tx+ty*ty
       b=2.*x0*tx
@@ -284,11 +283,11 @@
 
       SUBROUTINE sobseq(n,x)
       INTEGER n,MAXBIT,MAXDIM
-      double precision x(4)
+      real x(4)
       PARAMETER (MAXBIT=30,MAXDIM=6)
       INTEGER i,im,in,ipp,j,k,l,ip(MAXDIM),iu(MAXDIM,MAXBIT),iv(MAXBIT*
      *MAXDIM),ix(MAXDIM),mdeg(MAXDIM)
-      double precision fac
+      real fac
       SAVE ip,mdeg,ix,iv,in,fac
       EQUIVALENCE (iv,iu)
       DATA ip /0,1,1,2,1,4/, mdeg /1,2,3,3,4,4/, ix /6*0/

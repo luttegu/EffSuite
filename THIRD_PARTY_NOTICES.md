@@ -2,13 +2,13 @@
 
 ## EFFTRAN, MEFFTRAN and WEFFTRAN
 
-The cylinder and Marinelli engines are based on **EFFTRAN 5.0** and
-**MEFFTRAN 1.9**, supplied by the official EFFTRAN project
+The cylinder and Marinelli engines are based on **EFFTRAN 5.1** and
+**MEFFTRAN 2.0**, supplied by the official EFFTRAN project
 (https://efftran.github.io/). The well engine is based on **WEFFTRAN 0.8**,
 whose source and data were supplied in the user's archive. All three are by
 Tim Vidmar:
 
-* EFFTRAN 5.0 and MEFFTRAN 1.9: Copyright (c) 2005–2026 Tim Vidmar.
+* EFFTRAN 5.1 and MEFFTRAN 2.0: Copyright (c) 2005–2026 Tim Vidmar.
 * WEFFTRAN 0.8: Copyright (c) 1995–2016 Tim Vidmar (source file headers);
   the WEFFTRAN 0.8 README is dated 2018.
 
@@ -24,7 +24,7 @@ All three are used under his permission notice:
 
 Where the notice is kept:
 
-* **EFFTRAN 5.0 and MEFFTRAN 1.9**: the `.f` files do not contain the notice
+* **EFFTRAN 5.1 and MEFFTRAN 2.0**: the `.f` files do not contain the notice
   themselves. It is in each engine's `README.txt` and in a `NOTICE.txt` file
   in each `source/` folder.
 * **WEFFTRAN**: in the header of each WEFFTRAN source file, in the engine's
@@ -33,9 +33,8 @@ Where the notice is kept:
 * Python code adapted from the engines (`src/effsuite/spatial_summing.py`)
   carries the notice in its header.
 * Copies are in `third_party/`: `cylindrical-original-notice.txt` and
-  `marinelli-original-notice.txt` (the EFFTRAN 5.0 and MEFFTRAN 1.9 README
-  files, copied verbatim; the MEFFTRAN 1.9 README header still reads
-  "version 1.8"), and `well-original-notice.txt`.
+  `marinelli-original-notice.txt` (the EFFTRAN 5.1 and MEFFTRAN 2.0 README
+  files, copied verbatim), and `well-original-notice.txt`.
 
 EffSuite's modifications are listed in
 [docs/CHANGES_FROM_ORIGINALS.md](docs/CHANGES_FROM_ORIGINALS.md); they do not

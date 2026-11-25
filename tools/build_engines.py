@@ -23,6 +23,11 @@ def build(compiler, target, extra=()):
     if probe.returncode == 0 or "unrecognized command line option" not in probe.stderr:
         flags.append("-fallow-argument-mismatch")
     if target == "windows": flags += ["-static"]
+    # Another MinGW on PATH (for example C:\EGSnrc\mingw64\bin) can supply an older ld.exe
+    # whose executables Windows refuses to start (WinError 193); use the compiler's own tools.
+    env = dict(os.environ)
+    if Path(compiler).parent != Path("."):
+        env["PATH"] = str(Path(compiler).parent)+os.pathsep+env.get("PATH", "")
     jobs = []
     for mode in ("cylindrical", "marinelli", "well"):
         folder = ASSETS/mode
@@ -46,7 +51,7 @@ def build(compiler, target, extra=()):
         copy.write_text(text)
         binary = output/(stage+(".exe" if target == "windows" else ""))
         cmd = [compiler, *extra, *flags, "-w", "-o", str(binary), str(copy)]
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=120, env=env)
         if result.returncode: raise RuntimeError(f"{mode}/{stage}: {result.stderr}")
         copy.unlink()
         print(mode, stage, flush=True)

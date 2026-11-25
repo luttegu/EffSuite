@@ -50,9 +50,9 @@
       double precision sr,sx,st,sh,pt
       double precision rho,rho0
 
-      double precision u1(100),u2(100)
-      double precision t(100),sig(100),s(100),t2(100)
-      double precision smax,unc
+      real u1(1000),u2(1000)
+      real t(1000),sig(1000),s(1000),t2(1000)
+      real smax,unc
 
       double precision pi,u
       double precision sbul,dbul,dbul1
@@ -116,7 +116,7 @@
       read(7,*) pt
       read(7,77) smat
       read(7,77) bmat
-      rho=0.d0
+      rho=0.
       read(7,*,end=88,err=88) rho
 88    continue
       close(7)
@@ -149,8 +149,8 @@
       read(7,*) rho0
       close(7)
 
-      if (rho.le.0.d0) rho=rho0
-      if (rho0.le.0.d0) rho0=1.d-15
+      if (rho.le.0.) rho=rho0
+      if (rho0.le.0.) rho0=1.e-15
 
       do j=1,ne
         mus(j)=mus(j)*rho/rho0
@@ -484,19 +484,19 @@
 
 333   continue
 
-      smax=0.d0
+      smax=0.
 
       do j=1,ne
         u=u1(j)+u2(j)
-        u=u/2.d0
+	u=u/2.
         t(j)=(n-1)*t(j)+u
         t(j)=t(j)/n
         sig(j)=(n-1)*sig(j)+u*u
         sig(j)=sig(j)/n
         s(j)=sig(j)-t(j)*t(j)
-        s(j)=abs(s(j))
+	s(j)=abs(s(j))
         s(j)=sqrt(s(j)/n)
-        if (t(j).gt.0.d0) then
+	if (t(j).gt.0.) then
           s(j)=s(j)/t(j)
           if (s(j).gt.smax) smax=s(j)
         endif
@@ -512,9 +512,9 @@
 
       open(7,file='total.txt',status='unknown')
       do i=1,ne
-        write(7,99) exp(e(i)),max(1.d-15,t(i)),
-     +              max(1.d-15,sqrt(max(0.d0,t2(i)))),
-     +              max(1.d-15,s(i))
+        write(7,99) exp(e(i)),max(1.e-15,t(i)),
+     +              max(1.e-15,sqrt(max(0.,t2(i)))),
+     +              max(1.e-15,s(i))
       enddo
       close(7)
 99    format(4e15.5)

@@ -1,6 +1,6 @@
 # EffSuite Compared with the Original EFFTRAN, MEFFTRAN and WEFFTRAN
 
-*EffSuite v0.4.0 (November 2026). For the original author (Dr. Tim Vidmar), maintainers and scientific reviewers.*
+*EffSuite v0.5.0 (November 2026). For the original author (Dr. Tim Vidmar), maintainers and scientific reviewers.*
 
 > **Disclaimer:** Provided strictly on an AS-IS basis. G. Lutter accepts NO responsibility or liability under any circumstances for incorrect calculations, inaccurate analytical results, or damages resulting from software use. Users must independently verify all results.
 
@@ -15,17 +15,17 @@ the test evidence in [VALIDATION.md](VALIDATION.md).
 
 | Program | Version compared | EffSuite engine folder |
 |---|---|---|
-| EFFTRAN (cylindrical samples) | 5.0 (November 2026); earlier 4.8 and 4.9 | `src/effsuite/assets/engines/cylindrical` |
-| MEFFTRAN (Marinelli beakers) | 1.9 (November 2026); earlier 1.7 and 1.8 | `src/effsuite/assets/engines/marinelli` |
+| EFFTRAN (cylindrical samples) | 5.1 (November 2026); earlier 4.8, 4.9 and 5.0 | `src/effsuite/assets/engines/cylindrical` |
+| MEFFTRAN (Marinelli beakers) | 2.0 (November 2026); earlier 1.7, 1.8 and 1.9 | `src/effsuite/assets/engines/marinelli` |
 | WEFFTRAN (well detectors) | 0.8 (2018; Fortran stages "4.4.4 2016") | `src/effsuite/assets/engines/well` |
 
 ---
 
 ## Summary
 
-* **Cylinder and Marinelli.** The Fortran engines are the original EFFTRAN 5.0
-  and MEFFTRAN 1.9 routines, with small numerical safeguards (sections 1.3 and
-  1.4) and a higher-precision output format. The physics model is unchanged.
+* **Cylinder and Marinelli.** The Fortran engines are the original EFFTRAN 5.1
+  and MEFFTRAN 2.0 routines, with small numerical safeguards (sections 1.3 and
+  1.4) and a higher-precision output format (section 1.9 for the update). The physics model is unchanged.
   A Python layer runs the stages in private folders and runs nuclides in
   parallel.
 * **Well detectors.** The original subtraction formula for the summing factor
@@ -40,7 +40,7 @@ the test evidence in [VALIDATION.md](VALIDATION.md).
 
 ---
 
-## 1. Cylinder (EFFTRAN 5.0) and Marinelli (MEFFTRAN 1.9) engines
+## 1. Cylinder (EFFTRAN 5.1) and Marinelli (MEFFTRAN 2.0) engines
 
 ### 1.1 Sample bulk density (8th source line)
 
@@ -57,17 +57,18 @@ EffSuite has the same model, with these differences:
 | Item | Upstream | EffSuite |
 |---|---|---|
 | Missing or non-positive ρ (7-line file, `Point.txt` with `vacuum`) | replaced by 10⁻¹² (a 7-line file behaves like a vacuum) | replaced by the nominal ρ₀ (`if (rho.le.0.) rho=rho0`); ρ₀ floored at 10⁻¹⁵ |
-| Loop bound in `total.f` | EFFTRAN 5.0 line 152 scales `mus(j)` for `j=1,ns` (rows of the attenuation table) although `mus` holds the `ne` interpolated energies | `do j=1,ne`, the array actually used |
+| Loop bound in `total.f` | EFFTRAN 5.0 line 152 (5.1 line 154, MEFFTRAN 2.0 line 152) scales `mus(j)` for `j=1,ns` (rows of the attenuation table) although `mus` holds the `ne` interpolated energies | `do j=1,ne`, the array actually used |
 | Loop bound in `mine.f`, `scatter.f` | first 4.9/1.8 sources used `do j=1,ne` (`ne` = 0 in `mine.f`, 25 in `scatter.f`, so ρ was partly ignored); **corrected upstream** to `ns` | `do j=1,ns` |
 | Well geometry | not available in WEFFTRAN | same scaling added to the well engine and to the spatial model |
 
 Check: `Water` at ρ = 2.0 g/cm³ gives the same results as `heavy`
-(H₂O, ρ₀ = 2.0 g/cm³) to 6 decimal places in all three geometries. 7-line source
+(H₂O, ρ₀ = 2.0 g/cm³, a MEFFTRAN 1.9 material kept as a test fixture) to 6
+decimal places in all three geometries. 7-line source
 files and older projects still load, with ρ = ρ₀.
 
 ### 1.2 Efficiency-transfer uncertainty
 
-In EFFTRAN 4.9/5.0 and MEFFTRAN 1.9, `total.f` writes a fourth column: the
+From EFFTRAN 4.9 and MEFFTRAN 1.9 on, `total.f` writes a fourth column: the
 relative Monte Carlo statistical uncertainty *s* of the total efficiency.
 `transfer.f` combines it with the reference calibration uncertainty
 *u*<sub>ref</sub> (percent):
@@ -104,7 +105,9 @@ positioning and decay data are not included.
   prints as `0.000`. The arithmetic is unchanged.
 * **`transfer.f`.** EffSuite keeps `format(3e15.5)`. Upstream EFFTRAN 4.9/5.0
   uses `format(f12.1,e15.5,f12.1)`, which rounds energies to 0.1 keV
-  (46.539 keV becomes 46.5 keV).
+  (46.539 keV becomes 46.5 keV). It computes in single precision and in the
+  same order of operations as EFFTRAN 5.1 and MEFFTRAN 2.0, so its
+  efficiencies equal the upstream ones digit for digit.
 
 ### 1.5 Program organisation
 
@@ -121,6 +124,11 @@ positioning and decay data are not included.
   GammaVision export (section 3.2).
 
 ### 1.6 Defect in the MEFFTRAN 1.9 detector format
+
+**Fixed upstream in MEFFTRAN 2.0**: its `Efficiency Transfer.xlsm`, the
+bundled models and all stages (`mine.f`, `total.f`, `ptt.f`, `eta.f`) use
+16 lines again, without absorber. EffSuite still accepts 19-line files written
+by MEFFTRAN 1.9. The description below applies to MEFFTRAN 1.9.
 
 The MEFFTRAN 1.9 `Efficiency Transfer.xlsm` writes a 19-line
 `detector.txt`, with absorber diameter, thickness and material, as for
@@ -142,13 +150,16 @@ accepts either format and writes each engine exactly the lines it reads
 The cylinder and Marinelli engines read the same `kordaten.txt` (9,870
 lines). It contains Nb-94, which upstream added in 5.0/1.9, and also W-187,
 which upstream still lacks. Pa-234 keeps the upstream transition `41 43`.
-MEFFTRAN 1.9's `heavy.txt` (H₂O, ρ₀ = 2.0 g/cm³) is bundled, so files
-created in MEFFTRAN 1.9 open unchanged. Only the original EFFTRAN 5.0 and
-MEFFTRAN 1.9 materials are bundled; the earlier `HeavyWater.txt` (identical
-composition) was removed in 0.3.2.
+Apart from W-187 and the position of the Nb-94 record, the nuclide records
+are identical to those of the EFFTRAN 5.1 / MEFFTRAN 2.0 `kordaten.txt`.
+The bundled materials are the 19 of the EFFTRAN 5.1 and MEFFTRAN 2.0
+distributions, unchanged from 5.0/1.9. MEFFTRAN 1.9's `heavy.txt` (H₂O,
+ρ₀ = 2.0 g/cm³) is not in MEFFTRAN 2.0 and was removed in 0.5.0, as was the
+earlier `HeavyWater.txt` (identical composition) in 0.3.2.
 
 The cylinder and Marinelli Detector, Sample and Standard models are the
-original EFFTRAN 5.0 / MEFFTRAN 1.9 ones. The original WEFFTRAN distribution
+original EFFTRAN 5.0 / MEFFTRAN 1.9 ones, unchanged in EFFTRAN 5.1 /
+MEFFTRAN 2.0. The original WEFFTRAN distribution
 has no usable well-format models (only EFFTRAN-format leftovers), so EffSuite
 bundles its own well models, which are always kept: `Detector/well.txt`
 (Ge crystal, aluminium end cap), `Sample/Sample.txt` and
@@ -158,11 +169,54 @@ bundles its own well models, which are always kept: `Detector/well.txt`
 ### 1.8 Compilation
 
 All 35 native Windows programs (10 cylinder, 10 Marinelli and 15 well
-programs, including the EffSuite `raytrace`) are built with GNU Fortran 15.2.0 (w64devkit). The Linux programs are built with
-GNU Fortran 13.3. This replaced MinGW GCC 7.3 builds that failed on Windows
+programs, including the EffSuite `raytrace`) are built with GNU Fortran 15.2.0 (w64devkit). The Linux cylinder and Marinelli programs (rebuilt for
+EFFTRAN 5.1 and MEFFTRAN 2.0) are built with GNU Fortran 14.4, as are the Linux
+well programs `mine`, `total`, `scatter` and `efficiency`; the other Linux
+well programs with GNU Fortran 13.3. This replaced MinGW GCC 7.3 builds that failed on Windows
 with `WinError 623` (DLL relocation). The flags `-finit-local-zero` and
-`-fno-strict-aliasing` make the legacy Fortran 77 deterministic. Source,
-binary hashes and commands are in `assets/engines/*/bin/*/build_manifest.json`.
+`-fno-strict-aliasing` make the legacy Fortran 77 deterministic; the 13.3
+Linux builds were made without them. Source, binary hashes and commands are
+in `assets/engines/*/bin/*/build_manifest.json`.
+
+Until this update, the Linux cylinder and Marinelli programs were still the
+v0.1.1 builds, older than the EFFTRAN 4.9 / MEFFTRAN 1.8 sources (no bulk
+density, three-column `total.txt`). The Linux well programs `mine`, `total`,
+`scatter` and `efficiency` were also v0.1.1 builds, older than their sources
+(density scaling, path-length fix of section 2.1, 10⁻¹⁵ floor); they are
+rebuilt with GNU Fortran 14.4 from the unchanged sources. For a 60 mm water
+sample at 1.5 g/cm³ in the bundled well detector, their output files now
+equal the Windows ones.
+
+`tools/build_engines.py` puts the compiler's own folder first on `PATH`.
+Without this, another MinGW on `PATH` (for example `C:\EGSnrc\mingw64\bin`)
+supplies an older `ld.exe` (binutils 2.30), whose executables Windows refuses
+to start (`WinError 193`).
+
+### 1.9 Update to EFFTRAN 5.1 and MEFFTRAN 2.0
+
+Both distributions replace ActiveX controls with Form controls in the Excel
+workbooks (README). The 5.0 and 1.9 sources were not kept, so the 5.1 and
+2.0 sources were compared with the previous EffSuite sources, leaving out the
+EffSuite changes of sections 1.1 to 1.4:
+
+| Program | Difference from the previous EffSuite sources | EffSuite |
+|---|---|---|
+| EFFTRAN 5.1 | None in the stages EffSuite runs (declaration order and `if` formatting only). | Sources taken from 5.1 with the changes of sections 1.1, 1.3 and 1.4; `buildup.f`, `energy.f` and `ptt.f` are byte-identical to 5.1. The Windows programs give byte-identical output to the previous build; `transfer.f` changed (section 1.4). |
+| MEFFTRAN 2.0 | `buildup.f`, `efficiency.f`, `eta.f` and `scatter.f` use single precision (`real`), as EFFTRAN does; the previous sources used `double precision`, as MEFFTRAN 1.6.1 did. `total.f` keeps `double precision` for the geometry and attenuation data, but its Monte Carlo tallies (`t`, `t2`, `sig`, `s`, `u1`, `u2`, `smax`, `unc`) are `real` and hold 1000 energies instead of 100. `mine.f` has no unused absorber variables. 16-line detector (section 1.6). | Sources taken from 2.0 with the changes of sections 1.1, 1.3 and 1.4. `buildup.f`, `energy.f` and `ptt.f` are byte-identical to 2.0. |
+
+Check on the example of the MEFFTRAN 2.0 distribution (`detector.txt`,
+`source.txt`): the EffSuite Windows programs reproduce `total.txt`,
+`scatter.txt`, `buildup.txt`, `eta.txt`, `efficiency.txt` and `ptt.txt` of the
+upstream 2.0 programs exactly, and `coin.txt` to the upstream `f15.3` rounding.
+For the transfer examples of both distributions
+(`Standard_Efficiency/standard.txt`, `standard.txt`, `sample.txt`), all 16
+transferred efficiencies equal those of the upstream `transfer.exe`; energies and uncertainties agree after its `f12.1` rounding.
+Compared with the earlier EffSuite double-precision build, total efficiency
+changes by 2·10⁻⁵ (relative), peak efficiency by up to 0.35 %, P/T by up to
+0.43 % and *C* by up to 6·10⁻⁴ (0.2 %). The Linux build
+gives the same files, except 5 of 5,665 summing factors that differ by
+1·10⁻⁷ (relative). The DET952 Marinelli validation case still agrees with the
+laboratory MEFFTRAN results within 0.002.
 
 ---
 
@@ -427,9 +481,10 @@ not normalised. See [MATERIALS.md](MATERIALS.md).
 3. **WEFFTRAN positron emitters.** Use 2ε₅₁₁ − ε₅₁₁² for β⁺ feeding in near-4π
    geometry (section 2.1).
 4. **MEFFTRAN 1.9.** Make `mine.f` and `total.f` read the same 19-line
-   detector file as `ptt.f` and `eta.f` (section 1.6).
-5. **EFFTRAN 5.0 `total.f`.** Use `ne` rather than `ns` as the density loop
-   bound (section 1.1).
+   detector file as `ptt.f` and `eta.f` (section 1.6). Done in MEFFTRAN 2.0,
+   which uses 16 lines throughout.
+5. **EFFTRAN 5.1 and MEFFTRAN 2.0 `total.f`.** Use `ne` rather than `ns` as
+   the density loop bound (section 1.1).
 6. **`transfer.f`.** Write energies with `e15.5` instead of `f12.1`
    (section 1.4).
 7. **Decay data.** Correct Pa-234, Th-227 and W-187 (section 2.6), and add

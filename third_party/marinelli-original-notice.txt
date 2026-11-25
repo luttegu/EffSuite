@@ -1,6 +1,6 @@
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 C                                                                       C
-C  MEFFTRAN (version 1.8 2026)                                          C
+C  MEFFTRAN (version 2.0 2026)                                          C
 C  Copyright (c) 2005-2026                                              C
 C  Tim Vidmar                                                           C
 C                                                                       C
@@ -14,8 +14,7 @@ C  purpose. It is provided 'as is' without express or implied warranty. C
 C                                                                       C
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
--- Density added to source parameters
--- *.xlsm Excel file format
+-- ActiveX Controls replaced with Form Controls.
 
 The MEFFTRAN website is located at https://efftran.github.io/.
 
@@ -26,6 +25,3 @@ inconvenience, but there is no other way of guaranteeing that the new version
 would work correctly.
 
 November 2026
-
-
-

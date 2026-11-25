@@ -1,4 +1,4 @@
-# EffSuite User Guide — v0.4.0
+# EffSuite User Guide — v0.5.0
 
 > **Spectrometry software.** EffSuite reads and writes **Canberra / Mirion
 > Genie 2000** files (`.CAL`, `.NLB`, `.CTF`) and **ORTEC GammaVision** files
@@ -22,8 +22,8 @@ On the **Start** page, choose what to calculate:
 | **Efficiency transfer only** | detector, standard and sample, reference calibration | transferred sample calibration (`.CAL` / `.EFT`) |
 | **True coincidence summing only** | detector, sample, nuclides or a library | summing factors and a corrected `.NLB` / `.CTF` / `.LIB` |
 
-At the top of the window, set **Geometry** (EFFTRAN 5.0 for cylinders,
-MEFFTRAN 1.9 for Marinelli beakers, WEFFTRAN for well detectors),
+At the top of the window, set **Geometry** (EFFTRAN 5.1 for cylinders,
+MEFFTRAN 2.0 for Marinelli beakers, WEFFTRAN for well detectors),
 **Software** (Auto by default: GammaVision for `.EFT` / `.LIB`, Genie 2000 for
 `.CAL` / `.NLB` / `.CTF`), **Workers** (Auto = number of CPUs minus 2) and the
 data folder (**Data folder…**).

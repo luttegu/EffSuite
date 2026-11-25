@@ -1,9 +1,9 @@
 NOTICE for the Fortran source files in this folder
 ===================================================
 
-The following notice is quoted from the EFFTRAN 5.0 README (../README.txt):
+The following notice is quoted from the EFFTRAN 5.1 README (../README.txt):
 
-EFFTRAN (version 5.0 2026)
+EFFTRAN (version 5.1 2026)
 Copyright (c) 2005-2026
 Tim Vidmar
 
@@ -14,7 +14,7 @@ notice and this permission notice appear in all supporting documentation.
 Tim Vidmar makes no representations about the suitability of this software
 for any purpose. It is provided 'as is' without express or implied warranty.
 
-The .f files in this folder are based on the EFFTRAN 5.0 sources distributed
+The .f files in this folder are based on the EFFTRAN 5.1 sources distributed
 by the EFFTRAN project (https://efftran.github.io/), with the EffSuite changes
 listed in docs/CHANGES_FROM_ORIGINALS.md (section 1). The source files do not
 carry the notice themselves, so it is given here and in ../README.txt.

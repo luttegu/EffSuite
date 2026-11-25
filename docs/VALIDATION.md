@@ -1,4 +1,4 @@
-# Validation Evidence — EffSuite 0.4.0
+# Validation Evidence — EffSuite 0.5.0
 
 > **This release is not qualified for routine laboratory use.** The evidence
 > below supports evaluation. It does not replace a laboratory's own
@@ -12,7 +12,7 @@ Matplotlib, PySide6) and on Linux x86-64. They use the real bundled native
 programs and the real XCOM, and cover:
 
 - **Engines.** Preparation and calculation with the bundled cylinder
-  (EFFTRAN 5.0), Marinelli (MEFFTRAN 1.9) and well (WEFFTRAN) engines.
+  (EFFTRAN 5.1), Marinelli (MEFFTRAN 2.0) and well (WEFFTRAN) engines.
   Further checks:
   - the CLI gives the same results as the shared service in all three
     geometries;
@@ -20,8 +20,8 @@ programs and the real XCOM, and cover:
   - the identity transfer (standard = sample) gives exactly 1;
   - small sum-peak factors stay positive.
 - **Bulk density.** The 8-line source density scaling ρ/ρ₀ in all three
-  geometries: `Water` at ρ = 2.0 g/cm³ equals `heavy` (H₂O, ρ₀ = 2.0 g/cm³)
-  to 6 decimal places. The point-source `vacuum` (ρ = 0) guard works, and
+  geometries: `Water` at ρ = 2.0 g/cm³ equals `heavy` (H₂O, ρ₀ = 2.0 g/cm³,
+  loaded from the test fixtures) to 6 decimal places. The point-source `vacuum` (ρ = 0) guard works, and
   7-line models still load.
 - **Laboratory benchmark cases.**
   - `test_validation_case_207724.py`: cylinder, against a reference
@@ -111,7 +111,9 @@ uncertainties.
 - **Windows.** 35 x86-64 programs: 10 cylinder, 10 Marinelli, and 15 well
   stages including `raytrace`. They are built with GNU Fortran 15.2.0
   (w64devkit), using `-finit-local-zero -fno-strict-aliasing`.
-- **Linux.** Built with GNU Fortran 13.3.
+- **Linux.** Cylinder, Marinelli and the well stages `mine`, `total`,
+  `scatter` and `efficiency` built with GNU Fortran 14.4; the other well
+  stages with GNU Fortran 13.3.
 - **Records.** Each `assets/engines/*/bin/*/build_manifest.json` records the
   source and binary hashes, the compiler version and the flags.
 

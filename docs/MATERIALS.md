@@ -1,4 +1,4 @@
-# Materials and XCOM — EffSuite v0.4.0
+# Materials and XCOM — EffSuite v0.5.0
 
 The original Material.xls takes up to ten chemical formulas, relative weights
 and a separately entered bulk density. Its Save action runs XCOM to create a
@@ -18,9 +18,9 @@ program folder.
 
 ## Where materials are stored
 
-Only the **original materials of EFFTRAN 5.0 and MEFFTRAN 1.9** are bundled
-with the program (20 materials: CLYC, CZT, CsI, Ge, LaBr3, NaI, air,
-aluminium, beryllium, cellulose, copper, heavy, iron, lead, plexiglass,
+Only the **original materials of EFFTRAN 5.1 and MEFFTRAN 2.0** are bundled
+with the program (19 materials: CLYC, CZT, CsI, Ge, LaBr3, NaI, air,
+aluminium, beryllium, cellulose, copper, iron, lead, plexiglass,
 polystyrene, silica, soil, vacuum, water). They are read-only and always
 available.
 
@@ -56,7 +56,11 @@ Materials that were bundled with EffSuite 0.3.1 and earlier but are not
 originals (e.g. `Plastic_vial`, `HeavyWater`, `polyethylene`, the ashed food
 matrices) are no longer installed. Copy them from an earlier installation's
 `assets\common\Composition` and `Material` folders into your data folder if
-your models use them. `HeavyWater` is identical to the original `heavy`.
+your models use them. `heavy` (H₂O at ρ₀ = 2.0 g/cm³), bundled up to
+EffSuite 0.4.0 because MEFFTRAN 1.9 had it, is not in MEFFTRAN 2.0 and is no
+longer installed either; `HeavyWater` has the same composition. Copy
+`heavy.txt` from a 0.4.0 installation, or use `water` with a bulk density of
+2.0 g/cm³ on line 8 of the source model, which gives the same results.
 
 ## GUI
 

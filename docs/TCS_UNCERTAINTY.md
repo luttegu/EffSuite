@@ -5,7 +5,7 @@ EffSuite gives every true coincidence summing (TCS) correction factor *C* a
 This document describes what is calculated, the inputs you must provide, how to
 read the results and what is not included.
 
-> **Not in the original programs.** EFFTRAN 5.0, MEFFTRAN 1.9 and WEFFTRAN give
+> **Not in the original programs.** EFFTRAN 5.1, MEFFTRAN 2.0 and WEFFTRAN give
 > *C* as a single value: `coin.f` / `correct.f` write only nuclide, energy and
 > factor, and the *Coincidence Summing* workbooks show only "Correction Factor".
 > The only uncertainty in the originals is the efficiency-transfer uncertainty
@@ -86,7 +86,7 @@ First-order propagation (GUM, JCGM 100:2008, eq. 13):
 
 | Geometry | u<sub>num</sub> |
 |---|---|
-| Cylinder, Marinelli | Monte Carlo statistical uncertainty of the efficiency integration: the largest value *s*<sub>MC</sub> of column 4 of `total.txt` (written by EFFTRAN 5.0 / MEFFTRAN 1.9 `total.f`; the integration stops at 1 %). The same error enters peak and total efficiency together, so u<sub>num</sub> = \|*S*<sub>P</sub> + *S*<sub>T</sub>\| · *s*<sub>MC</sub>. |
+| Cylinder, Marinelli | Monte Carlo statistical uncertainty of the efficiency integration: the largest value *s*<sub>MC</sub> of column 4 of `total.txt` (written by EFFTRAN 5.1 / MEFFTRAN 2.0 `total.f`; the integration stops at 1 %). The same error enters peak and total efficiency together, so u<sub>num</sub> = \|*S*<sub>P</sub> + *S*<sub>T</sub>\| · *s*<sub>MC</sub>. |
 | Well | Relative change of *C* in the numerical refinement check (×2 directions and ×2 sample points, the larger change). It is left out when the refinement check is switched off. |
 
 ### 2.3 What the sensitivities look like
