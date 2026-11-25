@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import tempfile
 import threading
+import time
 import unittest
 from unittest.mock import patch
 
@@ -215,6 +216,21 @@ class GuiUpdateTests(unittest.TestCase):
             info.assert_not_called()
             self.window._update_checked(None, True)
             info.assert_called_once()
+
+    def test_finished_download_asks_to_install(self):
+        # QProgressDialog emits canceled() when it is closed; closing it after a
+        # finished download must not count as the user pressing Cancel.
+        release = updater.release_from_json(release_item("v99.0.0"))
+        with patch.object(updater, "download_installer", return_value=Path("setup.exe")), \
+             patch.object(updater, "install_folder_writable", return_value=True), \
+             patch.object(QMessageBox, "question", return_value=QMessageBox.StandardButton.No) as question:
+            self.window.download_update(release)
+            for _ in range(200):
+                self.app.processEvents()
+                if question.called:
+                    break
+                time.sleep(0.01)
+            question.assert_called_once()
 
     def test_startup_toggle_saved(self):
         from effsuite.paths import load_settings

@@ -2549,6 +2549,9 @@ class MainWindow(QMainWindow):
 
     def _close_download_dialog(self):
         if self._download_dialog is not None:
+            # QProgressDialog emits canceled() when closed; without this, every
+            # finished download looked cancelled and the installer never started.
+            self._download_dialog.canceled.disconnect()
             self._download_dialog.close()
             self._download_dialog.deleteLater()
             self._download_dialog = None
