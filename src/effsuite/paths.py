@@ -1,4 +1,4 @@
-r"""Centralized path resolution for EffSuite.
+r"""Path resolution for EffSuite.
 
 User folder (data and results): C:\GENIE2K\EffSuite when Genie 2000 is
 installed or that folder already exists, otherwise Documents\EffSuite, or
@@ -115,19 +115,6 @@ def _find_effsuite_root(env_root: str | None) -> Path:
             continue
 
     return Path(tempfile.gettempdir()) / "EffSuite"
-
-
-def is_readable_dir(path: Path | None) -> bool:
-    if path is None:
-        return False
-    try:
-        if not path.is_dir():
-            return False
-        with os.scandir(path) as it:
-            next(it, None)
-        return True
-    except (OSError, PermissionError):
-        return False
 
 
 # Older location of the laboratory data, still searched (read only) so existing files keep working.

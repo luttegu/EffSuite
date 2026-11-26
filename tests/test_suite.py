@@ -12,7 +12,7 @@ import unittest
 from effsuite.app_cli import example_path
 from effsuite.model_io import calibration_rows,normalize_nuclides,fields
 from effsuite.parallel_coincidence import CoincidenceError,CalculationCancelled
-from effsuite.suite import run_project,validate_project,engine_folder
+from effsuite.suite import run_project,validate_project
 
 
 class SuiteTests(unittest.TestCase):
@@ -87,7 +87,7 @@ class SuiteTests(unittest.TestCase):
         self.assertEqual(res_json["project"]["sample"][1],25.0)
 
     def test_detector_geometry_cross_compatibility_efftran_and_mefftran(self):
-        from effsuite.model_io import read_model, validate_model
+        from effsuite.model_io import read_model
         cyl_det = Path("src/effsuite/assets/engines/cylindrical/Detector/High-energy.txt")
         mar_det = Path("src/effsuite/assets/engines/marinelli/Detector/High-energy.txt")
 

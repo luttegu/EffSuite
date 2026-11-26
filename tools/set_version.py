@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""EffSuite Version Management Utility.
+"""Set or show the EffSuite version in every file that records it.
 
 Usage:
     python tools/set_version.py <new_version>

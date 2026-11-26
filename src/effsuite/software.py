@@ -2,7 +2,7 @@
 
 Rule: the environment variable EFFSUITE_SOFTWARE=genie|gammavision wins;
 otherwise .LIB and .EFT files are GammaVision and everything else is Genie.
-The functions below simply forward the call to genie.py or gammavision.py.
+read_library, read_cal and export_copy pass the call to genie.py or gammavision.py.
 """
 from __future__ import annotations
 

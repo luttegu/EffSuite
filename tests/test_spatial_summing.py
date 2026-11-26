@@ -1,7 +1,6 @@
 """Independent analytic and event-enumeration checks for the spatial extension."""
 from dataclasses import replace
 import itertools
-from pathlib import Path
 import unittest
 
 try:

@@ -22,11 +22,6 @@ def default_output():
     return get_results_dir() / (datetime.now().strftime("%Y%m%d_%H%M%S_%f"))
 
 
-def default_data_dir():
-    """The laboratory data folder (same as paths.get_data_dir)."""
-    return get_data_dir()
-
-
 def load_project(path):
     """Read and check a project file (.json)."""
     return validate_project(json.loads(Path(path).read_text(encoding="utf-8")))
@@ -193,7 +188,7 @@ def _resolve_file(path_or_name, subfolder, data_dir):
     if data_dir:
         d = Path(data_dir).expanduser()
         search.extend([d/subfolder/p.name, d/p.name])
-    default_d = default_data_dir()
+    default_d = get_data_dir()
     if default_d:
         search.extend([default_d/subfolder/p.name, default_d/p.name])
     for candidate in search:
@@ -279,7 +274,7 @@ def _copy_direct_outputs(result, *, output_cal=None, output_nlb=None, output_ctf
 
 def _build_project_from_args(mode, args, progress=None):
     """Turn the command-line options of one calculation into a checked project."""
-    data_dir = args.data_dir or default_data_dir()
+    data_dir = args.data_dir or get_data_dir()
     cal_path = _resolve_file(args.calibration, "Calibration", data_dir) if args.calibration else None
     nlb_path = _resolve_file(args.library, "NuclideLibrary", data_dir) if args.library else None
     ctf_path = _resolve_file(args.certificate, "Certificates", data_dir) if args.certificate else None
@@ -417,7 +412,6 @@ def _run_batch(args, progress):
             if args.plot_geometry:
                 res["geometry_plot"] = _save_geometry_plot(project, job_out/"geometry.png")
             all_ok = all_ok and bool(res.get("all_reported_factors_valid", True))
-            exports = res.get("genie_exports") or {}
             summary_rows.append({
                 "id":job_id,
                 "geometry":geom,
@@ -478,7 +472,7 @@ def _run_interactive_project(path: Path):
     try:
         project = load_project(path)
         result = run_project(project, out_dir, progress=progress)
-        print(f"\n[SUCCESS] Calculation complete. Results saved to:\n  {result['output_directory']}")
+        print(f"\n[PASS] Calculation complete. Results saved to:\n  {result['output_directory']}")
         print(f"  All reported factors valid: {result['all_reported_factors_valid']}")
     except Exception as exc:
         print(f"\n[ERROR] Calculation failed: {exc}", file=sys.stderr)
@@ -501,7 +495,7 @@ def _run_interactive_batch(path: Path):
         template = None
     try:
         ret = _run_batch(BatchArgs(), progress)
-        print(f"\n[SUCCESS] Batch run complete (exit code {ret}).")
+        print(f"\n[PASS] Batch run complete (exit code {ret}).")
     except Exception as exc:
         print(f"\n[ERROR] Batch run failed: {exc}", file=sys.stderr)
         _pause_if_interactive()
@@ -662,7 +656,7 @@ def _command_material(args, progress):
 def _command_models(args):
     """models: list the detector, sample, standard and material names."""
     mode = mode_name(args.geometry)
-    data_dir = args.data_dir or default_data_dir()
+    data_dir = args.data_dir or get_data_dir()
     for label in ("Detector", "Sample", "Standard"):
         names = set(p.stem for p in (ASSETS/mode/label).glob("*.txt"))
         if data_dir and (Path(data_dir)/label).is_dir():
@@ -714,7 +708,7 @@ def _command_config(args):
 def _command_plot_geometry(args):
     """plot-geometry: save a picture of a detector/source geometry."""
     mode = mode_name(args.geometry)
-    data_dir = args.data_dir or default_data_dir()
+    data_dir = args.data_dir or get_data_dir()
     det = read_model(mode, "detector", find_model(mode, "detector", args.detector, data_dir))
     smp = read_model(mode, "sample", find_model(mode, "sample", args.sample, data_dir)) if args.sample else None
     if smp:

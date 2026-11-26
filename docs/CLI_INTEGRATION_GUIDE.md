@@ -135,7 +135,7 @@ EffSuite_CLI.exe doctor
 Prints a machine-readable JSON object. The exit code is 0 when every engine program, XCOM and the required Python packages (NumPy, Matplotlib, xlrd) are present, otherwise 1:
 ```json
 {
-  "version": "0.5.2",
+  "version": "0.5.3",
   "python": "3.14.10 (...)",
   "interpreter": "C:\\...\\python.exe",
   "dependencies": { "numpy": true, "matplotlib": true, "xlrd": true, "PySide6": true },

@@ -14,7 +14,7 @@ from PySide6.QtGui import QAction, QFont, QPainter, QPen, QColor, QIcon, QTextCh
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget,
                                QVBoxLayout, QHBoxLayout, QGridLayout, QFormLayout, QGroupBox, QLabel, QLineEdit, QComboBox, QPushButton, QTabWidget, QTableWidget, QTableWidgetItem, QHeaderView, QFileDialog, QMessageBox, QPlainTextEdit, QSpinBox, QDoubleSpinBox, QCheckBox, QSplitter, QScrollArea, QStyledItemDelegate, QFrame, QRadioButton, QButtonGroup, QDialog, QListView, QSizePolicy, QProgressDialog, QTextBrowser)
 
-from .model_io import (COMMON_DATA, MODES, fields, read_model, model_bytes, calibration_rows, normalize_nuclides, default_material_density,
+from .model_io import (MODES, fields, read_model, model_bytes, calibration_rows, normalize_nuclides, default_material_density,
                        find_material_file, material_names)
 from .suite import VERSION, run_project, validate_project
 from .parallel_coincidence import CalculationCancelled, CoincidenceError
@@ -27,7 +27,7 @@ from .gui_theme import app_stylesheet, set_role, set_size
 
 
 class PaintedRadio(QRadioButton):
-    """Custom-painted radio button whose indicator dot is always visible regardless of OS theme or DPI."""
+    """Radio button with a hand-drawn indicator, visible on every OS theme and DPI."""
     INDICATOR_D = 16
 
     def __init__(self, text="", parent=None):
@@ -555,7 +555,7 @@ class TaskWorker(QObject):
 
 
 def get_app_icon() -> QIcon:
-    """Return the high-resolution multi-size application icon for EffSuite."""
+    """Return the application icon (icon.ico, else icon.png, else an empty icon)."""
     root_assets = Path(__file__).parent / "assets"
     ico = root_assets / "icon.ico"
     if ico.is_file():
@@ -2061,7 +2061,7 @@ class MainWindow(QMainWindow):
             self.append_log("Could not save the recovery snapshot: "+str(exc))
         from .app_cli import default_output
         output = default_output()
-        stop = self.cancel_event = threading.Event()
+        self.cancel_event = threading.Event()
         # start_task creates the active event before the worker closure is called.
         self.start_task(lambda log:run_project(project, output,
                                                cancel=self.cancel_event, progress=log), self.accept_result, cancellable=True)

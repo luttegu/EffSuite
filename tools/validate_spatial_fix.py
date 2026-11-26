@@ -27,7 +27,7 @@ STAGES = ("mine", "energy", "total", "scatter", "buildup", "eta", "ptt", "effici
 
 def validate(original: Path, compiler: list[str]) -> dict:
     names = ("CO-60", "CS-134", "EU-152", "NA-22")
-    groups = load_groups(original, names)
+    load_groups(original, names)   # parses the decay data first; raises if it is malformed or no nuclide is found
     report = {"scope": "Numerical/regression tests, not laboratory qualification",
               "compiler_command": compiler, "python": sys.version, "numpy": np.__version__,
               "point_reference": {}, "height_cases": []}

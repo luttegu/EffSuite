@@ -1,5 +1,13 @@
 # Release Notes
 
+## EffSuite 0.5.3 (November 2026)
+
+Code cleanup. The engines and all results are identical to 0.5.0.
+
+- **Command line:** a finished calculation or batch run is now reported as `[PASS]` instead of `[SUCCESS]`, like the other `[INFO]` / `[WARN]` / `[ERROR]` messages.
+- **Python package:** the `gui` extra is removed. It was identical to `desktop`; install with `pip install -e ".[desktop]"`.
+- Unused code removed and comments made plainer. In the geometry drawing code, dimensions are no longer called "quotes" (French *cotes*).
+
 ## EffSuite 0.5.2 (November 2026)
 
 Update check at every start. The engines and all results are identical to 0.5.0.

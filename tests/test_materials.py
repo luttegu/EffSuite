@@ -11,7 +11,7 @@ import unittest
 from effsuite.materials import (TEMPLATE,validate_composition,load_composition,composition_bytes,
  generate_attenuation,attenuation_rows,create_material,save_definition)
 from effsuite.parallel_coincidence import CoincidenceError,CalculationCancelled
-from effsuite.model_io import ASSETS, COMMON_DATA, default_material_density
+from effsuite.model_io import COMMON_DATA, default_material_density
 from effsuite.app_cli import example_path
 from effsuite.suite import run_project
 

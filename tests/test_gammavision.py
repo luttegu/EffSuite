@@ -1,4 +1,4 @@
-import shutil, tempfile, unittest
+import tempfile, unittest
 from pathlib import Path
 from effsuite import gammavision
 

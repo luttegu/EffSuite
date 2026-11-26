@@ -7,7 +7,7 @@ import unittest
 
 import numpy as np
 
-from effsuite.model_io import ASSETS, COMMON_DATA, read_model, validate_model
+from effsuite.model_io import ASSETS, read_model, validate_model
 from effsuite.parallel_coincidence import CoincidenceError
 from effsuite.spatial_summing import (LocalEfficiencies, Quadrature, integrated_counts, parse_decay,
                                       prepare_local, required_energies)
@@ -240,7 +240,7 @@ holder_material = copper
             (folder_h / "source.txt").write_text("\n".join(map(str, STANDARD)) + "\n")
 
             energies = np.array([122.06, 661.66, 1173.23, 1332.49])
-            loc_no_h = prepare_local(MATERIALS, folder_no_h, energies, Quadrature(2, 2, 4, 8))
+            prepare_local(MATERIALS, folder_no_h, energies, Quadrature(2, 2, 4, 8))
             loc_h = prepare_local(MATERIALS, folder_h, energies, Quadrature(2, 2, 4, 8))
 
             self.assertEqual(loc_h.metadata["probability_saturation_count"], 0)

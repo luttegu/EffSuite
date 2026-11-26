@@ -1,5 +1,4 @@
 """Regression test validating Marinelli beaker calculation against MEFFTRAN laboratory reference dataset (Sample 2025-0051C on DET952)."""
-import math
 from pathlib import Path
 import shutil
 import tempfile

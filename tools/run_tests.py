@@ -1,7 +1,6 @@
-"""Parallel test runner for EffSuite.
+"""Run the EffSuite test modules in parallel.
 
-Executes test modules concurrently across independent worker processes
-while isolating GUI tests appropriately and reporting per-module timings.
+Each module runs in its own Python process; the time of each module is reported.
 """
 from __future__ import annotations
 

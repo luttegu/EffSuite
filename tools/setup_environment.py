@@ -1,4 +1,4 @@
-"""Install into an app-local environment using precisely the invoking Python."""
+"""Create .venv with the Python that runs this script and install EffSuite into it."""
 from __future__ import annotations
 import json
 from pathlib import Path

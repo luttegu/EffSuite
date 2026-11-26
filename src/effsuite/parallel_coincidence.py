@@ -2,7 +2,7 @@
 
 The numerical executable is unchanged. Complete nuclide groups, including all
 lowercase-b continuation records, are assigned to isolated child processes.
-This is a source-informed migration component, not a rewritten physics engine.
+Only the process scheduling is new; the physics stays in the original program.
 """
 from __future__ import annotations
 
@@ -186,7 +186,7 @@ class ParallelResult:
 
 
 def _partition(groups: tuple[NuclideGroup, ...], workers: int) -> list[tuple[NuclideGroup, ...]]:
-    """Deterministic balancing; only a bounded number of native processes launch."""
+    """Split the groups over at most ``workers`` processes by estimated cost (deterministic)."""
     buckets: list[list[NuclideGroup]] = [[] for _ in range(workers)]
     loads = [0] * workers
     for group in sorted(groups, key=lambda group: (-group.estimated_cost, group.index)):
@@ -278,7 +278,7 @@ def _run_shard(command: tuple[str, ...], inputs: SharedInputs,
             try:
                 label = line[:10].decode("ascii").rstrip(" ")
                 energy = int(line[10:20])
-                factor = _number(line[20:].strip())
+                _number(line[20:].strip())   # rejects a malformed or nonfinite factor
             except (UnicodeDecodeError, ValueError) as exc:
                 raise CoincidenceError("Malformed fixed-width coin.txt output") from exc
             if label not in rows or not 2 <= energy <= 3000:

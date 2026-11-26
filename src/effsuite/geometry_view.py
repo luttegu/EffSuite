@@ -1,4 +1,4 @@
-"""Dimensioned axial cross-sections using the native total.f coordinates (mm) with live CAD-style dimensions."""
+"""Axial cross-sections with dimensions, in the coordinates of the original total.f (mm)."""
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QComboBox, QLabel, QPushButton, QGroupBox, QSizePolicy)
 from matplotlib.figure import Figure
@@ -55,7 +55,7 @@ def draw_geometry(ax, mode, d, s=None, kind='Sample', compact=False):
         used.add(label)
         bounds.extend([(x, y), (x+w, y+h)])
 
-    # 1. Draw physical geometry boxes
+    # 1. Geometry boxes
     if mode=='well':
         diameter, length, absorber, well_d, well_h = d[:5]
         r = diameter/2
@@ -75,19 +75,19 @@ def draw_geometry(ax, mode, d, s=None, kind='Sample', compact=False):
         box(-wr-absorber, bottom-absorber, 2*(wr+absorber), well_h+absorber, 'Dead layer / well absorber')
         box(-wr, bottom, 2*wr, well_h, 'Well cavity')
         top = length
-        det_quotes = [
+        det_dims = [
             f'Crystal: Ø {diameter:g} × {length:g} mm ({cryst_mat})',
             f'Well cavity: Ø {well_d:g} × {well_h:g} mm',
             f'Well absorber: {absorber:g} mm ({abs_mat})',
         ]
         if mantle_dead != absorber:
-            det_quotes.append(f'Mantle dead layer: {mantle_dead:g} mm')
+            det_dims.append(f'Mantle dead layer: {mantle_dead:g} mm')
         if bottom_dead != absorber:
-            det_quotes.append(f'Bottom dead layer: {bottom_dead:g} mm')
+            det_dims.append(f'Bottom dead layer: {bottom_dead:g} mm')
         if holder_th > 0:
-            det_quotes.append(f'Holder: {holder_th:g} mm ({holder_mat})')
+            det_dims.append(f'Holder: {holder_th:g} mm ({holder_mat})')
         if det_offset > 0:
-            det_quotes.append(f'Detector bottom gap: {det_offset:g} mm')
+            det_dims.append(f'Detector bottom gap: {det_offset:g} mm')
         if s:
             diameter_s, height, base, wall, gap = s[:5]
             outer_s = diameter_s/2
@@ -121,7 +121,7 @@ def draw_geometry(ax, mode, d, s=None, kind='Sample', compact=False):
         if mode=='cylindrical' and d[12]>0 and d[13]>0:
             box(-d[12]/2, top, d[12], d[13], 'Absorber')
             top += d[13]
-        det_quotes = [
+        det_dims = [
             f'Crystal: Ø {diameter:g} × {length:g} mm ({cryst_mat})',
             f'End cap: Ø {d[0]:g} mm, wall {d[1]:g} mm ({cap_mat})',
             f'Window: {d[6]:g} mm ({win_mat}), gap {d[7]:g} mm',
@@ -129,9 +129,9 @@ def draw_geometry(ax, mode, d, s=None, kind='Sample', compact=False):
             f'Bore: Ø {d[8]:g} × {d[9]:g} mm | Holder: {d[10]:g} mm ({hold_mat})',
         ]
         if d[11]:
-            det_quotes.append(f'Bulletization radius: {d[11]:g} mm')
+            det_dims.append(f'Bulletization radius: {d[11]:g} mm')
         if mode=='cylindrical' and d[13]>0:
-            det_quotes.append(f'Absorber: Ø {d[12]:g} × {d[13]:g} mm ({abs_mat})')
+            det_dims.append(f'Absorber: Ø {d[12]:g} × {d[13]:g} mm ({abs_mat})')
         if s and mode=='cylindrical':
             diameter_s, height, base, wall, gap = s[:5]
             outer_s = diameter_s/2
@@ -170,32 +170,32 @@ def draw_geometry(ax, mode, d, s=None, kind='Sample', compact=False):
     step = max(span*0.14, 11.0)
     fs = 7.5 if compact else 8.4
 
-    # 2. CAD Dimension Quote & Leader Callout Helpers
-    def quote_h(x1, x2, y_q, text, y_ref1=0.0, y_ref2=0.0, color='#1e3a8a'):
+    # 2. Dimension-line and leader-callout helpers
+    def dim_h(x1, x2, y_dim, text, y_ref1=0.0, y_ref2=0.0, color='#1e3a8a'):
         if abs(x2-x1)<=0:
             return
-        ax.plot([x1, x1], [y_ref1, y_q], linestyle=':', linewidth=0.75, color=color, alpha=0.75, zorder=3)
-        ax.plot([x2, x2], [y_ref2, y_q], linestyle=':', linewidth=0.75, color=color, alpha=0.75, zorder=3)
-        ax.annotate('', xy=(x2, y_q), xytext=(x1, y_q),
+        ax.plot([x1, x1], [y_ref1, y_dim], linestyle=':', linewidth=0.75, color=color, alpha=0.75, zorder=3)
+        ax.plot([x2, x2], [y_ref2, y_dim], linestyle=':', linewidth=0.75, color=color, alpha=0.75, zorder=3)
+        ax.annotate('', xy=(x2, y_dim), xytext=(x1, y_dim),
                     arrowprops={'arrowstyle':'<->', 'color':color, 'lw':1.05, 'shrinkA':0, 'shrinkB':0}, zorder=4)
-        ax.text((x1+x2)/2, y_q, text, ha='center', va='center', fontsize=fs, fontweight='bold', color=color,
+        ax.text((x1+x2)/2, y_dim, text, ha='center', va='center', fontsize=fs, fontweight='bold', color=color,
                 bbox={'boxstyle':'round,pad=0.2', 'facecolor':'#ffffff', 'edgecolor':color, 'alpha':0.96, 'lw':0.75}, zorder=5)
         hw = max(abs(x2-x1)/2, len(text)*step*0.095)
         mx = (x1+x2)/2
-        bounds.extend([(mx-hw, y_q-step*0.4), (mx+hw, y_q+step*0.4)])
+        bounds.extend([(mx-hw, y_dim-step*0.4), (mx+hw, y_dim+step*0.4)])
 
-    def quote_v(x_q, y1, y2, text, x_ref1=0.0, x_ref2=0.0, color='#1e3a8a', y_text=None):
+    def dim_v(x_dim, y1, y2, text, x_ref1=0.0, x_ref2=0.0, color='#1e3a8a', y_text=None):
         if abs(y2-y1)<=0:
             return
-        ax.plot([x_ref1, x_q], [y1, y1], linestyle=':', linewidth=0.75, color=color, alpha=0.75, zorder=3)
-        ax.plot([x_ref2, x_q], [y2, y2], linestyle=':', linewidth=0.75, color=color, alpha=0.75, zorder=3)
-        ax.annotate('', xy=(x_q, y2), xytext=(x_q, y1),
+        ax.plot([x_ref1, x_dim], [y1, y1], linestyle=':', linewidth=0.75, color=color, alpha=0.75, zorder=3)
+        ax.plot([x_ref2, x_dim], [y2, y2], linestyle=':', linewidth=0.75, color=color, alpha=0.75, zorder=3)
+        ax.annotate('', xy=(x_dim, y2), xytext=(x_dim, y1),
                     arrowprops={'arrowstyle':'<->', 'color':color, 'lw':1.05, 'shrinkA':0, 'shrinkB':0}, zorder=4)
         ym = (y1+y2)/2 if y_text is None else y_text
-        ax.text(x_q, ym, text, ha='center', va='center', fontsize=fs, fontweight='bold', color=color,
+        ax.text(x_dim, ym, text, ha='center', va='center', fontsize=fs, fontweight='bold', color=color,
                 bbox={'boxstyle':'round,pad=0.2', 'facecolor':'#ffffff', 'edgecolor':color, 'alpha':0.96, 'lw':0.75}, zorder=5)
         hw = max(step*1.2, len(text)*step*0.10)
-        bounds.extend([(x_q-hw, min(y1, ym)-step*0.3), (x_q+hw, max(y2, ym)+step*0.3)])
+        bounds.extend([(x_dim-hw, min(y1, ym)-step*0.3), (x_dim+hw, max(y2, ym)+step*0.3)])
 
     def callout(xy_target, xy_box, text, color='#334155', ha='center'):
         ax.annotate(
@@ -208,72 +208,72 @@ def draw_geometry(ax, mode, d, s=None, kind='Sample', compact=False):
         hw = max(step*1.3, len(text)*step*0.105)
         bounds.extend([(xy_box[0]-hw, xy_box[1]-step*0.4), (xy_box[0]+hw, xy_box[1]+step*0.4)])
 
-    # 3. Bottom Horizontal dimensions (Detector Radial)
+    # 3. Bottom: radial detector dimensions
     b_track = geom_bot-step*0.75
     if mode=='well' and well_d>0:
-        quote_h(-wr, wr, b_track, f'Well Ø {well_d:g} mm', bottom, bottom, '#0f766e')
+        dim_h(-wr, wr, b_track, f'Well Ø {well_d:g} mm', bottom, bottom, '#0f766e')
         b_track -= step*0.85
     elif mode!='well' and d[8]>0:
-        quote_h(-d[8]/2, d[8]/2, b_track, f'Bore Ø {d[8]:g} mm', 0, 0, '#0f766e')
+        dim_h(-d[8]/2, d[8]/2, b_track, f'Bore Ø {d[8]:g} mm', 0, 0, '#0f766e')
         b_track -= step*0.85
-    quote_h(-r, r, b_track, f'Crystal Ø {diameter:g} mm', 0, 0, '#1e3a8a')
+    dim_h(-r, r, b_track, f'Crystal Ø {diameter:g} mm', 0, 0, '#1e3a8a')
     b_track -= step*0.85
     if mode!='well' and d[0]>0:
-        quote_h(-outer, outer, b_track, f'Cap Ø {d[0]:g} mm', 0, 0, '#334155')
+        dim_h(-outer, outer, b_track, f'Cap Ø {d[0]:g} mm', 0, 0, '#334155')
 
-    # 4. Top Horizontal dimensions (Source / Cavity Radial)
+    # 4. Top: radial source / cavity dimensions
     t_track = geom_top+step*0.75
     if s:
         if mode=='marinelli' and hole_d>0:
-            quote_h(-hole, hole, t_track, f'Hole Ø {hole_d:g} mm', ceiling, ceiling, '#b45309')
+            dim_h(-hole, hole, t_track, f'Hole Ø {hole_d:g} mm', ceiling, ceiling, '#b45309')
             t_track += step*0.85
         elif mode!='marinelli' and wall>0 and inner>0:
-            quote_h(-inner, inner, t_track, f'Source Ø {2*inner:g} mm', source_top, source_top, '#b45309')
+            dim_h(-inner, inner, t_track, f'Source Ø {2*inner:g} mm', source_top, source_top, '#b45309')
             t_track += step*0.85
-        quote_h(-outer_s, outer_s, t_track, f'Container Ø {diameter_s:g} mm', source_top, source_top, '#9a3412')
+        dim_h(-outer_s, outer_s, t_track, f'Container Ø {diameter_s:g} mm', source_top, source_top, '#9a3412')
     elif mode=='cylindrical' and d[12]>0 and d[13]>0:
-        quote_h(-d[12]/2, d[12]/2, t_track, f'Absorber Ø {d[12]:g} mm', top, top, '#475569')
+        dim_h(-d[12]/2, d[12]/2, t_track, f'Absorber Ø {d[12]:g} mm', top, top, '#475569')
 
-    # 5. Left Vertical dimensions (Detector Axial + Thin Layer Callouts)
+    # 5. Left: axial detector dimensions and thin-layer callouts
     l_track = geom_left-step*1.35
     if mode=='well':
         if well_h>0:
-            quote_v(l_track, bottom, length, f'Well H: {well_h:g} mm', -wr, -wr, '#0f766e')
+            dim_v(l_track, bottom, length, f'Well H: {well_h:g} mm', -wr, -wr, '#0f766e')
             l_track -= step*1.9
-        quote_v(l_track, 0, length, f'Crystal L: {length:g} mm', -r, -r, '#1e3a8a')
+        dim_v(l_track, 0, length, f'Crystal L: {length:g} mm', -r, -r, '#1e3a8a')
         callout((-wr-absorber/2, bottom), (l_track, min(bottom*0.4, length*0.2)), f'Absorber: {absorber:g} mm', '#475569')
     else:
         used_l1 = False
         if d[9]>0:
-            quote_v(l_track, 0, d[9], f'Bore H: {d[9]:g} mm', -d[8]/2, -d[8]/2, '#0f766e')
+            dim_v(l_track, 0, d[9], f'Bore H: {d[9]:g} mm', -d[8]/2, -d[8]/2, '#0f766e')
             used_l1 = True
         if d[7]>0:
             y_win = length+d[7]/2
             if d[9]>0 and abs(y_win-d[9]/2)<step*0.75:
                 y_win = length+d[7]+step*0.35
-            quote_v(l_track, length, length+d[7], f'Gap: {d[7]:g} mm', -outer, -outer, '#475569', y_text=y_win)
+            dim_v(l_track, length, length+d[7], f'Gap: {d[7]:g} mm', -outer, -outer, '#475569', y_text=y_win)
             used_l1 = True
         if used_l1:
             l_track -= step*1.95
-        quote_v(l_track, 0, length, f'Crystal L: {length:g} mm', -r, -r, '#1e3a8a')
-        # Leader callouts for thin detector layers (Window, Dead layer, Cap wall / Holder)
+        dim_v(l_track, 0, length, f'Crystal L: {length:g} mm', -r, -r, '#1e3a8a')
+        # Callouts for the thin layers: window, dead layers, cap wall, holder
         callout((-outer*0.5, length+d[7]+d[6]/2), (l_track, length+d[7]+step*0.7),
                 f'Win: {d[6]:g} mm | DL: {d[4]:g}/{d[5]:g} mm', '#334155')
         callout((-outer+d[1]/2, length*0.15), (l_track, -step*0.85),
                 f'Cap wall: {d[1]:g} mm | Holder: {d[10]:g} mm', '#475569')
 
-    # 6. Right Vertical dimensions (Source Axial + Wall/Bottom Callouts)
+    # 6. Right: axial source dimensions and wall / bottom callouts
     r_track = geom_right+step*1.35
-    src_quotes = []
+    src_dims = []
     if s:
         rho_txt = f", ρ={float(s[7]):g} g/cm³" if len(s) > 7 and s[7] is not None else ""
         if mode=='marinelli':
             if hole_h>0:
-                quote_v(r_track, z, ceiling, f'Hole H: {hole_h:g} mm', hole, hole, '#b45309')
+                dim_v(r_track, z, ceiling, f'Hole H: {hole_h:g} mm', hole, hole, '#b45309')
                 r_track += step*1.95
-            quote_v(r_track, z, source_top, f'Fill H: {height:g} mm', outer_s, outer_s, '#9a3412')
+            dim_v(r_track, z, source_top, f'Fill H: {height:g} mm', outer_s, outer_s, '#9a3412')
             callout((hole+wall/2, z+hole_h*0.25), (r_track, z-step*0.85), f'Container wall: {wall:g} mm', '#7c2d12')
-            src_quotes = [
+            src_dims = [
                 f'{kind}: Ø {diameter_s:g} mm, Fill H {height:g} mm ({s[5]}{rho_txt})',
                 f'Hole: Ø {hole_d:g} × {hole_h:g} mm | Wall: {wall:g} mm ({s[6]})',
             ]
@@ -281,19 +281,19 @@ def draw_geometry(ax, mode, d, s=None, kind='Sample', compact=False):
             ref_top = bottom if mode=='well' else top
             r_track_inner = r_track
             if gap>0:
-                quote_v(r_track, ref_top, ref_top+gap, f'Gap: {gap:g} mm', outer_s, outer_s, '#0369a1')
+                dim_v(r_track, ref_top, ref_top+gap, f'Gap: {gap:g} mm', outer_s, outer_s, '#0369a1')
                 r_track += step*1.95
-            quote_v(r_track, z, source_top, f'Source H: {height:g} mm', outer_s, outer_s, '#9a3412')
+            dim_v(r_track, z, source_top, f'Source H: {height:g} mm', outer_s, outer_s, '#9a3412')
             y_callout = min(ref_top, z-base)-step*1.05
             callout((outer_s-wall/2, z-base/2), ((r_track_inner+r_track)/2, y_callout),
                     f'Wall: {wall:g} mm | Bot: {base:g} mm', '#7c2d12')
-            src_quotes = [
+            src_dims = [
                 f'{kind}: Ø {diameter_s:g} × {height:g} mm ({s[5]}{rho_txt})',
                 f'Container bottom / wall: {base:g} / {wall:g} mm ({s[6]})',
                 f'Positioning gap: {gap:g} mm | Active Ø: {2*inner:g} mm',
             ]
     else:
-        src_quotes = [f'Load or complete the {kind.lower()} fields to display source dimensions.']
+        src_dims = [f'Load or complete the {kind.lower()} fields to display source dimensions.']
 
     ax.axvline(0, color='#64748b', linestyle='-.', linewidth=0.7, zorder=1)
     ax.set_aspect('equal', adjustable='box')
@@ -312,22 +312,22 @@ def draw_geometry(ax, mode, d, s=None, kind='Sample', compact=False):
     if not compact:
         ax.set_title(('Detector' if kind=='Detector' else f'{kind} and detector')+': axial cross-section [mm]', fontsize=fs+1.8, fontweight='bold', color=theme.TEXT, pad=8)
         ax.legend(loc='upper left', bbox_to_anchor=(1.01, 1.0), fontsize=8.5, frameon=True, facecolor=theme.SURFACE_ALT, edgecolor=theme.SEPARATOR, title='Regions', title_fontsize=8.5)
-        quotes_card = "Dimensions and materials\n"+"\n".join("• "+q for q in det_quotes+src_quotes)
+        dims_card = "Dimensions and materials\n"+"\n".join("• "+q for q in det_dims+src_dims)
         if warnings:
-            quotes_card += "\n\n"+"\n".join(warnings)
-        ax.text(1.01, 0.48, quotes_card, transform=ax.transAxes, va='top', ha='left', fontsize=8.0, color=theme.TEXT,
+            dims_card += "\n\n"+"\n".join(warnings)
+        ax.text(1.01, 0.48, dims_card, transform=ax.transAxes, va='top', ha='left', fontsize=8.0, color=theme.TEXT,
                 bbox={'boxstyle':'round,pad=0.5', 'facecolor':theme.SURFACE_ALT, 'edgecolor':theme.SEPARATOR, 'lw':0.9})
-        return '\n'.join(det_quotes+src_quotes+(['']+warnings if warnings else []))
+        return '\n'.join(det_dims+src_dims+(['']+warnings if warnings else []))
     else:
         ax.legend(loc='lower center', bbox_to_anchor=(0.5, 1.01), ncol=4, fontsize=7.2, frameon=True, facecolor=theme.SURFACE_ALT, edgecolor=theme.SEPARATOR, handlelength=1.2, columnspacing=0.9)
-        short = f"{det_quotes[0]}  |  {src_quotes[0]}"
+        short = f"{det_dims[0]}  |  {src_dims[0]}"
         if warnings:
             short += "\n"+"  ".join(warnings)
         return short
 
 
 def _partial_detector_values(owner):
-    """Extract valid detector values or fall back to safe preview defaults while typing."""
+    """Detector values for the preview: (values, complete). Fields not yet valid get preview defaults."""
     try:
         return owner.detector_form.values(), True
     except Exception:
@@ -357,7 +357,7 @@ def _partial_detector_values(owner):
 
 
 def _partial_source_values(owner, kind):
-    """Extract valid source values or fall back to partial values if enough dimensions are typed."""
+    """Source values for the preview: (values, complete). Values is None until a dimension is typed."""
     try:
         return owner.source_form.values(kind), True
     except Exception:
@@ -390,7 +390,7 @@ def _partial_source_values(owner, kind):
 
 
 class LiveGeometryWidget(QGroupBox):
-    """Embedded live axial cross-section preview with readable CAD dimensions."""
+    """Axial cross-section with dimensions, redrawn when the forms change."""
     def __init__(self, owner, default_kind='Sample'):
         """Geometry preview shown inside a tab, with a Sample / Standard / Detector choice."""
         super().__init__('Axial cross-section with dimensions [mm]')

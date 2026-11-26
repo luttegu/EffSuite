@@ -161,11 +161,6 @@ def _user_data_directory(project: dict) -> Path:
     return get_data_dir()
 
 
-def _material_roots(project: dict) -> list[Path]:
-    """Material/Composition folders of a run, most specific first (bundled originals last)."""
-    return material_roots(project.get("data_directory"))
-
-
 def _data_fingerprint(roots: list[Path], engine_dir: Path, mode: str) -> dict:
     """SHA-256 of every data file a run uses: bundled Material/Composition files,
     replaced by the user's files of the same name (``roots``, most specific
@@ -244,7 +239,7 @@ def _prepare_folder(mode: str, project: dict, destination: Path, source_kind: st
 
     for name in ("Material", "Composition"):
         (destination / name).mkdir()
-        for root in reversed(_material_roots(project)):   # least specific first: later copies win
+        for root in reversed(material_roots(project.get("data_directory"))):   # least specific first: later copies win
             if (root / name).is_dir():
                 shutil.copytree(root / name, destination / name, dirs_exist_ok=True)
     for name in ("zzaa.txt", "param.txt", "kordaten.txt"):
@@ -754,7 +749,7 @@ def run_project(project: dict, output: Path, *, cancel=None, progress=None) -> d
         data_root = lab_data if (lab_data / "Composition").is_dir() else COMMON_DATA
         engine_dir = lab_data if (lab_data / "Detector").is_dir() else ASSETS / mode
         result["scientific_data_directory"] = str(lab_data)
-        result["scientific_data_sha256"] = _data_fingerprint(_material_roots(project), engine_dir, mode)
+        result["scientific_data_sha256"] = _data_fingerprint(material_roots(project.get("data_directory")), engine_dir, mode)
 
         if project["task"] in {"transfer", "both"}:
             _run_transfer(mode, project, work, stop, progress, result)

@@ -1,5 +1,4 @@
 """Regression test validating calculation against EFFTRAN reference dataset (Sample 207724)."""
-import json
 from pathlib import Path
 import tempfile
 import unittest

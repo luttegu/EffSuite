@@ -28,7 +28,6 @@ from numpy.polynomial.legendre import leggauss
 
 import sys
 import tempfile
-import threading
 import time
 
 from .model_io import ASSETS, COMMON_DATA, find_material_file
@@ -410,7 +409,7 @@ def well_local_response(installation: Path, detector, source, energies, order=Qu
     hl_t = _xcom_table(installation, holder_material) if holder_thickness > 0 else None
     model = _crystal_model(dr, dl, dd, well_d, well_h, ge_t, *zz_aa,
                            mantle_dead=mantle_dead, bottom_dead=bottom_dead)
-    r_out, r_hole, z_hole = model["r_out"], model["r_hole"], model["z_hole"]
+    r_hole, z_hole = model["r_hole"], model["z_hole"]
     r_act_out, z_act_bottom = model["r_act_out"], model["z_act_bottom"]
     flange = dd
     total_offset = offset + det_sample_offset
