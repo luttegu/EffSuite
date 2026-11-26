@@ -198,7 +198,7 @@ All commands and options, and how to call EffSuite from other software: [CLI Int
 Every difference from the original programs is documented in [CHANGES_FROM_ORIGINALS.md](docs/CHANGES_FROM_ORIGINALS.md); the test evidence is in [VALIDATION.md](docs/VALIDATION.md).
 
 ### Summary of physics and engineering changes
-| Feature | Original Implementation | EffSuite Modernization |
+| Feature | Original programs | EffSuite |
 | :--- | :--- | :--- |
 | **Sample bulk density (`rho`)** | Added in EFFTRAN 4.9–5.0 / MEFFTRAN 1.8–1.9 (absent in WEFFTRAN) | 8-line source density scaling ($\rho / \rho_0$) across Cylindrical, Marinelli, and Well (`WEFFTRAN`) with validated loop bounds, `Point.txt` guard, and GUI auto-fill |
 | **Transfer uncertainty** | Fixed 0.5% standard/sample placeholders in older versions | Monte Carlo propagation ($u = \sqrt{u_{\mathrm{ref}}^2 + (100 s_{\mathrm{std}})^2 + (100 s_{\mathrm{sample}})^2}$) for Cylindrical (EFFTRAN 5.1) and Marinelli (MEFFTRAN 2.0); wells keep the original 0.5% terms |

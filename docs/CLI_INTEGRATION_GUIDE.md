@@ -4,29 +4,29 @@ How to call the **EffSuite Command-Line Interface (CLI)** from other programs (s
 
 ---
 
-## 1. Overview & Executable Location
+## 1. Overview and executable location
 
 `EffSuite_CLI.exe` is a standalone console program that runs the efficiency transfer and true coincidence summing calculations without the GUI.
 
-### Typical Executable Paths
-- **Installed via Inno Setup (Default User Install)**:
+### Typical executable paths
+- **Installed with the Inno Setup installer (per-user default)**:
   `%LOCALAPPDATA%\Programs\EffSuite\EffSuite_CLI.exe`
-- **Genie 2000 Integration Directory**:
+- **Installed on a Genie 2000 workstation**:
   `C:\GENIE2K\EffSuite\EffSuite_CLI.exe`
-- **Development / Standalone Build**:
+- **Standalone build**:
   `C:\PGM\EffSuite\dist\EffSuite\EffSuite_CLI.exe`
-- **Python Package / Virtual Environment**:
+- **From Python (installed package or virtual environment)**:
   `python -m effsuite.app_cli`
 
 ---
 
-## 2. Process Exit Codes & Return Status
+## 2. Exit codes
 
-When executing `EffSuite_CLI.exe` as a subprocess, evaluate the process exit code:
+When you run `EffSuite_CLI.exe` as a subprocess, check its exit code:
 
-| Exit Code | Meaning | Software Handling Recommendation |
+| Exit code | Meaning | How to handle it |
 | :---: | :--- | :--- |
-| **0** | **Success (Complete)** | The calculation finished and every reported summing line has a valid correction factor. |
+| **0** | **Success** | The calculation finished and every reported summing line has a valid correction factor. |
 | **1** | **Success with uncorrected lines** | The calculation finished and the results were published, but at least one reported line has no usable factor and is marked `*` (`status` other than `candidate` in `summing.csv`). Typical causes: no decay data for the nuclide, lines the engine does not calculate (for example I-129 X-rays), or, for wells, a failed convergence check (which also blocks the corrected-library export). Exported files keep the original value for those lines. **Treat as success if the expected output files exist.** |
 | **2** | **Error** | Invalid input, missing file or engine, or engine failure. The message is on `stderr`. No result folder is published. |
 | **130** | **Interrupted** | Ctrl+C. |
@@ -35,13 +35,13 @@ When executing `EffSuite_CLI.exe` as a subprocess, evaluate the process exit cod
 
 ---
 
-## 3. Invocation Modes & Command Syntax
+## 3. Invocation modes
 
-### Mode A: Direct Parametric Invocations (Recommended for External Software)
+### Mode A: Geometry subcommands with options (recommended for external software)
 
 Call the specific geometry subcommand (`cylinder` / `efftran`, `marinelli` / `mefftran`, `well` / `wefftran`). All parameters can be passed directly as arguments:
 
-#### 1. Cylindrical Geometry (`cylinder` / `efftran`)
+#### 1. Cylindrical geometry (`cylinder` / `efftran`)
 ```bash
 EffSuite_CLI.exe cylinder ^
   --detector "High-energy" ^
@@ -58,7 +58,7 @@ EffSuite_CLI.exe cylinder ^
   --workers 4
 ```
 
-#### 2. Marinelli Beaker Geometry (`marinelli` / `mefftran`)
+#### 2. Marinelli beaker geometry (`marinelli` / `mefftran`)
 ```bash
 EffSuite_CLI.exe marinelli ^
   --detector "High-energy" ^
@@ -75,7 +75,7 @@ EffSuite_CLI.exe marinelli ^
   --workers 4
 ```
 
-#### 3. Well-Type Detector Geometry (`well` / `wefftran`)
+#### 3. Well-type detector geometry (`well` / `wefftran`)
 ```bash
 EffSuite_CLI.exe well ^
   --detector "well" ^
@@ -91,7 +91,7 @@ EffSuite_CLI.exe well ^
   --workers 4
 ```
 
-#### 4. GammaVision Invocation (`.EFT` Efficiency + `.LIB` Nuclide Library — *Untested*)
+#### 4. GammaVision (`.EFT` efficiency + `.LIB` nuclide library, *untested*)
 > **GammaVision Notice:** GammaVision support has been implemented as EFFTRAN is doing it, but I cannot test it because I do not have the software. Volunteers are welcome to test and provide feedback.
 ```bash
 EffSuite_CLI.exe cylinder ^
@@ -110,7 +110,7 @@ EffSuite_CLI.exe cylinder ^
 
 ---
 
-### Mode B: Project File Replay (`run`)
+### Mode B: Re-running a project file (`run`)
 
 If a workflow is saved from the GUI (or generated programmatically as JSON), execute it directly with optional inline overrides:
 
@@ -124,7 +124,7 @@ EffSuite_CLI.exe run "C:\Projects\Sample_207724.effsuite.json" ^
 
 ---
 
-### Mode C: Diagnostic & Self-Test (`doctor`)
+### Mode C: Self-test (`doctor`)
 
 To verify the installation, engine binaries, and dependencies from your calling application:
 
@@ -166,7 +166,7 @@ Run any command with `--help` for its full option list.
 
 ---
 
-## 4. Parameter Reference Table
+## 4. Parameter reference
 
 | Argument | Type / Format | Description |
 | :--- | :--- | :--- |
@@ -207,19 +207,19 @@ override the project values. See [TCS_UNCERTAINTY.md](TCS_UNCERTAINTY.md).
 
 ---
 
-## 5. Output Files & Formats
+## 5. Output files
 
 Every exported spectrometry file identifies whether it is for **Genie 2000** (`.CAL`, `.NLB`, `.CTF`) or **GammaVision** (`.EFT`, `.LIB`, plus `<name>_gv.txt`) both by its file extension and inside `results.json` (`"software": "Genie"` or `"GammaVision"`) and `report.html`.
 
-In addition to the destination files specified by `--output-cal` and `--output-nlb`, the directory given to `--out` contains structured outputs for programmatic ingestion:
+In addition to the destination files specified by `--output-cal` and `--output-nlb`, the directory given to `--out` also contains these files for other programs to read:
 
 1. **`results.json`**:
    Calculation manifest containing:
    - Numerical efficiency transfer values for all calibration points.
    - The summing factor $C$ of every line, with its status.
    - The relative standard uncertainty of each factor, `tcs_u_rel_percent`, with its components and sensitivity coefficients, plus a `tcs_uncertainty` section recording the settings and method.
-   - SHA-256 cryptographic hashes of all engine executables, data files, and inputs.
-   - Complete runtime diagnostics and timings.
+   - SHA-256 hashes of all engine executables, data files, and inputs.
+   - Runtime diagnostics and timings.
 2. **`efficiency.csv`**:
    Tabular efficiency transfer factors:
    `energy_keV, standard_efficiency, sample_efficiency, transfer_factor, sample_relative_uncertainty_percent_legacy`
@@ -232,7 +232,7 @@ In addition to the destination files specified by `--output-cal` and `--output-n
 
 ---
 
-## 6. Code Examples for Calling from Other Languages
+## 6. Calling EffSuite from other languages
 
 ### C# (.NET / WPF / WinForms)
 
@@ -394,13 +394,13 @@ if ($LASTEXITCODE -eq 0 -or ($LASTEXITCODE -eq 1 -and (Test-Path $outCal))) {
 
 ---
 
-## 7. Troubleshooting & Best Practices
+## 7. Troubleshooting
 
-1. **Path Spacing**:
+1. **Paths with spaces**:
    Always wrap file paths containing spaces in double quotes when invoking via shell strings. When using structured process APIs (`ProcessStartInfo.ArgumentList` or Python `subprocess.run(list)`), quoting is handled automatically.
 2. **Matrix density and new materials**:
    `--sample-density` needs no new attenuation table: the engines scale the material's table by $\rho / \rho_0$. A new *composition* needs a material: when a material named in a model has a `Composition/<name>.txt` but no `Material/<name>.txt`, EffSuite runs the bundled XCOM automatically and saves the table in the data folder. Use the `material` command to create one in advance.
-3. **Parallel Worker Allocation**:
+3. **Parallel workers**:
    On multi-core lab workstations, use `--workers 4` or `--workers 0` (automatic). If executing multiple independent sample calculations in parallel from an external scheduler, use `--workers 1` per instance to prevent CPU oversubscription.
-4. **CAM File Locks**:
+4. **CAM file locks**:
    Ensure that the target `.CAL` and `.NLB` destination files are not opened with exclusive write locks in Genie 2000 Gamma Acquisition & Analysis while EffSuite is writing to them.
