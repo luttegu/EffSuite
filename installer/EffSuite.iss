@@ -4,7 +4,7 @@
 ; =====================================================================
 
 #define MyAppName "EffSuite"
-#define MyAppVersion "0.5.3"
+#define MyAppVersion "0.5.4"
 #define MyAppPublisher "GL"
 #define MyAppURL "https://github.com/luttegu/EffSuite"
 #define MyAppExeName "EffSuite_GUI.exe"

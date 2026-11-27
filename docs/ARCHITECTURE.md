@@ -1,4 +1,4 @@
-# EffSuite Architecture — v0.5.3
+# EffSuite Architecture — v0.5.4
 
 *For developers. The physics is described in
 [CHANGES_FROM_ORIGINALS.md](CHANGES_FROM_ORIGINALS.md), and the well model in
@@ -121,5 +121,5 @@ Setup_Windows.bat                          :: create .venv and install dependenc
 .venv\Scripts\python.exe tools\run_tests.py :: all test modules in parallel (or Run_Tests_Windows.bat)
 Build_Windows.bat                          :: PyInstaller: dist\EffSuite\EffSuite_GUI.exe and EffSuite_CLI.exe
 Build_Installer.bat                        :: Inno Setup installer (installer\EffSuite.iss)
-python tools\set_version.py 0.5.3          :: set the version everywhere
+python tools\set_version.py 0.5.4          :: set the version everywhere
 ```
