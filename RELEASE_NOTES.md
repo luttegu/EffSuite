@@ -1,5 +1,9 @@
 # Release Notes
 
+## Unreleased
+
+- **Less memory.** Each EffSuite process (CLI or GUI) committed about 830 MB of memory on a 24-thread PC, of which about 750 MB was reserved by numpy's OpenBLAS (one buffer per CPU thread) and never used. EffSuite now sets `OPENBLAS_NUM_THREADS=1` at start: about 90–100 MB committed for a CLI run. Results and run times are unchanged. A value already set in the environment is kept.
+
 ## EffSuite 0.5.3 (November 2026)
 
 Code cleanup. The engines and all results are identical to 0.5.0.

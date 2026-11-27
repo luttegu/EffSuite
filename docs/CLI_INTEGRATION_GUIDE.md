@@ -404,3 +404,5 @@ if ($LASTEXITCODE -eq 0 -or ($LASTEXITCODE -eq 1 -and (Test-Path $outCal))) {
    On multi-core lab workstations, use `--workers 4` or `--workers 0` (automatic). If executing multiple independent sample calculations in parallel from an external scheduler, use `--workers 1` per instance to prevent CPU oversubscription.
 4. **CAM file locks**:
    Ensure that the target `.CAL` and `.NLB` destination files are not opened with exclusive write locks in Genie 2000 Gamma Acquisition & Analysis while EffSuite is writing to them.
+5. **Memory**:
+   A CLI run commits about 90–100 MB of memory. It sets `OPENBLAS_NUM_THREADS=1` at start, because numpy's OpenBLAS would otherwise reserve about 30 MB of committed memory per CPU thread (about 750 MB on a 24-thread PC). A value already set in the environment is kept.
